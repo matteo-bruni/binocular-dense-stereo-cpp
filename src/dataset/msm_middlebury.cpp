@@ -44,86 +44,77 @@
 #include "util.hpp"
 
 
-namespace cv
-{
-namespace datasets
-{
+namespace cv {
+    namespace datasets {
 
-using namespace std;
+        using namespace std;
 
-class MSM_middleburyImp : public MSM_middlebury
-{
-public:
-    MSM_middleburyImp() {}
-    //MSM_middleburyImp(const string &path);
-    virtual ~MSM_middleburyImp() {}
+        class MSM_middleburyImp : public MSM_middlebury {
+        public:
+            MSM_middleburyImp() {
+            }
 
-    virtual void load(const string &path);
+            //MSM_middleburyImp(const string &path);
+            virtual ~MSM_middleburyImp() {
+            }
 
-private:
-    void loadDataset(const string &path);
-};
+            virtual void load(const string &path);
+
+        private:
+            void loadDataset(const string &path);
+        };
 
 /*MSM_middleburyImp::MSM_middleburyImp(const string &path)
 {
     loadDataset(path);
 }*/
 
-void MSM_middleburyImp::load(const string &path)
-{
-    loadDataset(path);
-}
+        void MSM_middleburyImp::load(const string &path) {
+            loadDataset(path);
+        }
 
-void MSM_middleburyImp::loadDataset(const string &path)
-{
-    train.push_back(vector< Ptr<Object> >());
-    test.push_back(vector< Ptr<Object> >());
-    validation.push_back(vector< Ptr<Object> >());
+        void MSM_middleburyImp::loadDataset(const string &path) {
+            train.push_back(vector<Ptr<Object> >());
+            test.push_back(vector<Ptr<Object> >());
+            validation.push_back(vector<Ptr<Object> >());
 
-    string name(path.substr(0, path.length()-1));
-    size_t start = name.rfind('/');
-    name = name.substr(start+1, name.length()-start);
+            string name(path.substr(0, path.length() - 1));
+            size_t start = name.rfind('/');
+            name = name.substr(start + 1, name.length() - start);
 
-    string angName(path + "templeR_ang.txt");
-    string parName(path + "templeR_par.txt");
+            string angName(path + "templeR_ang.txt");
+            string parName(path + "templeR_par.txt");
 
-    std::cout << "Path: " << path << "\n";
-    std::cout << name << "\n";
-    ifstream infile(parName.c_str());
-    string imageName;
-    infile >> imageName; // skip header
-    while (infile >> imageName)
-    {
-        Ptr<MSM_middleburyObj> curr(new MSM_middleburyObj);
-        curr->imageName = imageName;
+            std::cout << "Path: " << path << "\n";
+            std::cout << name << "\n";
+            ifstream infile(parName.c_str());
+            string imageName;
+            infile >> imageName; // skip header
+            while (infile >> imageName) {
+                Ptr<MSM_middleburyObj> curr(new MSM_middleburyObj);
+                curr->imageName = imageName;
 
-        for (int i=0; i<3; ++i)
-        {
-            for (int j=0; j<3; ++j)
-            {
-                infile >> curr->k(i, j);
+                for (int i = 0; i < 3; ++i) {
+                    for (int j = 0; j < 3; ++j) {
+                        infile >> curr->k(i, j);
+                    }
+                }
+                for (int i = 0; i < 3; ++i) {
+                    for (int j = 0; j < 3; ++j) {
+                        infile >> curr->r(i, j);
+                    }
+                }
+                for (int i = 0; i < 3; ++i) {
+                    infile >> curr->t[i];
+                }
+
+                train.back().push_back(curr);
             }
         }
-        for (int i=0; i<3; ++i)
-        {
-            for (int j=0; j<3; ++j)
-            {
-                infile >> curr->r(i, j);
-            }
-        }
-        for (int i=0; i<3; ++i)
-        {
-            infile >> curr->t[i];
+
+        Ptr<MSM_middlebury> MSM_middlebury::create() {
+            return Ptr<MSM_middleburyImp>(new MSM_middleburyImp);
         }
 
-        train.back().push_back(curr);
     }
-}
-
-Ptr<MSM_middlebury> MSM_middlebury::create()
-{
-    return Ptr<MSM_middleburyImp>(new MSM_middleburyImp);
-}
-
-}
 }

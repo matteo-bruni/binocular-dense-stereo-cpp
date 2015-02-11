@@ -46,55 +46,49 @@
 #include <sstream>
 
 #ifdef __GNUC__
-    #include <unistd.h>
-    #include <dirent.h>
-    #include <sys/stat.h>
+
+#include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
 #else
     #include <io.h>
     #include <direct.h>
 #endif
 
-namespace cv
-{
-namespace datasets
-{
+namespace cv {
+    namespace datasets {
 
-using namespace std;
+        using namespace std;
 
-void split(const string &s, vector<string> &elems, char delim)
-{
-    stringstream ss(s);
-    string item;
-    while (getline(ss, item, delim))
-    {
-        elems.push_back(item);
-    }
-}
+        void split(const string &s, vector<string> &elems, char delim) {
+            stringstream ss(s);
+            string item;
+            while (getline(ss, item, delim)) {
+                elems.push_back(item);
+            }
+        }
 
-void createDirectory(const string &path)
-{
+        void createDirectory(const string &path) {
 #ifdef __GNUC__
-    mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+            mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #else
     mkdir(path.c_str());
 #endif
-}
-
-void getDirList(const string &dirName, vector<string> &fileNames)
-{
-#ifdef __GNUC__
-    struct dirent **namelist;
-    int n = scandir(dirName.c_str(), &namelist, NULL, alphasort);
-    for (int i=0; i<n; ++i)
-    {
-        string fileName(namelist[i]->d_name);
-        if ('.' != fileName[0])
-        {
-            fileNames.push_back(fileName);
         }
-        free(namelist[i]);
-    }
-    free(namelist);
+
+        void getDirList(const string &dirName, vector<string> &fileNames) {
+#ifdef __GNUC__
+            struct dirent **namelist;
+            int n = scandir(dirName.c_str(), &namelist, NULL, alphasort);
+            for (int i = 0; i < n; ++i) {
+                string fileName(namelist[i]->d_name);
+                if ('.' != fileName[0]) {
+                    fileNames.push_back(fileName);
+                }
+                free(namelist[i]);
+            }
+            free(namelist);
 #else // for WIN32
     struct _finddata_t file;
     string filter(dirName);
@@ -114,7 +108,7 @@ void getDirList(const string &dirName, vector<string> &fileNames)
     } while (_findnext(hFile, &file)==0);
     _findclose(hFile);
 #endif
-}
+        }
 
-}
+    }
 }

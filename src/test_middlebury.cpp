@@ -73,39 +73,29 @@ int main(int argc, char *argv[])
 
     // ***************
     // dataset contains camera parameters for each image.
-    // For example, let output number of elements and last element.
     printf("images number: %u\n", (unsigned int)dataset->getTrain().size());
 
-//    vector< Ptr<Object> >& data = dataset->getTrain();
-
-//    MSM_middleburyObj *example = (MSM_middleburyObj * )data.back().get();
-
+    // For example, let output number of elements and last element.
     Ptr<MSM_middleburyObj> example = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain().back() );
 
-    //Ptr<MSM_middleburyObj example2 = static_cast< Ptr<MSM_middleburyObj> > ( &(dataset->getTrain()).back() );
-//
+
     printf("last image name: %s\n", (path + example->imageName).c_str());
     printf("K:\n");
-    for (int i=0; i<3; ++i)
-    {
-        for (int j=0; j<3; ++j)
-        {
+    for (int i=0; i<3; ++i) {
+        for (int j=0; j<3; ++j) {
             printf("%f ", example->k(i, j));
         }
         printf("\n");
     }
     printf("R:\n");
-    for (int i=0; i<3; ++i)
-    {
-        for (int j=0; j<3; ++j)
-        {
+    for (int i=0; i<3; ++i) {
+        for (int j=0; j<3; ++j) {
             printf("%f ", example->r(i, j));
         }
         printf("\n");
     }
     printf("t:\n");
-    for (int i=0; i<3; ++i)
-    {
+    for (int i=0; i<3; ++i) {
         printf("%f ", example->t[i]);
     }
     printf("\n");

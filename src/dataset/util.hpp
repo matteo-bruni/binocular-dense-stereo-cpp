@@ -52,23 +52,21 @@
 
 #include <opencv2/core/core.hpp>
 
-namespace cv
-{
-namespace datasets
-{
+namespace cv {
+    namespace datasets {
 
 //! @addtogroup datasets
 //! @{
 
-void CV_EXPORTS split(const std::string &s, std::vector<std::string> &elems, char delim);
+        void CV_EXPORTS split(const std::string &s, std::vector<std::string> &elems, char delim);
 
-void CV_EXPORTS createDirectory(const std::string &path);
+        void CV_EXPORTS createDirectory(const std::string &path);
 
-void CV_EXPORTS getDirList(const std::string &dirName, std::vector<std::string> &fileNames);
+        void CV_EXPORTS getDirList(const std::string &dirName, std::vector<std::string> &fileNames);
 
 //! @}
 
-}
+    }
 }
 
 #endif

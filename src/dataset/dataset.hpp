@@ -336,14 +336,14 @@ file's row format: `synset,labelID,description`. For example: "n07751451,18,plum
 
 Python script to parse `meta.mat`:
 ~~~{py}
-    import scipy.io
-    meta_mat = scipy.io.loadmat("devkit-1.0/data/meta.mat")
+import scipy.io
+meta_mat = scipy.io.loadmat("devkit-1.0/data/meta.mat")
 
-    labels_dic = dict((m[0][1][0], m[0][0][0][0]-1) for m in meta_mat['synsets']
-    label_names_dic = dict((m[0][1][0], m[0][2][0]) for m in meta_mat['synsets']
+labels_dic = dict((m[0][1][0], m[0][0][0][0]-1) for m in meta_mat['synsets']
+label_names_dic = dict((m[0][1][0], m[0][2][0]) for m in meta_mat['synsets']
 
-    for label in labels_dic.keys():
-        print "{0},{1},{2}".format(label, labels_dic[label], label_names_dic[label])
+for label in labels_dic.keys():
+print "{0},{1},{2}".format(label, labels_dic[label], label_names_dic[label])
 ~~~
 
 ### MNIST
@@ -481,45 +481,47 @@ To run benchmark execute:
 
 */
 
-namespace cv
-{
-namespace datasets
-{
+namespace cv {
+    namespace datasets {
 
 //! @addtogroup datasets
 //! @{
 
-struct Object
-{
-virtual ~Object() {}
-};
+        struct Object {
+            virtual ~Object() {
+            }
+        };
 
-class CV_EXPORTS Dataset
-{
-public:
-    Dataset() {}
-    virtual ~Dataset() {}
+        class CV_EXPORTS Dataset {
+        public:
+            Dataset() {
+            }
 
-    virtual void load(const std::string &path) = 0;
+            virtual ~Dataset() {
+            }
 
-    std::vector< Ptr<Object> >& getTrain(int splitNum = 0);
-    std::vector< Ptr<Object> >& getTest(int splitNum = 0);
-    std::vector< Ptr<Object> >& getValidation(int splitNum = 0);
+            virtual void load(const std::string &path) = 0;
 
-    int getNumSplits() const;
+            std::vector<Ptr<Object> > &getTrain(int splitNum = 0);
 
-protected:
-    std::vector< std::vector< Ptr<Object> > > train;
-    std::vector< std::vector< Ptr<Object> > > test;
-    std::vector< std::vector< Ptr<Object> > > validation;
+            std::vector<Ptr<Object> > &getTest(int splitNum = 0);
 
-private:
-    std::vector< Ptr<Object> > empty;
-};
+            std::vector<Ptr<Object> > &getValidation(int splitNum = 0);
+
+            int getNumSplits() const;
+
+        protected:
+            std::vector<std::vector<Ptr<Object> > > train;
+            std::vector<std::vector<Ptr<Object> > > test;
+            std::vector<std::vector<Ptr<Object> > > validation;
+
+        private:
+            std::vector<Ptr<Object> > empty;
+        };
 
 //! @}
 
-}
+    }
 }
 
 #endif

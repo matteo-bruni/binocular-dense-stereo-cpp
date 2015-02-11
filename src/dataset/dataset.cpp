@@ -42,48 +42,40 @@
 #include "dataset.hpp"
 #include "util.hpp"
 
-namespace cv
-{
-namespace datasets
-{
+namespace cv {
 
-using namespace std;
+    namespace datasets {
 
-vector< Ptr<Object> >& Dataset::getTrain(int splitNum)
-{
-    if (splitNum >= (int)train.size())
-    {
-        return empty;
+        using namespace std;
+
+        vector<Ptr<Object> > &Dataset::getTrain(int splitNum) {
+
+            if (splitNum >= (int) train.size()) {
+                return empty;
+            }
+            return train[splitNum];
+        }
+
+        vector<Ptr<Object> > &Dataset::getTest(int splitNum) {
+
+            if (splitNum >= (int) test.size()) {
+                return empty;
+            }
+            return test[splitNum];
+        }
+
+        vector<Ptr<Object> > &Dataset::getValidation(int splitNum) {
+            if (splitNum >= (int) validation.size()) {
+                return empty;
+            }
+
+            return validation[splitNum];
+        }
+
+        int Dataset::getNumSplits() const {
+            return (int) train.size();
+        }
+
     }
-
-    return train[splitNum];
-}
-
-vector< Ptr<Object> >& Dataset::getTest(int splitNum)
-{
-    if (splitNum >= (int)test.size())
-    {
-        return empty;
-    }
-
-    return test[splitNum];
-}
-
-vector< Ptr<Object> >& Dataset::getValidation(int splitNum)
-{
-    if (splitNum >= (int)validation.size())
-    {
-        return empty;
-    }
-
-    return validation[splitNum];
-}
-
-int Dataset::getNumSplits() const
-{
-    return (int)train.size();
-}
-
-}
 }
 
