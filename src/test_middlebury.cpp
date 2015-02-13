@@ -48,11 +48,14 @@
 #include "dataset/msm_middlebury.hpp"
 
 
+#include "matching_reproject/stereo_matching.hpp"
+
 
 
 using namespace std;
 using namespace cv;
 using namespace cv::datasets;
+using namespace stereo;
 
 int main(int argc, char *argv[])
 {
@@ -76,8 +79,7 @@ int main(int argc, char *argv[])
     printf("images number: %u\n", (unsigned int)dataset->getTrain().size());
 
     // For example, let output number of elements and last element.
-    Ptr<MSM_middleburyObj> example = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain()[0]);
-    Ptr<MSM_middleburyObj> example2 = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain()[1]);
+    Ptr<MSM_middleburyObj> example = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain().back());
 
     printf("last image name: %s\n", (path + example->imageName).c_str());
     printf("K:\n");
@@ -100,25 +102,12 @@ int main(int argc, char *argv[])
     }
     printf("\n");
 
-    printf("last image name: %s\n", (path + example2->imageName).c_str());
-    printf("K:\n");
-    for (int i=0; i<3; ++i) {
-        for (int j=0; j<3; ++j) {
-            printf("%f ", example->k(i, j));
-        }
-        printf("\n");
-    }
-    printf("R:\n");
-    for (int i=0; i<3; ++i) {
-        for (int j=0; j<3; ++j) {
-            printf("%f ", example->r(i, j));
-        }
-        printf("\n");
-    }
-    printf("t:\n");
-    for (int i=0; i<3; ++i) {
-        printf("%f ", example->t[i]);
-    }
-    printf("\n");
+    Mat img1;
+    Mat img2;
+    std::string img1_path = "../dataset/dataset_templeRing/templeR0001.png";
+    std::string img2_path = "../dataset/dataset_templeRing/templeR0002.png";
+    stereo::loadImages(img1_path, img2_path, img1,img2);
+
+
     return 0;
 }

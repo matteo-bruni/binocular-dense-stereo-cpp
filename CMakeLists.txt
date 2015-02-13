@@ -27,18 +27,29 @@ set(SOURCE_FILES
     src/dataset/msm_middlebury.cpp
     src/dataset/util.cpp
     src/test_middlebury.cpp
+    src/matching_reproject/stereo_matching.cpp
+    src/matching_reproject/stereo_matching.hpp
 )
 
 
-#################################### Locate libxml2 ############################################
+#################################### Locate OpenCV ############################################
 
 find_package(OpenCV REQUIRED)
 #INCLUDE(${CMAKE_SOURCE_DIR}/cmake/modules/FindLibXML2.cmake)
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 message(${OpenCV_INCLUDE_DIRS})
-set(LIBS ${LIBS} ${OPENCV_INCLUDE_DIR})
+set(LIBS ${LIBS} ${OpenCV_LIBS})
+
+#################################### Locate PCL ############################################
+
+find_package(PCL 1.2 REQUIRED)
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+set(LIBS ${LIBS} ${PCL_LIBRARIES})
 
 
+#################################### target build ############################################
 
 add_executable(binocular_dense_stereo ${SOURCE_FILES})
-target_link_libraries(binocular_dense_stereo ${OpenCV_LIBS})
+target_link_libraries(binocular_dense_stereo ${LIBS})
