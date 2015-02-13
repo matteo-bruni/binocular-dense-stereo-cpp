@@ -11,14 +11,7 @@
     </ADDITIONAL_GENERATION_ENVIRONMENT>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50f3cfb0-7af6-459b-be1d-5f9d49bb4800" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/dataset/msm_middlebury.cpp" afterPath="$PROJECT_DIR$/src/dataset/msm_middlebury.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/dataset/msm_middlebury.hpp" afterPath="$PROJECT_DIR$/src/dataset/msm_middlebury.hpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/matching_reproject/stereo_matching.cpp" afterPath="$PROJECT_DIR$/src/matching_reproject/stereo_matching.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/matching_reproject/stereo_matching.hpp" afterPath="$PROJECT_DIR$/src/matching_reproject/stereo_matching.hpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test_middlebury.cpp" afterPath="$PROJECT_DIR$/src/test_middlebury.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-    </list>
+    <list default="true" id="50f3cfb0-7af6-459b-be1d-5f9d49bb4800" name="Default" comment="" />
     <ignored path="binocular-dense-stereo.iws" />
     <ignored path=".idea/workspace.xml" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -51,8 +44,8 @@
       <file leaf-file-name="test_middlebury.cpp" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/test_middlebury.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="1.27349">
-              <caret line="126" column="0" selection-start-line="126" selection-start-column="0" selection-end-line="126" selection-end-column="0" />
+            <state vertical-scroll-proportion="0.8708054">
+              <caret line="110" column="21" selection-start-line="110" selection-start-column="21" selection-end-line="110" selection-end-column="21" />
               <folding>
                 <element signature="e#2075#2107#0" expanded="true" />
                 <element signature="e#2182#2219#0" expanded="true" />
@@ -525,7 +518,7 @@
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="CMake" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3290461" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.18777293" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.18777293" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39979655" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.31511253" sideWeight="0.9062159" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
@@ -1012,8 +1005,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/test_middlebury.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="1.27349">
-          <caret line="126" column="0" selection-start-line="126" selection-start-column="0" selection-end-line="126" selection-end-column="0" />
+        <state vertical-scroll-proportion="0.8708054">
+          <caret line="110" column="21" selection-start-line="110" selection-start-column="21" selection-end-line="110" selection-end-column="21" />
           <folding>
             <element signature="e#2075#2107#0" expanded="true" />
             <element signature="e#2182#2219#0" expanded="true" />
