@@ -11,9 +11,7 @@
     </ADDITIONAL_GENERATION_ENVIRONMENT>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50f3cfb0-7af6-459b-be1d-5f9d49bb4800" name="Default" comment="miky adding stereo">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/matching_reproject/stereo_matching.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test_middlebury.cpp" afterPath="$PROJECT_DIR$/src/test_middlebury.cpp" />
+    <list default="true" id="50f3cfb0-7af6-459b-be1d-5f9d49bb4800" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="binocular-dense-stereo.iws" />
@@ -359,7 +357,13 @@
       <option name="project" value="LOCAL" />
       <updated>1423833236514</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="miky adding stereo">
+      <created>1423834006752</created>
+      <option name="number" value="00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1423834006752</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="ToolWindowManager">
