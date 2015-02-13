@@ -1,6 +1,6 @@
 build/
 bin/
-
+.idea/
 
 # Compiled Object files
 *.slo

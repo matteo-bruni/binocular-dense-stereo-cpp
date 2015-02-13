@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 //        parser.printMessage();
 //        return -1;
 //    }
-    string path("/home/hunter/Projects/binocular-dense-stereo/dataset/dataset_templeRing/");
+    string path("../dataset/dataset_templeRing/");
 
     Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
     dataset->load(path);
@@ -82,10 +82,10 @@ int main(int argc, char *argv[])
     printf("last image name: %s\n", (path + example->imageName).c_str());
     printf("K:\n");
     for (int i=0; i<3; ++i) {
-        for (int j=0; j<3; ++j) {
-            printf("%f ", example->k(i, j));
-        }
-        printf("\n");
+            for (int j=0; j<3; ++j) {
+                printf("%f ", example->k(i, j));
+            }
+            printf("\n");
     }
     printf("R:\n");
     for (int i=0; i<3; ++i) {
