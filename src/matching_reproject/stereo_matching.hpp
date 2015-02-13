@@ -15,4 +15,5 @@ namespace stereo {
     void display(Mat& img1, Mat& img2,Mat& disp);
 
     void storePointCloud(Mat& disp, Mat& Q,const char* filename, const Mat& mat);
+
 }

@@ -48,6 +48,7 @@
 // custom includes
 #include "dataset/msm_middlebury.hpp"
 #include "matching_reproject/stereo_matching.hpp"
+#include "utils/util.hpp"
 
 // Include logging facilities
 #include "logger/log.h"
@@ -129,20 +130,32 @@ int main(int argc, char *argv[])
 
     Mat D1,D2,R1,R2,P1,P2,Q;
 
-    Mat M1 =Mat(data_img1->k);
-    Mat M2 =Mat(data_img2->k);
+    Mat M1 = Mat(data_img1->k);
+    Mat M2 = Mat(data_img2->k);
     Mat r1 = Mat(data_img1->r);
     Mat r2 = Mat(data_img2->r);
 
-    Mat t1 = Mat(data_img1->t);
-    Mat t2 = Mat(data_img2->t);
+    Mat t1 = Mat(3, 1, CV_64FC1, &t1);
+    Mat t2 = Mat(3, 1, CV_64FC1, &t2);
+
 
 //    double t1[3];
 //    std::copy(t1, data_img1->t,t1);
 //    double t2[3];
 //    std::copy(t2, data_img2->t,t2);
+
+
     Mat R = r2*r1.t();
-    Mat T = t1 - (R.t()*t2);
+
+    util::infoMatrix(R);
+    util::infoMatrix(t2);
+
+    util::infoMatrix(t1);
+
+    Mat T = t1 - (R.t()*t2 );
+
+    std::cout << T << std::endl;
+
 
 //    Rect roi1,roi2;
 //

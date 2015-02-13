@@ -19,8 +19,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
+
+
 set(SOURCE_FILES
     src/logger/log.h
+    src/utils/util.hpp
+    src/utils/util.cpp
     src/dataset/dataset.hpp
     src/dataset/msm_middlebury.hpp
     src/dataset/util.hpp

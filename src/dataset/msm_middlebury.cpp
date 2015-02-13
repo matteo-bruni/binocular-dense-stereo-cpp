@@ -104,12 +104,12 @@ namespace cv {
                         infile >> curr->r(i, j);
                     }
                 }
-                printf("premorte\n");
+//                printf("premorte\n");
                 for (int i = 0; i < 3; ++i) {
-                    printf("morte\n");
+//                    printf("morte\n");
 
-                    infile >> curr->t(1, i); //[i];
-                    std::cout << curr->t(1, i);
+                    infile >> curr->t[i];
+//                    std::cout << curr->t(1, i);
                 }
 
                 train.back().push_back(curr);
