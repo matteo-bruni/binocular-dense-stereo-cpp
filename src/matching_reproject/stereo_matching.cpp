@@ -54,23 +54,25 @@ static void saveXYZ(const char* filename, const Mat& mat)
     fclose(fp);
 }
 
+namespace stereo {
 
-void loadImages(const std::string &img1_filename, const std::string &img2_filename, Mat& img1, Mat& img2){
+    void loadImages(const std::string &img1_filename, const std::string &img2_filename, Mat &img1, Mat &img2) {
 
-    int color_mode = -1; // = alg == STEREO_BM ? 0 : -1;
+        int color_mode = -1; // = alg == STEREO_BM ? 0 : -1;
 
-    img1 = imread(img1_filename, color_mode);
-    img2 = imread(img2_filename, color_mode);
+        img1 = imread(img1_filename, color_mode);
+        img2 = imread(img2_filename, color_mode);
 
-    float scale = 1.f; // TODO check
-    if(1.f != scale)
-    {
-        Mat temp1, temp2;
-        int method = scale < 1 ? INTER_AREA : INTER_CUBIC;
-        resize(img1, temp1, Size(), scale, scale, method);
-        img1 = temp1;
-        resize(img2, temp2, Size(), scale, scale, method);
-        img2 = temp2;
+        float scale = 1.f; // TODO check
+        if (1.f != scale) {
+            Mat temp1, temp2;
+            int method = scale < 1 ? INTER_AREA : INTER_CUBIC;
+            resize(img1, temp1, Size(), scale, scale, method);
+            img1 = temp1;
+            resize(img2, temp2, Size(), scale, scale, method);
+            img2 = temp2;
+        }
+
     }
 
 }
