@@ -45,10 +45,19 @@
 #include <string>
 #include <vector>
 
+// custom includes
 #include "dataset/msm_middlebury.hpp"
-
-
 #include "matching_reproject/stereo_matching.hpp"
+
+// Include logging facilities
+#include "logger/log.h"
+#ifndef FILELOG_MAX_LEVEL
+    #define FILELOG_MAX_LEVEL logDEBUG4
+#endif
+#define FILE_LOG(level) \
+  if (level > FILELOG_MAX_LEVEL) ;\
+  else if (level > FILELog::ReportingLevel() || !Output2FILE::Stream()) ; \
+   else FILELog().Get(level)
 
 
 
@@ -59,6 +68,10 @@ using namespace stereo;
 
 int main(int argc, char *argv[])
 {
+
+    FILE_LOG(logINFO) << "Binocular Dense Stereo";
+
+
 //    const char *keys =
 //            "{ help h usage ? |    | show this message }"
 //            "{ path p         |true| path to dataset description }";
@@ -74,7 +87,6 @@ int main(int argc, char *argv[])
     Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
     dataset->load(path);
 
-    // ***************
     // dataset contains camera parameters for each image.
     printf("images number: %u\n", (unsigned int)dataset->getTrain().size());
 
