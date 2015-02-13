@@ -29,30 +29,30 @@
 using namespace cv;
 
 
-
-static void print_help()
-{
-    printf("\nDemo stereo matching converting L and R images into disparity and point clouds\n");
-    printf("\nUsage: stereo_match <left_image> <right_image> [--algorithm=bm|sgbm|hh|var] [--blocksize=<block_size>]\n"
-            "[--max-disparity=<max_disparity>] [--scale=scale_factor>] [-i <intrinsic_filename>] [-e <extrinsic_filename>]\n"
-            "[--no-display] [-o <disparity_image>] [-p <point_cloud_file>]\n");
-}
-
-static void saveXYZ(const char* filename, const Mat& mat)
-{
-    const double max_z = 1.0e4;
-    FILE* fp = fopen(filename, "wt");
-    for(int y = 0; y < mat.rows; y++)
-    {
-        for(int x = 0; x < mat.cols; x++)
-        {
-            Vec3f point = mat.at<Vec3f>(y, x);
-            if(fabs(point[2] - max_z) < FLT_EPSILON || fabs(point[2]) > max_z) continue;
-            fprintf(fp, "%f %f %f\n", point[0], point[1], point[2]);
-        }
-    }
-    fclose(fp);
-}
+//
+//static void print_help()
+//{
+//    printf("\nDemo stereo matching converting L and R images into disparity and point clouds\n");
+//    printf("\nUsage: stereo_match <left_image> <right_image> [--algorithm=bm|sgbm|hh|var] [--blocksize=<block_size>]\n"
+//            "[--max-disparity=<max_disparity>] [--scale=scale_factor>] [-i <intrinsic_filename>] [-e <extrinsic_filename>]\n"
+//            "[--no-display] [-o <disparity_image>] [-p <point_cloud_file>]\n");
+//}
+//
+//static void saveXYZ(const char* filename, const Mat& mat)
+//{
+//    const double max_z = 1.0e4;
+//    FILE* fp = fopen(filename, "wt");
+//    for(int y = 0; y < mat.rows; y++)
+//    {
+//        for(int x = 0; x < mat.cols; x++)
+//        {
+//            Vec3f point = mat.at<Vec3f>(y, x);
+//            if(fabs(point[2] - max_z) < FLT_EPSILON || fabs(point[2]) > max_z) continue;
+//            fprintf(fp, "%f %f %f\n", point[0], point[1], point[2]);
+//        }
+//    }
+//    fclose(fp);
+//}
 
 namespace stereo {
 
@@ -75,6 +75,142 @@ namespace stereo {
 
     }
 
+    void rectifyImages(Mat& img1, Mat& img2, Mat& M1, Mat& D1, Mat& M2, Mat& D2, Mat& R, Mat& T, Mat& R1, Mat& R2, Mat& P1, Mat& P2, Mat& Q, Rect &roi1, Rect &roi2, int scale){
+
+        Size img_size = img1.size();
+
+        M1 *= scale;
+        M2 *= scale;
+
+        stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, P1, P2, Q, CALIB_ZERO_DISPARITY, -1, img_size, &roi1, &roi2 );
+
+        Mat map11, map12, map21, map22;
+        initUndistortRectifyMap(M1, D1, R1, P1, img_size, CV_16SC2, map11, map12);
+        initUndistortRectifyMap(M2, D2, R2, P2, img_size, CV_16SC2, map21, map22);
+
+        Mat img1r, img2r;
+        remap(img1, img1r, map11, map12, INTER_LINEAR);
+        remap(img2, img2r, map21, map22, INTER_LINEAR);
+
+        img1 = img1r;
+        img2 = img2r;
+    }
+    void computeDisparity(Mat& img1, Mat& img2,Mat& disp,int alg){
+
+        enum { STEREO_BM=0, STEREO_SGBM=1, STEREO_HH=2, STEREO_VAR=3 };
+        StereoBM bm;
+        StereoSGBM sgbm;
+        StereoVar var;
+        int SADWindowSize = 0, numberOfDisparities = 0;
+        Size img_size = img1.size();
+
+        numberOfDisparities = numberOfDisparities > 0 ? numberOfDisparities : ((img_size.width/8) + 15) & -16;
+
+//        bm.state->roi1 = roi1;
+//        bm.state->roi2 = roi2;
+//        bm.state->preFilterCap = 31;
+//        bm.state->SADWindowSize = SADWindowSize > 0 ? SADWindowSize : 9;
+//        bm.state->minDisparity = 0;
+//        bm.state->numberOfDisparities = numberOfDisparities;
+//        bm.state->textureThreshold = 10;
+//        bm.state->uniquenessRatio = 15;
+//        bm.state->speckleWindowSize = 100;
+//        bm.state->speckleRange = 32;
+//        bm.state->disp12MaxDiff = 1;
+
+        sgbm.preFilterCap = 63;
+        sgbm.SADWindowSize = SADWindowSize > 0 ? SADWindowSize : 3;
+
+        int cn = img1.channels();
+
+        sgbm.P1 = 8*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
+        sgbm.P2 = 32*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
+        sgbm.minDisparity = 0;
+        sgbm.numberOfDisparities = numberOfDisparities;
+        sgbm.uniquenessRatio = 10;
+        sgbm.speckleWindowSize = bm.state->speckleWindowSize;
+        sgbm.speckleRange = bm.state->speckleRange;
+        sgbm.disp12MaxDiff = 1;
+        sgbm.fullDP = alg == STEREO_HH;
+
+        var.levels = 3;                                 // ignored with USE_AUTO_PARAMS
+        var.pyrScale = 0.5;                             // ignored with USE_AUTO_PARAMS
+        var.nIt = 25;
+        var.minDisp = -numberOfDisparities;
+        var.maxDisp = 0;
+        var.poly_n = 3;
+        var.poly_sigma = 0.0;
+        var.fi = 15.0f;
+        var.lambda = 0.03f;
+        var.penalization = var.PENALIZATION_TICHONOV;   // ignored with USE_AUTO_PARAMS
+        var.cycle = var.CYCLE_V;                        // ignored with USE_AUTO_PARAMS
+        var.flags = var.USE_SMART_ID | var.USE_AUTO_PARAMS | var.USE_INITIAL_DISPARITY | var.USE_MEDIAN_FILTERING ;
+
+        Mat disp8;
+        //Mat img1p, img2p, dispp;
+        //copyMakeBorder(img1, img1p, 0, 0, numberOfDisparities, 0, IPL_BORDER_REPLICATE);
+        //copyMakeBorder(img2, img2p, 0, 0, numberOfDisparities, 0, IPL_BORDER_REPLICATE);
+
+        int64 t = getTickCount();
+        if( alg == STEREO_BM )
+            bm(img1, img2, disp);
+        else if( alg == STEREO_VAR ) {
+            var(img1, img2, disp);
+        }
+        else if( alg == STEREO_SGBM || alg == STEREO_HH )
+            sgbm(img1, img2, disp);
+        t = getTickCount() - t;
+        printf("Time elapsed: %fms\n", t*1000/getTickFrequency());
+
+        //disp = dispp.colRange(numberOfDisparities, img1p.cols);
+        if( alg != STEREO_VAR )
+            disp.convertTo(disp8, CV_8U, 255/(numberOfDisparities*16.));
+        else
+            disp.convertTo(disp8, CV_8U);
+
+
+    }
+
+
+
+    void display(Mat& img1, Mat& img2,Mat& disp){
+
+        namedWindow("left", 1);
+        imshow("left", img1);
+        namedWindow("right", 1);
+        imshow("right", img2);
+        namedWindow("disparity", 0);
+        imshow("disparity", disp);
+        printf("press any key to continue...");
+        fflush(stdout);
+        waitKey();
+        printf("\n");
+
+    }
+
+    void storePointCloud(Mat& disp, Mat& Q,const char* filename, const Mat& mat){
+
+        printf("storing the point cloud...");
+        fflush(stdout);
+        Mat xyz;
+        reprojectImageTo3D(disp, xyz, Q, true);
+        //reprojectImageTo3D( disp, xyz, Q, false, CV_32F );
+
+        const double max_z = 1.0e4;
+        FILE* fp = fopen(filename, "wt");
+        for(int y = 0; y < mat.rows; y++)
+        {
+            for(int x = 0; x < mat.cols; x++)
+            {
+                Vec3f point = mat.at<Vec3f>(y, x);
+                if(fabs(point[2] - max_z) < FLT_EPSILON || fabs(point[2]) > max_z) continue;
+                fprintf(fp, "%f %f %f\n", point[0], point[1], point[2]);
+            }
+        }
+        fclose(fp);
+        printf("\n");
+
+    }
 }
 //
 //int main(int argc, char** argv)

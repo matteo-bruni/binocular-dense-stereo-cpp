@@ -61,7 +61,8 @@ namespace cv {
             std::string imageName;
             Matx33d k;
             Matx33d r;
-            double t[3];
+//            double t[3];
+            Matx13d t;
         };
 
         class CV_EXPORTS MSM_middlebury : public Dataset {

@@ -79,34 +79,71 @@ int main(int argc, char *argv[])
     printf("images number: %u\n", (unsigned int)dataset->getTrain().size());
 
     // For example, let output number of elements and last element.
-    Ptr<MSM_middleburyObj> example = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain().back());
+//    Ptr<MSM_middleburyObj> example = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain().back());
 
-    printf("last image name: %s\n", (path + example->imageName).c_str());
-    printf("K:\n");
-    for (int i=0; i<3; ++i) {
-            for (int j=0; j<3; ++j) {
-                printf("%f ", example->k(i, j));
-            }
-            printf("\n");
-    }
-    printf("R:\n");
-    for (int i=0; i<3; ++i) {
-        for (int j=0; j<3; ++j) {
-            printf("%f ", example->r(i, j));
-        }
-        printf("\n");
-    }
-    printf("t:\n");
-    for (int i=0; i<3; ++i) {
-        printf("%f ", example->t[i]);
-    }
-    printf("\n");
+//    printf("last image name: %s\n", (path + example->imageName).c_str());
+//    printf("K:\n");
+//    for (int i=0; i<3; ++i) {
+//            for (int j=0; j<3; ++j) {
+//                printf("%f ", example->k(i, j));
+//            }
+//            printf("\n");
+//    }
+//    printf("R:\n");
+//    for (int i=0; i<3; ++i) {
+//        for (int j=0; j<3; ++j) {
+//            printf("%f ", example->r(i, j));
+//        }
+//        printf("\n");
+//    }
+//    printf("t:\n");
+//    for (int i=0; i<3; ++i) {
+//        printf("%f ", example->t[i]);
+//    }
+//    printf("\n");
+
+
+    Ptr<MSM_middleburyObj> data_img1 = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain()[0]);
+
+    Ptr<MSM_middleburyObj> data_img2 = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain()[1]);
 
     Mat img1;
     Mat img2;
+
     std::string img1_path = "../dataset/dataset_templeRing/templeR0001.png";
     std::string img2_path = "../dataset/dataset_templeRing/templeR0002.png";
+
     stereo::loadImages(img1_path, img2_path, img1,img2);
+
+    Mat D1,D2,R1,R2,P1,P2,Q;
+
+    Mat M1 =Mat(data_img1->k);
+    Mat M2 =Mat(data_img2->k);
+    Mat r1 = Mat(data_img1->r);
+    Mat r2 = Mat(data_img2->r);
+
+    Mat t1 = Mat(data_img1->t);
+    Mat t2 = Mat(data_img2->t);
+
+//    double t1[3];
+//    std::copy(t1, data_img1->t,t1);
+//    double t2[3];
+//    std::copy(t2, data_img2->t,t2);
+    Mat R = r2*r1.t();
+    Mat T = t1 - (R.t()*t2);
+
+//    Rect roi1,roi2;
+//
+//    stereo::rectifyImages(img1, img2, M1, D1, M2, D2, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
+//
+//    Mat disp;
+//
+//    stereo::computeDisparity(img1, img2, disp,1);
+//
+//    stereo::display(img1, img2, disp);
+
+
+    //stereo::storePointCloud(<#(Mat&)disp#>, <#(Mat&)Q#>, <#(const char*)filename#>, <#(const Mat&)mat#>);
 
 
     return 0;
