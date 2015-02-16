@@ -76,7 +76,7 @@ namespace stereo {
 
     }
 
-    void rectifyImages(Mat& img1, Mat& img2, Mat& M1, Mat& D1, Mat& M2, Mat& D2, Mat& R, Mat& T, Mat& R1, Mat& R2, Mat& P1, Mat& P2, Mat& Q, Rect &roi1, Rect &roi2, int scale){
+    void rectifyImages(Mat& img1, Mat& img2, Mat& M1, Mat& D1, Mat& M2, Mat& D2, Mat& R, Mat& T, Mat& R1, Mat& R2, Mat& P1, Mat& P2, Mat& Q, Rect &roi1, Rect &roi2, float scale){
 
         Size img_size = img1.size();
 
@@ -195,26 +195,26 @@ namespace stereo {
 
     }
 
-    void storePointCloud(Mat& disp, Mat& Q,const char* filename, const Mat& mat){
+    void storePointCloud(Mat& disp, Mat& Q,/*const char* filename,*/ Mat& recons3D){
 
         printf("storing the point cloud...");
-        fflush(stdout);
-        Mat xyz;
-        reprojectImageTo3D(disp, xyz, Q, true);
+//        fflush(stdout);
+
+        reprojectImageTo3D(disp, recons3D, Q, true);
         //reprojectImageTo3D( disp, xyz, Q, false, CV_32F );
 
-        const double max_z = 1.0e4;
-        FILE* fp = fopen(filename, "wt");
-        for(int y = 0; y < mat.rows; y++)
-        {
-            for(int x = 0; x < mat.cols; x++)
-            {
-                Vec3f point = mat.at<Vec3f>(y, x);
-                if(fabs(point[2] - max_z) < FLT_EPSILON || fabs(point[2]) > max_z) continue;
-                fprintf(fp, "%f %f %f\n", point[0], point[1], point[2]);
-            }
-        }
-        fclose(fp);
+//        const double max_z = 1.0e4;
+//        FILE* fp = fopen(filename, "wt");
+//        for(int y = 0; y < recons3D.rows; y++)
+//        {
+//            for(int x = 0; x < recons3D.cols; x++)
+//            {
+//                Vec3f point = recons3D.at<Vec3f>(y, x);
+//                if(fabs(point[2] - max_z) < FLT_EPSILON || fabs(point[2]) > max_z) continue;
+//                fprintf(fp, "%f %f %f\n", point[0], point[1], point[2]);
+//            }
+//        }
+//        fclose(fp);
         printf("\n");
 
     }

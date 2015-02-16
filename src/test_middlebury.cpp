@@ -45,6 +45,19 @@
 #include <string>
 #include <vector>
 
+// include mik
+#include <cstdint>
+#include <cv.h>
+#include <highgui.h>
+#include <iostream>
+#include <string>
+#include <pcl/common/common_headers.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <boost/thread/thread.hpp>
+#include <stdint.h>
+#include <stdint-gcc.h>
+
 // custom includes
 #include "dataset/msm_middlebury.hpp"
 #include "matching_reproject/stereo_matching.hpp"
@@ -66,6 +79,21 @@ using namespace std;
 using namespace cv;
 using namespace cv::datasets;
 using namespace stereo;
+using namespace pcl;
+
+//
+//
+//boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizer (pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud)
+//{
+//    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+//    viewer->setBackgroundColor (0, 0, 0);
+//    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(cloud);
+//    viewer->addPointCloud<pcl::PointXYZRGB> (cloud, rgb, "reconstruction");
+//    //viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "reconstruction");
+//    viewer->addCoordinateSystem ( 1.0 );
+//    viewer->initCameraParameters ();
+//    return (viewer);
+//}
 
 int main(int argc, char *argv[])
 {
@@ -106,8 +134,8 @@ int main(int argc, char *argv[])
     Mat r2 = Mat(data_img2->r);
 
     // init translation vectors from dataset
-    Mat t1 = Mat(3, 1, CV_64FC1, &t1);
-    Mat t2 = Mat(3, 1, CV_64FC1, &t2);
+    Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->t);
+    Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->t);
 
     // rotation between img2 and img1
     Mat R = r2*r1.t();
@@ -117,15 +145,83 @@ int main(int argc, char *argv[])
     Rect roi1,roi2;
     stereo::rectifyImages(img1, img2, M1, D1, M2, D2, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
 
+    double Q03, Q13, Q23, Q32, Q33;
+    Q03 = Q.at<double>(0,3);
+    Q13 = Q.at<double>(1,3);
+    Q23 = Q.at<double>(2,3);
+    Q32 = Q.at<double>(3,2);
+    Q33 = Q.at<double>(3,3);
 //    util::infoMatrix(R);
 
     Mat disp;
     stereo::computeDisparity(img1, img2, disp,1);
     stereo::display(img1, img2, disp);
-
-//    stereo::storePointCloud(disp, Q, "sblinda", mat);
-//    stereo::storePointCloud(<#(Mat&)disp#>, <#(Mat&)Q#>, <#(const char*)filename#>, <#(const Mat&)mat#>);
-
+//    Mat recons3D;
+//    stereo::storePointCloud(disp, Q, /*"sblinda",*/recons3D);
+//
+//
+//
+//    std::cout << "Creating Point Cloud..." <<std::endl;
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+//
+//    double px, py, pz;
+//    uchar pr, pg, pb;
+//
+//    for (int i = 0; i < img1.rows; i++)
+//    {
+//        uchar* rgb_ptr = img1.ptr<uchar>(i);
+//
+//        uchar* disp_ptr = disp.ptr<uchar>(i);
+//
+//        double* recons_ptr = recons3D.ptr<double>(i);
+//
+//        for (int j = 0; j < img1.cols; j++)
+//        {
+//            //Get 3D coordinates
+//
+//            uchar d = disp_ptr[j];
+//            if ( d == 0 ) continue; //Discard bad pixels
+//            double pw = -1.0 * static_cast<double>(d) * Q32 + Q33;
+//            px = static_cast<double>(j) + Q03;
+//            py = static_cast<double>(i) + Q13;
+//            pz = Q23;
+//
+//            px = px/pw;
+//            py = py/pw;
+//            pz = pz/pw;
+//
+//
+//
+//            //Get RGB info
+//            pb = rgb_ptr[3*j];
+//            pg = rgb_ptr[3*j+1];
+//            pr = rgb_ptr[3*j+2];
+//
+//            //Insert info into point cloud structure
+//            pcl::PointXYZRGB point;
+//            point.x = px;
+//            point.y = py;
+//            point.z = pz;
+//
+//            uint32_t rgb = (static_cast<uint32_t>(pr) << 16 |
+//                    static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));
+//            point.rgb = *reinterpret_cast<float*>(&rgb);
+//            point_cloud_ptr->points.push_back (point);
+//        }
+//    }
+//    point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
+//    point_cloud_ptr->height = 1;
+//
+//    //Create visualizer
+//    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+//    viewer = createVisualizer( point_cloud_ptr );
+//
+//    //Main loop
+//    while ( !viewer->wasStopped())
+//    {
+//        viewer->spinOnce(100);
+//        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+//    }
 
     return 0;
 }
