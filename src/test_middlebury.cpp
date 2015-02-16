@@ -147,68 +147,21 @@ int main(int argc, char *argv[])
     Mat disp;
     stereo::computeDisparity(img1, img2, disp,1);
 
+    stereo::display(img1, img2, disp);
 
     FILE_LOG(logINFO) << "Creating point cloud..";
     Mat recons3D;
+
+//    Q = np.float32([[1, 0, 0, -0.5*width],
+//    [0,-1, 0,  0.5*height], # turn points 180 deg around x-axis,
+//    [0, 0, 0,  0.8*width], # so that y-axis looks up
+//    [0, 0, 1,   0]])
+//
     stereo::storePointCloud(disp, Q, recons3D);
 
-    double Q03, Q13, Q23, Q32, Q33;
-    Q03 = Q.at<double>(0,3);
-    Q13 = Q.at<double>(1,3);
-    Q23 = Q.at<double>(2,3);
-    Q32 = Q.at<double>(3,2);
-    Q33 = Q.at<double>(3,3);
+    //    std::cout << "Creating Point Cloud..." <<std::endl;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr  = stereo::createPointCloud(img1, img2, Q, disp, recons3D);
 
-//    std::cout << "Creating Point Cloud..." <<std::endl;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
-
-    double px, py, pz;
-    uchar pr, pg, pb;
-
-    for (int i = 0; i < img1.rows; i++)
-    {
-        uchar* rgb_ptr = img1.ptr<uchar>(i);
-
-        uchar* disp_ptr = disp.ptr<uchar>(i);
-
-        double* recons_ptr = recons3D.ptr<double>(i);
-
-        for (int j = 0; j < img1.cols; j++)
-        {
-            //Get 3D coordinates
-
-            uchar d = disp_ptr[j];
-            if ( d == 0 ) continue; //Discard bad pixels
-            double pw = -1.0 * static_cast<double>(d) * Q32 + Q33;
-            px = static_cast<double>(j) + Q03;
-            py = static_cast<double>(i) + Q13;
-            pz = Q23;
-
-            px = px/pw;
-            py = py/pw;
-            pz = pz/pw;
-
-
-
-            //Get RGB info
-            pb = rgb_ptr[3*j];
-            pg = rgb_ptr[3*j+1];
-            pr = rgb_ptr[3*j+2];
-
-            //Insert info into point cloud structure
-            pcl::PointXYZRGB point;
-            point.x = px;
-            point.y = py;
-            point.z = pz;
-
-            uint32_t rgb = (static_cast<uint32_t>(pr) << 16 |
-                    static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));
-            point.rgb = *reinterpret_cast<float*>(&rgb);
-            point_cloud_ptr->points.push_back (point);
-        }
-    }
-    point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
-    point_cloud_ptr->height = 1;
 
     //Create visualizer
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;

@@ -1,6 +1,6 @@
 #include <cv.h>
 #include <highgui.h>
-
+#include <pcl/common/common_headers.h>
 
 namespace stereo {
 
@@ -15,5 +15,7 @@ namespace stereo {
     void display(Mat& img1, Mat& img2,Mat& disp);
 
     void storePointCloud(Mat& disp, Mat& Q,/*const char* filename,*/ Mat& recons3D);
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr createPointCloud(Mat& img1, Mat& img2, Mat& Q, Mat& disp, Mat& recons3D);
 
 }

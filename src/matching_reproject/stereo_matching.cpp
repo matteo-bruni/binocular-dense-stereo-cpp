@@ -127,20 +127,36 @@ namespace stereo {
 //        bm.state->speckleRange = 32;
 //        bm.state->disp12MaxDiff = 1;
 
-        sgbm.preFilterCap = 63;
-        sgbm.SADWindowSize = SADWindowSize > 0 ? SADWindowSize : 3;
+
+//        sbm = cv2.StereoSGBM()
+//        /sbm.SADWindowSize = 5  # Matched block size. It must be an odd number >=1 . Normally, it should be somewhere in the 3..11 range.
+//        /sbm.numberOfDisparities = 112  # con valori piu alti tipo 112 viene il contorno nero
+//        /sbm.preFilterCap = 60
+//        /sbm.minDisparity = 1  # con altri valori smongola
+//        /sbm.uniquenessRatio = 11
+//        /sbm.speckleWindowSize = 0
+//        /sbm.speckleRange = 0
+//        /sbm.disp12MaxDiff = 1
+//        /sbm.fullDP = False  # a True runna il full-scale two-pass dynamic programming algorithm
+//
+//        disparity = sbm.compute(gray_left, gray_right)
+//        disparity_visual = cv2.normalize(disparity, alpha=0, beta=255, norm_type=cv2.cv.CV_MINMAX, dtype=cv2.cv.CV_8U)
+//
+
+        sgbm.preFilterCap = 60;//63;
+        sgbm.SADWindowSize = 5; //SADWindowSize > 0 ? SADWindowSize : 3;
 
         int cn = img1.channels();
 
         sgbm.P1 = 8*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
         sgbm.P2 = 32*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
-        sgbm.minDisparity = 0;
-        sgbm.numberOfDisparities = numberOfDisparities;
-        sgbm.uniquenessRatio = 10;
-        sgbm.speckleWindowSize = bm.state->speckleWindowSize;
-        sgbm.speckleRange = bm.state->speckleRange;
-        sgbm.disp12MaxDiff = 1;
-        sgbm.fullDP = alg == STEREO_HH;
+        sgbm.minDisparity = 1;//0;
+        sgbm.numberOfDisparities = 112;//numberOfDisparities;
+        sgbm.uniquenessRatio = 11;//10;
+        sgbm.speckleWindowSize = 0; //bm.state->speckleWindowSize;
+        sgbm.speckleRange = 0;//bm.state->speckleRange;
+        sgbm.disp12MaxDiff = 1;//
+        sgbm.fullDP = alg == STEREO_HH;// FALSE
 
         var.levels = 3;                                 // ignored with USE_AUTO_PARAMS
         var.pyrScale = 0.5;                             // ignored with USE_AUTO_PARAMS
@@ -175,9 +191,9 @@ namespace stereo {
 
         //disp = dispp.colRange(numberOfDisparities, img1p.cols);
         if( alg != STEREO_VAR )
-            disp.convertTo(disp8, CV_8U, 255/(numberOfDisparities*16.));
+            disp.convertTo(disp, CV_8U, 255/(numberOfDisparities*16.));
         else
-            disp.convertTo(disp8, CV_8U);
+            disp.convertTo(disp, CV_8U);
 
 
     }
@@ -206,7 +222,7 @@ namespace stereo {
 //        printf("storing the point cloud...");
 //        fflush(stdout);
 
-        reprojectImageTo3D(disp, recons3D, Q, true);
+
         //reprojectImageTo3D( disp, xyz, Q, false, CV_32F );
 
 //        const double max_z = 1.0e4;
@@ -226,6 +242,71 @@ namespace stereo {
     }
 }
 
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr createPointCloud(Mat& img1, Mat& img2, Mat& Q, Mat& disp, Mat& recons3D){
+
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr = (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+        reprojectImageTo3D(disp, recons3D, Q, true);
+
+        double Q03, Q13, Q23, Q32, Q33;
+        Q03 = Q.at<double>(0,3);
+        Q13 = Q.at<double>(1,3);
+        Q23 = Q.at<double>(2,3);
+        Q32 = Q.at<double>(3,2);
+        Q33 = Q.at<double>(3,3);
+
+
+
+        double px, py, pz;
+        uchar pr, pg, pb;
+
+        for (int i = 0; i < img1.rows; i++) {
+
+            uchar* rgb_ptr = img1.ptr<uchar>(i);
+
+            uchar* disp_ptr = disp.ptr<uchar>(i);
+
+            double* recons_ptr = recons3D.ptr<double>(i);
+
+            for (int j = 0; j < img1.cols; j++) {
+
+                //Get 3D coordinates
+
+                uchar d = disp_ptr[j];
+                if ( d == 0 ) continue; //Discard bad pixels
+                double pw = -1.0 * static_cast<double>(d) * Q32 + Q33;
+                px = static_cast<double>(j) + Q03;
+                py = static_cast<double>(i) + Q13;
+                pz = Q23;
+
+                px = px/pw;
+                py = py/pw;
+                pz = pz/pw;
+
+
+
+                //Get RGB info
+                pb = rgb_ptr[3*j];
+                pg = rgb_ptr[3*j+1];
+                pr = rgb_ptr[3*j+2];
+
+                //Insert info into point cloud structure
+                pcl::PointXYZRGB point;
+                point.x = px;
+                point.y = py;
+                point.z = pz;
+
+                uint32_t rgb = (static_cast<uint32_t>(pr) << 16 |
+                        static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));
+                point.rgb = *reinterpret_cast<float*>(&rgb);
+                point_cloud_ptr->points.push_back (point);
+            }
+        }
+        point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
+        point_cloud_ptr->height = 1;
+
+        return point_cloud_ptr;
+}
 
 //
 //int main(int argc, char** argv)
