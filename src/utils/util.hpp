@@ -8,6 +8,6 @@ namespace util {
     using namespace cv;
 
     string type2str(int type);
-    void infoMatrix(Mat& M);
+    string infoMatrix(Mat& M);
 
 }

@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <stdio.h>
+#include <iomanip>
 
 inline std::string NowTime();
 
@@ -18,7 +19,7 @@ class Log
 public:
     Log();
     virtual ~Log();
-    std::ostringstream& Get(TLogLevel level = logINFO);
+    std::ostringstream& Get(TLogLevel level = logINFO, std::string file="", std::string func="", int line=0);
 public:
     static TLogLevel& ReportingLevel();
     static std::string ToString(TLogLevel level);
@@ -36,10 +37,15 @@ Log<T>::Log()
 }
 
 template <typename T>
-std::ostringstream& Log<T>::Get(TLogLevel level)
+std::ostringstream& Log<T>::Get(TLogLevel level, std::string file, std::string func, int line)
 {
-    os << "- " << NowTime();
-    os << " " << ToString(level) << ": ";
+    os << "-- " << NowTime();
+    os << " " << ToString(level) << " ";
+    os << std::left << std::setw(22) << std::setfill(' ') << file
+            << " "
+            << std::left << std::setw(20) << std::setfill('.') << func << "():"
+            << std::right << std::setw(5) << std::setfill(' ') << line
+            <<": ";
     os << std::string(level > logDEBUG ? level - logDEBUG : 0, '\t');
     return os;
 }
@@ -129,10 +135,12 @@ class FILELOG_DECLSPEC FILELog : public Log<Output2FILE> {};
 #define FILELOG_MAX_LEVEL logDEBUG4
 #endif
 
+#define FILE (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
 #define FILE_LOG(level) \
     if (level > FILELOG_MAX_LEVEL) ;\
     else if (level > FILELog::ReportingLevel() || !Output2FILE::Stream()) ; \
-    else FILELog().Get(level)
+    else FILELog().Get(level, FILE, __FUNCTION__, __LINE__)
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
 

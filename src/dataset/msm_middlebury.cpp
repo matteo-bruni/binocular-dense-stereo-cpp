@@ -42,6 +42,7 @@
 #include <iostream>
 #include "msm_middlebury.hpp"
 #include "util.hpp"
+#include "../logger/log.h"
 
 
 namespace cv {
@@ -64,10 +65,6 @@ namespace cv {
             void loadDataset(const string &path);
         };
 
-/*MSM_middleburyImp::MSM_middleburyImp(const string &path)
-{
-    loadDataset(path);
-}*/
 
         void MSM_middleburyImp::load(const string &path) {
             loadDataset(path);
@@ -85,8 +82,8 @@ namespace cv {
             string angName(path + "templeR_ang.txt");
             string parName(path + "templeR_par.txt");
 
-            std::cout << "Path: " << path << "\n";
-            std::cout << name << "\n";
+            FILE_LOG(logINFO) << "Loading dataset : " << name << " in path: " << path;
+
             ifstream infile(parName.c_str());
             string imageName;
             infile >> imageName; // skip header

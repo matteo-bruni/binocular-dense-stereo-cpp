@@ -68,10 +68,6 @@
 #ifndef FILELOG_MAX_LEVEL
     #define FILELOG_MAX_LEVEL logDEBUG4
 #endif
-#define FILE_LOG(level) \
-  if (level > FILELOG_MAX_LEVEL) ;\
-  else if (level > FILELog::ReportingLevel() || !Output2FILE::Stream()) ; \
-   else FILELog().Get(level)
 
 
 
@@ -106,7 +102,7 @@ int main(int argc, char *argv[])
     dataset->load(path);
 
     // dataset contains camera parameters for each image.
-    printf("images number: %u\n", (unsigned int)dataset->getTrain().size());
+    FILE_LOG(logINFO) << "images number: " << (unsigned int)dataset->getTrain().size();
 
     Mat img1;
     Mat img2;
@@ -142,8 +138,19 @@ int main(int argc, char *argv[])
     // translation between img2 and img1
     Mat T = t1 - (R.t()*t2 );
 
+    FILE_LOG(logINFO) << "Rectifying images...";
     Rect roi1,roi2;
     stereo::rectifyImages(img1, img2, M1, D1, M2, D2, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
+
+
+    FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
+    Mat disp;
+    stereo::computeDisparity(img1, img2, disp,1);
+
+
+    FILE_LOG(logINFO) << "Creating point cloud..";
+    Mat recons3D;
+    stereo::storePointCloud(disp, Q, recons3D);
 
     double Q03, Q13, Q23, Q32, Q33;
     Q03 = Q.at<double>(0,3);
@@ -151,22 +158,8 @@ int main(int argc, char *argv[])
     Q23 = Q.at<double>(2,3);
     Q32 = Q.at<double>(3,2);
     Q33 = Q.at<double>(3,3);
-//    util::infoMatrix(R);
 
-    Mat disp;
-    stereo::computeDisparity(img1, img2, disp,1);
-
-
-//    stereo::display(img1, img2, disp);
-
-
-
-    Mat recons3D;
-    stereo::storePointCloud(disp, Q, /*"sblinda",*/recons3D);
-
-
-
-    std::cout << "Creating Point Cloud..." <<std::endl;
+//    std::cout << "Creating Point Cloud..." <<std::endl;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
 
     double px, py, pz;

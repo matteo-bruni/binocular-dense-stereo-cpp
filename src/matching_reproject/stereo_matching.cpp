@@ -23,9 +23,10 @@
 
 #include <stdio.h>
 
-
 #include "stereo_matching.hpp"
 #include "../utils/util.hpp"
+#include "../logger/log.h"
+
 
 using namespace cv;
 
@@ -83,7 +84,8 @@ namespace stereo {
         M1 *= scale;
         M2 *= scale;
 
-        util::infoMatrix(T);
+        FILE_LOG(logINFO) << util::infoMatrix(T);
+
 
         stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, P1, P2, Q, CALIB_ZERO_DISPARITY, -1, img_size, &roi1, &roi2 );
 
@@ -167,7 +169,9 @@ namespace stereo {
         else if( alg == STEREO_SGBM || alg == STEREO_HH )
             sgbm(img1, img2, disp);
         t = getTickCount() - t;
-        printf("Time elapsed: %fms\n", t*1000/getTickFrequency());
+
+        FILE_LOG(logINFO) << "Time elapsed: " << t*1000/getTickFrequency()<< "ms";
+
 
         //disp = dispp.colRange(numberOfDisparities, img1p.cols);
         if( alg != STEREO_VAR )
@@ -197,7 +201,9 @@ namespace stereo {
 
     void storePointCloud(Mat& disp, Mat& Q,/*const char* filename,*/ Mat& recons3D){
 
-        printf("storing the point cloud...");
+        FILE_LOG(logINFO) << "storing the point cloud..";
+
+//        printf("storing the point cloud...");
 //        fflush(stdout);
 
         reprojectImageTo3D(disp, recons3D, Q, true);
@@ -215,7 +221,7 @@ namespace stereo {
 //            }
 //        }
 //        fclose(fp);
-        printf("\n");
+//        printf("\n");
 
     }
 }

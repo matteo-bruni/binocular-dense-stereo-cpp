@@ -45,9 +45,10 @@ namespace util {
         return r;
     }
 
-    void infoMatrix(Mat& M) {
-        string ty2 =  util::type2str( M.type() );
-        printf("Matrix: %s %dx%d \n", ty2.c_str(),  M.rows, M.cols );
+    string infoMatrix(Mat& M) {
+        std::ostringstream out;
+        out << "Matrix: " << util::type2str( M.type() )<< " "<< M.rows << "x" << M.cols;
+        return out.str();
 
 
     }
