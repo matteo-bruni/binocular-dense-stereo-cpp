@@ -81,19 +81,19 @@ using namespace cv::datasets;
 using namespace stereo;
 using namespace pcl;
 
-//
-//
-//boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizer (pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud)
-//{
-//    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-//    viewer->setBackgroundColor (0, 0, 0);
-//    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(cloud);
-//    viewer->addPointCloud<pcl::PointXYZRGB> (cloud, rgb, "reconstruction");
-//    //viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "reconstruction");
-//    viewer->addCoordinateSystem ( 1.0 );
-//    viewer->initCameraParameters ();
-//    return (viewer);
-//}
+
+
+boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizer (pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud)
+{
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+    viewer->setBackgroundColor (0, 0, 0);
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(cloud);
+    viewer->addPointCloud<pcl::PointXYZRGB> (cloud, rgb, "reconstruction");
+    //viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "reconstruction");
+    viewer->addCoordinateSystem ( 1.0 );
+    viewer->initCameraParameters ();
+    return (viewer);
+}
 
 int main(int argc, char *argv[])
 {
@@ -155,73 +155,78 @@ int main(int argc, char *argv[])
 
     Mat disp;
     stereo::computeDisparity(img1, img2, disp,1);
-    stereo::display(img1, img2, disp);
-//    Mat recons3D;
-//    stereo::storePointCloud(disp, Q, /*"sblinda",*/recons3D);
-//
-//
-//
-//    std::cout << "Creating Point Cloud..." <<std::endl;
-//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
-//
-//    double px, py, pz;
-//    uchar pr, pg, pb;
-//
-//    for (int i = 0; i < img1.rows; i++)
-//    {
-//        uchar* rgb_ptr = img1.ptr<uchar>(i);
-//
-//        uchar* disp_ptr = disp.ptr<uchar>(i);
-//
-//        double* recons_ptr = recons3D.ptr<double>(i);
-//
-//        for (int j = 0; j < img1.cols; j++)
-//        {
-//            //Get 3D coordinates
-//
-//            uchar d = disp_ptr[j];
-//            if ( d == 0 ) continue; //Discard bad pixels
-//            double pw = -1.0 * static_cast<double>(d) * Q32 + Q33;
-//            px = static_cast<double>(j) + Q03;
-//            py = static_cast<double>(i) + Q13;
-//            pz = Q23;
-//
-//            px = px/pw;
-//            py = py/pw;
-//            pz = pz/pw;
-//
-//
-//
-//            //Get RGB info
-//            pb = rgb_ptr[3*j];
-//            pg = rgb_ptr[3*j+1];
-//            pr = rgb_ptr[3*j+2];
-//
-//            //Insert info into point cloud structure
-//            pcl::PointXYZRGB point;
-//            point.x = px;
-//            point.y = py;
-//            point.z = pz;
-//
-//            uint32_t rgb = (static_cast<uint32_t>(pr) << 16 |
-//                    static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));
-//            point.rgb = *reinterpret_cast<float*>(&rgb);
-//            point_cloud_ptr->points.push_back (point);
-//        }
-//    }
-//    point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
-//    point_cloud_ptr->height = 1;
-//
-//    //Create visualizer
-//    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
-//    viewer = createVisualizer( point_cloud_ptr );
-//
-//    //Main loop
-//    while ( !viewer->wasStopped())
-//    {
-//        viewer->spinOnce(100);
-//        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
-//    }
+
+
+//    stereo::display(img1, img2, disp);
+
+
+
+    Mat recons3D;
+    stereo::storePointCloud(disp, Q, /*"sblinda",*/recons3D);
+
+
+
+    std::cout << "Creating Point Cloud..." <<std::endl;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+    double px, py, pz;
+    uchar pr, pg, pb;
+
+    for (int i = 0; i < img1.rows; i++)
+    {
+        uchar* rgb_ptr = img1.ptr<uchar>(i);
+
+        uchar* disp_ptr = disp.ptr<uchar>(i);
+
+        double* recons_ptr = recons3D.ptr<double>(i);
+
+        for (int j = 0; j < img1.cols; j++)
+        {
+            //Get 3D coordinates
+
+            uchar d = disp_ptr[j];
+            if ( d == 0 ) continue; //Discard bad pixels
+            double pw = -1.0 * static_cast<double>(d) * Q32 + Q33;
+            px = static_cast<double>(j) + Q03;
+            py = static_cast<double>(i) + Q13;
+            pz = Q23;
+
+            px = px/pw;
+            py = py/pw;
+            pz = pz/pw;
+
+
+
+            //Get RGB info
+            pb = rgb_ptr[3*j];
+            pg = rgb_ptr[3*j+1];
+            pr = rgb_ptr[3*j+2];
+
+            //Insert info into point cloud structure
+            pcl::PointXYZRGB point;
+            point.x = px;
+            point.y = py;
+            point.z = pz;
+
+            uint32_t rgb = (static_cast<uint32_t>(pr) << 16 |
+                    static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));
+            point.rgb = *reinterpret_cast<float*>(&rgb);
+            point_cloud_ptr->points.push_back (point);
+        }
+    }
+    point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
+    point_cloud_ptr->height = 1;
+
+    //Create visualizer
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+    viewer = createVisualizer( point_cloud_ptr );
+
+    //Main loop
+    while ( !viewer->wasStopped())
+    {
+        viewer->spinOnce(100);
+        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+    }
 
     return 0;
 }
