@@ -54,6 +54,8 @@
 #include <pcl/common/common_headers.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/registration/icp.h>
+
 #include <boost/thread/thread.hpp>
 #include <stdint.h>
 #include <stdint-gcc.h>
@@ -135,7 +137,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     Mat disp;
     stereo::computeDisparity(img1, img2, disp,1);
 
-    stereo::display(img1, img2, disp);
+//    stereo::display(img1, img2, disp);
 
     FILE_LOG(logINFO) << "Creating point cloud..";
     Mat recons3D;
@@ -185,7 +187,33 @@ int main(int argc, char *argv[])
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = generatePointCloud(dataset, img1_num, img2_num);
 
-    viewPointCloud(cloud);
+    img1_num = 2;
+    img2_num = 3;
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
+
+
+
+    // ICP object.
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+    pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
+    registration.setInputSource(cloud);
+    registration.setInputTarget(cloud2);
+
+    registration.align(*finalCloud);
+    if (registration.hasConverged())
+    {
+        std::cout << "ICP converged." << std::endl
+                << "The score is " << registration.getFitnessScore() << std::endl;
+        std::cout << "Transformation matrix:" << std::endl;
+        std::cout << registration.getFinalTransformation() << std::endl;
+    }
+    else std::cout << "ICP did not converge." << std::endl;
+
+
+    viewPointCloud(finalCloud);
 
     return 0;
+
 }
