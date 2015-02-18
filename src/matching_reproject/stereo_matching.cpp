@@ -58,10 +58,18 @@ using namespace cv;
 
 namespace stereo {
 
-    void loadImages(const std::string &img1_num, const std::string &img2_num, Mat &img1, Mat &img2) {
+    void loadImages(const int img1_num, const int img2_num, Mat &img1, Mat &img2) {
 
-        std::string img1_path = "../dataset/dataset_templeRing/templeR00"+ img1_num +".png";
-        std::string img2_path = "../dataset/dataset_templeRing/templeR00"+ img2_num +".png";
+
+        std::ostringstream ss;
+        ss << std::setw(2) << std::setfill('0') << img1_num;
+        std::string img1_path = "../dataset/dataset_templeRing/templeR00"+ ss.str() +".png";
+        FILE_LOG(logINFO) << " loading " << img1_path;
+        // clear string stream
+        ss.str(std::string());
+        ss << std::setw(2) << std::setfill('0') << img2_num;
+        std::string img2_path = "../dataset/dataset_templeRing/templeR00"+ ss.str() +".png";
+        FILE_LOG(logINFO) << " loading " << img2_path;
 
         int color_mode = -1; // = alg == STEREO_BM ? 0 : -1;
 

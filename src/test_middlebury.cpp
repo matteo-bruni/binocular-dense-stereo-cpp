@@ -91,7 +91,7 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizer (pcl::Poin
     return (viewer);
 }
 
-void pointClouds ( Ptr<MSM_middlebury> &dataset,const std::string& img1_num, const std::string& img2_num ){
+void pointClouds ( Ptr<MSM_middlebury> &dataset, const int img1_num, const int img2_num ){
 
     Mat img1;
     Mat img2;
@@ -99,8 +99,8 @@ void pointClouds ( Ptr<MSM_middlebury> &dataset,const std::string& img1_num, con
     // images path
 
     // load images data
-    Ptr<MSM_middleburyObj> data_img1 = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain()[0]);
-    Ptr<MSM_middleburyObj> data_img2 = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain()[1]);
+    Ptr<MSM_middleburyObj> data_img1 = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain()[img1_num]);
+    Ptr<MSM_middleburyObj> data_img2 = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain()[img2_num]);
     // load images
     stereo::loadImages(img1_num, img2_num, img1,img2);
 
@@ -172,9 +172,10 @@ int main(int argc, char *argv[])
     // dataset contains camera parameters for each image.
     FILE_LOG(logINFO) << "images number: " << (unsigned int)dataset->getTrain().size();
 
+    unsigned int dataset_size = (unsigned int)dataset->getTrain().size();
 
-    std::string img1_num = "01";
-    std::string img2_num = "02";
+    int img1_num = 1;
+    int img2_num = 2;
     pointClouds(dataset, img1_num,img2_num);
 
 

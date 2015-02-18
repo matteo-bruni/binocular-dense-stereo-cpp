@@ -6,7 +6,7 @@ namespace stereo {
 
     using namespace cv;
 
-    void loadImages(const std::string  &img1_num, const std::string  &img2_num, Mat &img1, Mat &img2);
+    void loadImages(const int img1_num, const int img2_num, Mat &img1, Mat &img2);
 
     void rectifyImages(Mat& img1, Mat& img2, Mat& M1, Mat& D1, Mat& M2, Mat& D2, Mat& R, Mat& T, Mat& R1, Mat& R2, Mat& P1, Mat& P2, Mat& Q, Rect &roi1, Rect &roi2, float scale);
 
