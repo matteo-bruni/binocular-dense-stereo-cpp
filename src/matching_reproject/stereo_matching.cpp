@@ -58,6 +58,10 @@ using namespace cv;
 
 namespace stereo {
 
+    /*
+        input : images number img1_num, img2_num
+        output: cv:Mat matrices
+     */
     void loadImages(const int img1_num, const int img2_num, Mat &img1, Mat &img2) {
 
 
@@ -88,6 +92,12 @@ namespace stereo {
 
     }
 
+    /*
+        input   :
+                Mat& img1, Mat& img2, Mat& M1, Mat& D1, Mat& M2, Mat& D2, Mat& R, Mat& T, scale
+        output  :
+                Mat& R1, Mat& R2, Mat& P1, Mat& P2, Mat& Q, Rect &roi1, Rect &roi2,
+     */
     void rectifyImages(Mat& img1, Mat& img2, Mat& M1, Mat& D1, Mat& M2, Mat& D2, Mat& R, Mat& T, Mat& R1, Mat& R2, Mat& P1, Mat& P2, Mat& Q, Rect &roi1, Rect &roi2, float scale){
 
         Size img_size = img1.size();
@@ -126,34 +136,6 @@ namespace stereo {
 
         numberOfDisparities = numberOfDisparities > 0 ? numberOfDisparities : ((img_size.width/8) + 15) & -16;
 
-//        bm.state->roi1 = roi1;
-//        bm.state->roi2 = roi2;
-//        bm.state->preFilterCap = 31;
-//        bm.state->SADWindowSize = SADWindowSize > 0 ? SADWindowSize : 9;
-//        bm.state->minDisparity = 0;
-//        bm.state->numberOfDisparities = numberOfDisparities;
-//        bm.state->textureThreshold = 10;
-//        bm.state->uniquenessRatio = 15;
-//        bm.state->speckleWindowSize = 100;
-//        bm.state->speckleRange = 32;
-//        bm.state->disp12MaxDiff = 1;
-
-
-//        sbm = cv2.StereoSGBM()
-//        /sbm.SADWindowSize = 5  # Matched block size. It must be an odd number >=1 . Normally, it should be somewhere in the 3..11 range.
-//        /sbm.numberOfDisparities = 112  # con valori piu alti tipo 112 viene il contorno nero
-//        /sbm.preFilterCap = 60
-//        /sbm.minDisparity = 1  # con altri valori smongola
-//        /sbm.uniquenessRatio = 11
-//        /sbm.speckleWindowSize = 0
-//        /sbm.speckleRange = 0
-//        /sbm.disp12MaxDiff = 1
-//        /sbm.fullDP = False  # a True runna il full-scale two-pass dynamic programming algorithm
-//
-//        disparity = sbm.compute(gray_left, gray_right)
-//        disparity_visual = cv2.normalize(disparity, alpha=0, beta=255, norm_type=cv2.cv.CV_MINMAX, dtype=cv2.cv.CV_8U)
-//
-
         sgbm.preFilterCap = 60;//63;
         sgbm.SADWindowSize = 5; //SADWindowSize > 0 ? SADWindowSize : 3;
 
@@ -188,17 +170,12 @@ namespace stereo {
         //copyMakeBorder(img2, img2p, 0, 0, numberOfDisparities, 0, IPL_BORDER_REPLICATE);
 
         int64 t = getTickCount();
-        if( alg == STEREO_BM )
-            bm(img1, img2, disp);
-        else if( alg == STEREO_VAR ) {
-            var(img1, img2, disp);
-        }
-        else if( alg == STEREO_SGBM || alg == STEREO_HH )
-            sgbm(img1, img2, disp);
+
+        sgbm(img1, img2, disp);
+
         t = getTickCount() - t;
 
         FILE_LOG(logINFO) << "Time elapsed: " << t*1000/getTickFrequency()<< "ms";
-
 
         //disp = dispp.colRange(numberOfDisparities, img1p.cols);
         if( alg != STEREO_VAR )
@@ -208,8 +185,6 @@ namespace stereo {
 
 
     }
-
-
 
     void display(Mat& img1, Mat& img2,Mat& disp){
 

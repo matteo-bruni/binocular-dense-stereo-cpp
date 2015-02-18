@@ -91,7 +91,7 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizer (pcl::Poin
     return (viewer);
 }
 
-void pointClouds ( Ptr<MSM_middlebury> &dataset, const int img1_num, const int img2_num ){
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &dataset, const int img1_num, const int img2_num){
 
     Mat img1;
     Mat img2;
@@ -147,6 +147,12 @@ void pointClouds ( Ptr<MSM_middlebury> &dataset, const int img1_num, const int i
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
 
     stereo::createPointCloud(img1, img2, Q, disp, recons3D, point_cloud_ptr);
+
+    return point_cloud_ptr;
+}
+
+
+void viewPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr) {
     //Create visualizer
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
     viewer = createVisualizer( point_cloud_ptr );
@@ -176,8 +182,10 @@ int main(int argc, char *argv[])
 
     int img1_num = 1;
     int img2_num = 2;
-    pointClouds(dataset, img1_num,img2_num);
 
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = generatePointCloud(dataset, img1_num, img2_num);
+
+    viewPointCloud(cloud);
 
     return 0;
 }
