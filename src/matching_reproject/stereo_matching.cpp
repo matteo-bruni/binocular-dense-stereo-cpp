@@ -58,12 +58,15 @@ using namespace cv;
 
 namespace stereo {
 
-    void loadImages(const std::string &img1_filename, const std::string &img2_filename, Mat &img1, Mat &img2) {
+    void loadImages(const std::string &img1_num, const std::string &img2_num, Mat &img1, Mat &img2) {
+
+        std::string img1_path = "../dataset/dataset_templeRing/templeR00"+ img1_num +".png";
+        std::string img2_path = "../dataset/dataset_templeRing/templeR00"+ img2_num +".png";
 
         int color_mode = -1; // = alg == STEREO_BM ? 0 : -1;
 
-        img1 = imread(img1_filename, color_mode);
-        img2 = imread(img2_filename, color_mode);
+        img1 = imread(img1_path, color_mode);
+        img2 = imread(img2_path, color_mode);
 
         float scale = 1.f; // TODO check
         if (1.f != scale) {
@@ -222,7 +225,7 @@ namespace stereo {
 //        printf("storing the point cloud...");
 //        fflush(stdout);
 
-
+          reprojectImageTo3D(disp, recons3D, Q, true);
         //reprojectImageTo3D( disp, xyz, Q, false, CV_32F );
 
 //        const double max_z = 1.0e4;
@@ -240,13 +243,35 @@ namespace stereo {
 //        printf("\n");
 
     }
-}
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr createPointCloud(Mat& img1, Mat& img2, Mat& Q, Mat& disp, Mat& recons3D){
 
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr = (new pcl::PointCloud<pcl::PointXYZRGB>);
+    void createPointCloud (Mat& img1, Mat& img2, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr){
+
+
+        Size img_size = img1.size();
+
+
+//        Mat Q1;
+//
+//        Q1.at<double>(0,0)=1;
+//        Q1.at<double>(0,1)=0;
+//        Q1.at<double>(0,2)=0;
+//        Q1.at<double>(0,3)=-0.5*img_size.width;
+//        Q1.at<double>(1,0)=0;
+//        Q1.at<double>(1,1)=-1;
+//        Q1.at<double>(1,2)=0;
+//        Q1.at<double>(1,3)=0.5*img_size.height;
+//        Q1.at<double>(2,0)=0;
+//        Q1.at<double>(2,1)=0;
+//        Q1.at<double>(2,2)=0;
+//        Q1.at<double>(2,3)=0.8*img_size.width;
+//        Q1.at<double>(3,0)=0;
+//        Q1.at<double>(3,1)=0;
+//        Q1.at<double>(3,2)=1;
+//        Q1.at<double>(3,3)=0;
 
         reprojectImageTo3D(disp, recons3D, Q, true);
+
 
         double Q03, Q13, Q23, Q32, Q33;
         Q03 = Q.at<double>(0,3);
@@ -255,7 +280,11 @@ namespace stereo {
         Q32 = Q.at<double>(3,2);
         Q33 = Q.at<double>(3,3);
 
-
+//    Q = np.float32([[1, 0, 0, -0.5*width],
+//    [0,-1, 0,  0.5*height], # turn points 180 deg around x-axis,
+//    [0, 0, 0,  0.8*width], # so that y-axis looks up
+//    [0, 0, 1,   0]])
+//
 
         double px, py, pz;
         uchar pr, pg, pb;
@@ -305,9 +334,8 @@ namespace stereo {
         point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
         point_cloud_ptr->height = 1;
 
-        return point_cloud_ptr;
+ }
 }
-
 //
 //int main(int argc, char** argv)
 //{

@@ -91,30 +91,18 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizer (pcl::Poin
     return (viewer);
 }
 
-int main(int argc, char *argv[])
-{
-
-    FILE_LOG(logINFO) << "Binocular Dense Stereo";
-
-    string path("../dataset/dataset_templeRing/");
-
-    Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
-    dataset->load(path);
-
-    // dataset contains camera parameters for each image.
-    FILE_LOG(logINFO) << "images number: " << (unsigned int)dataset->getTrain().size();
+void pointClouds ( Ptr<MSM_middlebury> &dataset,const std::string& img1_num, const std::string& img2_num ){
 
     Mat img1;
     Mat img2;
 
     // images path
-    std::string img1_path = "../dataset/dataset_templeRing/templeR0001.png";
-    std::string img2_path = "../dataset/dataset_templeRing/templeR0002.png";
+
     // load images data
     Ptr<MSM_middleburyObj> data_img1 = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain()[0]);
     Ptr<MSM_middleburyObj> data_img2 = static_cast< Ptr<MSM_middleburyObj> >  (dataset->getTrain()[1]);
     // load images
-    stereo::loadImages(img1_path, img2_path, img1,img2);
+    stereo::loadImages(img1_num, img2_num, img1,img2);
 
     // init
     Mat R1,R2,P1,P2,Q;
@@ -152,17 +140,13 @@ int main(int argc, char *argv[])
     FILE_LOG(logINFO) << "Creating point cloud..";
     Mat recons3D;
 
-//    Q = np.float32([[1, 0, 0, -0.5*width],
-//    [0,-1, 0,  0.5*height], # turn points 180 deg around x-axis,
-//    [0, 0, 0,  0.8*width], # so that y-axis looks up
-//    [0, 0, 1,   0]])
-//
-    stereo::storePointCloud(disp, Q, recons3D);
 
-    //    std::cout << "Creating Point Cloud..." <<std::endl;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr  = stereo::createPointCloud(img1, img2, Q, disp, recons3D);
+    // stereo::storePointCloud(disp, Q, recons3D);
 
+    //std::cout << "Creating Point Cloud..." <<std::endl;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
 
+    stereo::createPointCloud(img1, img2, Q, disp, recons3D, point_cloud_ptr);
     //Create visualizer
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
     viewer = createVisualizer( point_cloud_ptr );
@@ -173,6 +157,26 @@ int main(int argc, char *argv[])
         viewer->spinOnce(100);
         boost::this_thread::sleep (boost::posix_time::microseconds (100000));
     }
+}
+
+int main(int argc, char *argv[])
+{
+
+    FILE_LOG(logINFO) << "Binocular Dense Stereo";
+
+    string path("../dataset/dataset_templeRing/");
+
+    Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
+    dataset->load(path);
+
+    // dataset contains camera parameters for each image.
+    FILE_LOG(logINFO) << "images number: " << (unsigned int)dataset->getTrain().size();
+
+
+    std::string img1_num = "01";
+    std::string img2_num = "02";
+    pointClouds(dataset, img1_num,img2_num);
+
 
     return 0;
 }
