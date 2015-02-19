@@ -60,6 +60,7 @@
 #include <stdint.h>
 #include <stdint-gcc.h>
 
+#include <pcl/common/projection_matrix.h>
 // custom includes
 #include "dataset/msm_middlebury.hpp"
 #include "matching_reproject/stereo_matching.hpp"
@@ -135,13 +136,12 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
 
     FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
     Mat disp;
-    stereo::computeDisparity(img1, img2, disp,1);
+    stereo::computeDisparity(img1, img2, disp,1,roi1,roi2);
 
-//    stereo::display(img1, img2, disp);
+    //stereo::display(img1, img2, disp);
 
     FILE_LOG(logINFO) << "Creating point cloud..";
     Mat recons3D;
-
 
     // stereo::storePointCloud(disp, Q, recons3D);
 
@@ -167,6 +167,43 @@ void viewPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr) {
     }
 }
 
+void createAllClouds(Ptr<MSM_middlebury> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds){
+
+
+    int img1_num=1;
+    int img2_num=2;
+
+
+    std::stringstream ss;
+    std::string path;
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = generatePointCloud(dataset, img1_num, img2_num);
+    clouds.push_back(cloud);
+
+    pcl::io::savePCDFileASCII ("./cloud1.pcd", *cloud);
+    unsigned int dataset_size = (unsigned int)dataset->getTrain().size();
+
+    // c'è un problema sull'ultima immagine
+    for (int i=2; i<dataset_size-1;i++){
+        img1_num = i;
+        img2_num = i+1;
+        cloud = generatePointCloud(dataset, img1_num, img2_num);
+        clouds.push_back(cloud);
+        if(!(*cloud).empty()){
+            ss.str( std::string() );
+            ss.clear();
+            ss <<  i;
+            path = "./cloud"+ ss.str() +".pcd";
+            pcl::io::savePCDFileASCII (path, *cloud);
+        }
+
+    }
+
+   printf("**** %lu",clouds.size());
+
+
+}
+
 int main(int argc, char *argv[])
 {
 
@@ -180,39 +217,37 @@ int main(int argc, char *argv[])
     // dataset contains camera parameters for each image.
     FILE_LOG(logINFO) << "images number: " << (unsigned int)dataset->getTrain().size();
 
-    unsigned int dataset_size = (unsigned int)dataset->getTrain().size();
+    std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
 
-    int img1_num = 1;
-    int img2_num = 2;
-
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = generatePointCloud(dataset, img1_num, img2_num);
-
-    img1_num = 2;
-    img2_num = 3;
-
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
+    createAllClouds(dataset,clouds);
 
 
+   // viewPointCloud(cloud);
 
-    // ICP object.
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-
-    pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
-    registration.setInputSource(cloud);
-    registration.setInputTarget(cloud2);
-
-    registration.align(*finalCloud);
-    if (registration.hasConverged())
-    {
-        std::cout << "ICP converged." << std::endl
-                << "The score is " << registration.getFitnessScore() << std::endl;
-        std::cout << "Transformation matrix:" << std::endl;
-        std::cout << registration.getFinalTransformation() << std::endl;
-    }
-    else std::cout << "ICP did not converge." << std::endl;
-
-
-    viewPointCloud(finalCloud);
+//    int img1_num = 46;
+//    int img2_num = 47;
+////
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
+//
+//    // ICP object.
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+//
+//    pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
+//    registration.setInputSource(cloud);
+//    registration.setInputTarget(cloud2);
+//
+//    registration.align(*finalCloud);
+//    if (registration.hasConverged())
+//    {
+//        std::cout << "ICP converged." << std::endl
+//                << "The score is " << registration.getFitnessScore() << std::endl;
+//        std::cout << "Transformation matrix:" << std::endl;
+//        std::cout << registration.getFinalTransformation() << std::endl;
+//    }
+//    else std::cout << "ICP did not converge." << std::endl;
+//
+//
+//    viewPointCloud(finalCloud);
 
     return 0;
 

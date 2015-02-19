@@ -10,7 +10,7 @@ namespace stereo {
 
     void rectifyImages(Mat& img1, Mat& img2, Mat& M1, Mat& D1, Mat& M2, Mat& D2, Mat& R, Mat& T, Mat& R1, Mat& R2, Mat& P1, Mat& P2, Mat& Q, Rect &roi1, Rect &roi2, float scale);
 
-    void computeDisparity(Mat& img1, Mat& img2,Mat& disp,int alg);
+    void computeDisparity(Mat& img1, Mat& img2,Mat& disp,int alg,Rect & roi1,Rect &roi2);
 
     void display(Mat& img1, Mat& img2,Mat& disp);
 

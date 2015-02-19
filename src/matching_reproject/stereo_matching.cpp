@@ -77,8 +77,8 @@ namespace stereo {
 
         int color_mode = -1; // = alg == STEREO_BM ? 0 : -1;
 
-        img1 = imread(img1_path, color_mode);
-        img2 = imread(img2_path, color_mode);
+        img1 = imread(img1_path);
+        img2 = imread(img2_path);
 
         float scale = 1.f; // TODO check
         if (1.f != scale) {
@@ -125,63 +125,133 @@ namespace stereo {
 
 
 
-    void computeDisparity(Mat& img1, Mat& img2,Mat& disp,int alg){
+    void computeDisparity(Mat& img1, Mat& img2,Mat& disp,int alg,Rect & roi1,Rect &roi2){
 
-        enum { STEREO_BM=0, STEREO_SGBM=1, STEREO_HH=2, STEREO_VAR=3 };
-        StereoBM bm;
-        StereoSGBM sgbm;
-        StereoVar var;
-        int SADWindowSize = 0, numberOfDisparities = 0;
-        Size img_size = img1.size();
 
-        numberOfDisparities = numberOfDisparities > 0 ? numberOfDisparities : ((img_size.width/8) + 15) & -16;
+        /////////////////
 
-        sgbm.preFilterCap = 60;//63;
-        sgbm.SADWindowSize = 5; //SADWindowSize > 0 ? SADWindowSize : 3;
 
-        int cn = img1.channels();
+        std::string tipo = "SGBM";
 
-        sgbm.P1 = 8*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
-        sgbm.P2 = 32*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
-        sgbm.minDisparity = 1;//0;
-        sgbm.numberOfDisparities = 112;//numberOfDisparities;
-        sgbm.uniquenessRatio = 11;//10;
-        sgbm.speckleWindowSize = 0; //bm.state->speckleWindowSize;
-        sgbm.speckleRange = 0;//bm.state->speckleRange;
-        sgbm.disp12MaxDiff = 1;//
-        sgbm.fullDP = alg == STEREO_HH;// FALSE
 
-        var.levels = 3;                                 // ignored with USE_AUTO_PARAMS
-        var.pyrScale = 0.5;                             // ignored with USE_AUTO_PARAMS
-        var.nIt = 25;
-        var.minDisp = -numberOfDisparities;
-        var.maxDisp = 0;
-        var.poly_n = 3;
-        var.poly_sigma = 0.0;
-        var.fi = 15.0f;
-        var.lambda = 0.03f;
-        var.penalization = var.PENALIZATION_TICHONOV;   // ignored with USE_AUTO_PARAMS
-        var.cycle = var.CYCLE_V;                        // ignored with USE_AUTO_PARAMS
-        var.flags = var.USE_SMART_ID | var.USE_AUTO_PARAMS | var.USE_INITIAL_DISPARITY | var.USE_MEDIAN_FILTERING ;
+        Mat g1, g2;
 
-        Mat disp8;
-        //Mat img1p, img2p, dispp;
-        //copyMakeBorder(img1, img1p, 0, 0, numberOfDisparities, 0, IPL_BORDER_REPLICATE);
-        //copyMakeBorder(img2, img2p, 0, 0, numberOfDisparities, 0, IPL_BORDER_REPLICATE);
+        cvtColor(img1, g1, CV_BGR2GRAY);
+        cvtColor(img2, g2, CV_BGR2GRAY);
 
-        int64 t = getTickCount();
+        if (tipo == "BM")
+        {
+            StereoBM sbm;
+            sbm.state->SADWindowSize = 5;
+            sbm.state->numberOfDisparities = 160;
+            sbm.state->preFilterSize = 5;
+            sbm.state->preFilterCap = 11;
+            sbm.state->minDisparity = -68;
+            sbm.state->textureThreshold = 130;
+            sbm.state->uniquenessRatio = 0;
+            sbm.state->speckleWindowSize = 0;
+            sbm.state->speckleRange = 0;
+            sbm.state->disp12MaxDiff = 1;
+            sbm(g1, g2, disp);
+        }
+        else if (tipo == "SGBM")
+        {
+            StereoSGBM sbm;
+            sbm.SADWindowSize = 5;
+            sbm.numberOfDisparities = 112;
+            sbm.preFilterCap = 63;
+            sbm.minDisparity = 0;
+            sbm.uniquenessRatio = 10;
+            sbm.speckleWindowSize = 0;
+            sbm.speckleRange = 0;
+            sbm.disp12MaxDiff = 1;
+            sbm.fullDP = false;
+            sbm.P1 = 8*3*5*5;
+            sbm.P2 = 8*3*5*5;
+            sbm(g1, g2, disp);
+        }
 
-        sgbm(img1, img2, disp);
 
-        t = getTickCount() - t;
+        normalize(disp, disp, 0, 255, CV_MINMAX, CV_8U);
 
-        FILE_LOG(logINFO) << "Time elapsed: " << t*1000/getTickFrequency()<< "ms";
+//        imshow("left", img1);
+//        imshow("right", img2);
+//        imshow("disp", disp);
 
-        //disp = dispp.colRange(numberOfDisparities, img1p.cols);
-        if( alg != STEREO_VAR )
-            disp.convertTo(disp, CV_8U, 255/(numberOfDisparities*16.));
-        else
-            disp.convertTo(disp, CV_8U);
+
+        ///////////////
+//        enum { STEREO_BM=0, STEREO_SGBM=1, STEREO_HH=2, STEREO_VAR=3 };
+//        StereoBM bm;
+//        StereoSGBM sgbm;
+//        StereoVar var;
+//        int SADWindowSize = 0, numberOfDisparities = 0;
+//        Size img_size = img1.size();
+//
+//        numberOfDisparities = numberOfDisparities > 0 ? numberOfDisparities : ((img_size.width/8) + 15) & -16;
+//
+//        sgbm.preFilterCap = 60;//63;
+//        sgbm.SADWindowSize = 5; //SADWindowSize > 0 ? SADWindowSize : 3;
+//
+//
+//        bm.state->roi1 = roi1;
+//        bm.state->roi2 = roi2;
+//        bm.state->preFilterCap = 5;
+//        bm.state->SADWindowSize = 5;
+//        bm.state->minDisparity = -68;
+//        bm.state->numberOfDisparities = 160;
+//        bm.state->textureThreshold = 130;
+//        bm.state->uniquenessRatio = 0;
+//        bm.state->speckleWindowSize = 100;
+//        bm.state->speckleRange = 0;
+//        bm.state->disp12MaxDiff = 0;
+//
+//        int cn = img1.channels();
+//
+//        sgbm.P1 = 8*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
+//        sgbm.P2 = 32*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
+//        sgbm.minDisparity = 1;//0;
+//        sgbm.numberOfDisparities = 112;//numberOfDisparities;
+//        sgbm.uniquenessRatio = 11;//10;
+//        sgbm.speckleWindowSize = 0; //bm.state->speckleWindowSize;
+//        sgbm.speckleRange = 0;//bm.state->speckleRange;
+//        sgbm.disp12MaxDiff = 1;//
+//        sgbm.fullDP = alg == STEREO_HH;// FALSE
+//
+////        var.levels = 3;                                 // ignored with USE_AUTO_PARAMS
+////        var.pyrScale = 0.5;                             // ignored with USE_AUTO_PARAMS
+////        var.nIt = 25;
+////        var.minDisp = -numberOfDisparities;
+////        var.maxDisp = 0;
+////        var.poly_n = 3;
+////        var.poly_sigma = 0.0;
+////        var.fi = 15.0f;
+////        var.lambda = 0.03f;
+////        var.penalization = var.PENALIZATION_TICHONOV;   // ignored with USE_AUTO_PARAMS
+////        var.cycle = var.CYCLE_V;                        // ignored with USE_AUTO_PARAMS
+////        var.flags = var.USE_SMART_ID | var.USE_AUTO_PARAMS | var.USE_INITIAL_DISPARITY | var.USE_MEDIAN_FILTERING ;
+//
+//      //  Mat disp8;
+//        //Mat img1p, img2p, dispp;
+//        //copyMakeBorder(img1, img1p, 0, 0, numberOfDisparities, 0, IPL_BORDER_REPLICATE);
+//        //copyMakeBorder(img2, img2p, 0, 0, numberOfDisparities, 0, IPL_BORDER_REPLICATE);
+//
+//        int64 t = getTickCount();
+//
+//        //sgbm(img1, img2, disp);
+//
+//        bm(img1, img2, disp,CV_16S);
+//
+//
+//        t = getTickCount() - t;
+//
+//        FILE_LOG(logINFO) << "Time elapsed: " << t*1000/getTickFrequency()<< "ms";
+//
+//
+//        //disp = dispp.colRange(numberOfDisparities, img1p.cols);
+//        if( alg != STEREO_VAR )
+//            disp.convertTo(disp, CV_8U, 255/(numberOfDisparities*16.));
+//        else
+//            disp.convertTo(disp, CV_8U);
 
 
     }
@@ -295,8 +365,6 @@ namespace stereo {
                 py = py/pw;
                 pz = pz/pw;
 
-
-
                 //Get RGB info
                 pb = rgb_ptr[3*j];
                 pg = rgb_ptr[3*j+1];
@@ -336,6 +404,7 @@ namespace stereo {
 //    {
 //        print_help();
 //        return 0;
+
 //    }
 //    const char* img1_filename = 0;
 //    const char* img2_filename = 0;
