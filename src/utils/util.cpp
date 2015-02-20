@@ -2,7 +2,7 @@
 #include "util.hpp"
 #include <opencv2/core/types_c.h>
 
-namespace util {
+namespace stereo_util {
 
     using namespace std;
 
@@ -47,11 +47,22 @@ namespace util {
 
     string infoMatrix(Mat& M) {
         std::ostringstream out;
-        out << "Matrix: " << util::type2str( M.type() )<< " "<< M.rows << "x" << M.cols;
+        out << "Matrix: " << stereo_util::type2str( M.type() )<< " "<< M.rows << "x" << M.cols;
         return out.str();
 
 
     }
 
+    /**
+    * Rotate an image
+    */
+    void rotate(cv::Mat& src, double angle, cv::Mat& dst)
+    {
+        int len = std::max(src.cols, src.rows);
+        cv::Point2f pt(len/2., len/2.);
+        cv::Mat r = cv::getRotationMatrix2D(pt, angle, 1.0);
+
+        cv::warpAffine(src, dst, r, cv::Size(len, len));
+    }
 
 }

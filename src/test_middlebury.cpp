@@ -138,7 +138,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     Mat disp;
     stereo::computeDisparity(img1, img2, disp,1,roi1,roi2);
 
-    //stereo::display(img1, img2, disp);
+    stereo::display(img1, img2, disp);
 
     FILE_LOG(logINFO) << "Creating point cloud..";
     Mat recons3D;
@@ -198,8 +198,7 @@ void createAllClouds(Ptr<MSM_middlebury> &dataset, std::vector<pcl::PointCloud<p
         }
 
     }
-
-   printf("**** %lu",clouds.size());
+    FILE_LOG(logINFO) << "cloud size" <<clouds.size();
 
 
 }
@@ -222,13 +221,18 @@ int main(int argc, char *argv[])
     createAllClouds(dataset,clouds);
 
 
-   // viewPointCloud(cloud);
+//    viewPointCloud(cloud);
 
-//    int img1_num = 46;
-//    int img2_num = 47;
-////
+
+
+    // TEST SINGLE CLoUD
+//    int img1_num = 1;
+//    int img2_num = 2;
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
-//
+//    viewPointCloud(cloud2);
+
+
+
 //    // ICP object.
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 //

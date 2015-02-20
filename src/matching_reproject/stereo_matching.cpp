@@ -105,7 +105,7 @@ namespace stereo {
         M1 *= scale;
         M2 *= scale;
 
-        FILE_LOG(logINFO) << util::infoMatrix(T);
+        FILE_LOG(logINFO) << stereo_util::infoMatrix(T);
 
 
         stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, P1, P2, Q, CALIB_ZERO_DISPARITY, -1, img_size, &roi1, &roi2 );
@@ -131,27 +131,40 @@ namespace stereo {
         /////////////////
 
 
-        std::string tipo = "SGBM";
-
+        std::string tipo = "BM";
 
         Mat g1, g2;
 
         cvtColor(img1, g1, CV_BGR2GRAY);
         cvtColor(img2, g2, CV_BGR2GRAY);
 
+        stereo_util::rotate(g1, 90, g1);
+        stereo_util::rotate(g2, 90, g2);
+
         if (tipo == "BM")
         {
+//            StereoBM sbm;
+//            sbm.state->SADWindowSize = 5;
+//            sbm.state->numberOfDisparities = 160;
+//            sbm.state->preFilterSize = 5;
+//            sbm.state->preFilterCap = 11;
+//            sbm.state->minDisparity = -68;
+//            sbm.state->textureThreshold = 130;
+//            sbm.state->uniquenessRatio = 0;
+//            sbm.state->speckleWindowSize = 0;
+//            sbm.state->speckleRange = 0;
+//            sbm.state->disp12MaxDiff = 1;
             StereoBM sbm;
             sbm.state->SADWindowSize = 5;
             sbm.state->numberOfDisparities = 160;
             sbm.state->preFilterSize = 5;
             sbm.state->preFilterCap = 11;
-            sbm.state->minDisparity = -68;
-            sbm.state->textureThreshold = 130;
+            sbm.state->minDisparity = 6;
+            sbm.state->textureThreshold = 173;
             sbm.state->uniquenessRatio = 0;
             sbm.state->speckleWindowSize = 0;
             sbm.state->speckleRange = 0;
-            sbm.state->disp12MaxDiff = 1;
+//            sbm.state->disp12MaxDiff = 1;
             sbm(g1, g2, disp);
         }
         else if (tipo == "SGBM")
@@ -173,6 +186,7 @@ namespace stereo {
 
 
         normalize(disp, disp, 0, 255, CV_MINMAX, CV_8U);
+        stereo_util::rotate(disp, -90, disp);
 
 //        imshow("left", img1);
 //        imshow("right", img2);
@@ -304,8 +318,8 @@ namespace stereo {
         Size img_size = img1.size();
 
 
-//        Mat Q1;
-//
+        /// Q NAIVE
+//        Mat Q1(4,4, CV_64FC1);
 //        Q1.at<double>(0,0)=1;
 //        Q1.at<double>(0,1)=0;
 //        Q1.at<double>(0,2)=0;
@@ -322,8 +336,13 @@ namespace stereo {
 //        Q1.at<double>(3,1)=0;
 //        Q1.at<double>(3,2)=1;
 //        Q1.at<double>(3,3)=0;
-
-        reprojectImageTo3D(disp, recons3D, Q, true);
+//        double Q03, Q13, Q23, Q32, Q33;
+//        Q03 = Q1.at<double>(0,3);
+//        Q13 = Q1.at<double>(1,3);
+//        Q23 = Q1.at<double>(2,3);
+//        Q32 = Q1.at<double>(3,2);
+//        Q33 = Q1.at<double>(3,3);
+//        reprojectImageTo3D(disp, recons3D, Q1, true);
 
 
         double Q03, Q13, Q23, Q32, Q33;
@@ -332,12 +351,8 @@ namespace stereo {
         Q23 = Q.at<double>(2,3);
         Q32 = Q.at<double>(3,2);
         Q33 = Q.at<double>(3,3);
+        reprojectImageTo3D(disp, recons3D, Q, true);
 
-//    Q = np.float32([[1, 0, 0, -0.5*width],
-//    [0,-1, 0,  0.5*height], # turn points 180 deg around x-axis,
-//    [0, 0, 0,  0.8*width], # so that y-axis looks up
-//    [0, 0, 1,   0]])
-//
 
         double px, py, pz;
         uchar pr, pg, pb;
