@@ -61,6 +61,7 @@
 #include <stdint-gcc.h>
 
 #include <pcl/common/projection_matrix.h>
+
 // custom includes
 #include "dataset/msm_middlebury.hpp"
 #include "matching_reproject/stereo_matching.hpp"
@@ -68,10 +69,33 @@
 
 // Include logging facilities
 #include "logger/log.h"
+/////////////////////////////
+
+#include <boost/make_shared.hpp>
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_representation.h>
+
+#include <pcl/io/pcd_io.h>
+
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/filter.h>
+
+#include <pcl/features/normal_3d.h>
+
+#include <pcl/registration/icp.h>
+#include <pcl/registration/icp_nl.h>
+#include <pcl/registration/transforms.h>
+
+#include <pcl/visualization/pcl_visualizer.h>
+
+using pcl::visualization::PointCloudColorHandlerGenericField;
+using pcl::visualization::PointCloudColorHandlerCustom;
+class VoxelGrid;
+
 #ifndef FILELOG_MAX_LEVEL
     #define FILELOG_MAX_LEVEL logDEBUG4
 #endif
-
 
 
 using namespace std;
@@ -80,7 +104,10 @@ using namespace cv::datasets;
 using namespace stereo;
 using namespace pcl;
 
-
+typedef pcl::PointXYZ PointT;
+typedef pcl::PointCloud<PointT> PointCloud;
+typedef pcl::PointNormal PointNormalT;
+typedef pcl::PointCloud<PointNormalT> PointCloudWithNormals;
 
 boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizer (pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud)
 {
@@ -138,7 +165,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     Mat disp;
     stereo::computeDisparity(img1, img2, disp,1,roi1,roi2);
 
-    stereo::display(img1, img2, disp);
+   // stereo::display(img1, img2, disp);
 
     FILE_LOG(logINFO) << "Creating point cloud..";
     Mat recons3D;
@@ -188,8 +215,8 @@ void createAllClouds(Ptr<MSM_middlebury> &dataset, std::vector<pcl::PointCloud<p
         img1_num = i;
         img2_num = i+1;
         cloud = generatePointCloud(dataset, img1_num, img2_num);
-        clouds.push_back(cloud);
         if(!(*cloud).empty()){
+            clouds.push_back(cloud);
             ss.str( std::string() );
             ss.clear();
             ss <<  i;
@@ -200,6 +227,123 @@ void createAllClouds(Ptr<MSM_middlebury> &dataset, std::vector<pcl::PointCloud<p
     }
     FILE_LOG(logINFO) << "cloud size" <<clouds.size();
 
+
+}
+
+
+
+
+
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr icp(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_sr,pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_tg,const bool downsample){
+
+    ///downsampling
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr src (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr tgt (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::VoxelGrid<PointXYZRGB> grid;
+    if (downsample)
+    {
+        grid.setLeafSize (0.05, 0.05, 0.05);
+        grid.setInputCloud (cloud_sr);
+        grid.filter (*src);
+
+        grid.setInputCloud (cloud_tg);
+        grid.filter (*tgt);
+    }
+    else
+    {
+        src = cloud_sr;
+        tgt = cloud_tg;
+    }
+
+    // Compute surface normals and curvature
+    PointCloudWithNormals::Ptr points_with_normals_src (new PointCloudWithNormals);
+    PointCloudWithNormals::Ptr points_with_normals_tgt (new PointCloudWithNormals);
+
+    pcl::NormalEstimation<PointT, PointNormalT> norm_est;
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
+    norm_est.setSearchMethod (tree);
+    norm_est.setKSearch (30);
+
+    norm_est.setInputCloud (src);
+    norm_est.compute (*points_with_normals_src);
+    pcl::copyPointCloud (*src, *points_with_normals_src);
+
+    norm_est.setInputCloud (tgt);
+    norm_est.compute (*points_with_normals_tgt);
+    pcl::copyPointCloud (*tgt, *points_with_normals_tgt);
+
+
+    ////run iterativatly icp
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_out(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> reg;
+    reg.setInputSource(src);
+    reg.setInputTarget(tgt);
+
+ // vedere meglio il numero di iterazioni giusto
+    reg.setMaximumIterations (2);
+
+
+    Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev, targetToSource;
+    PointCloudWithNormals::Ptr reg_result = points_with_normals_src;
+    reg.setMaximumIterations (2);
+    for (int i = 0; i < 30; ++i)
+    {
+        PCL_INFO ("Iteration Nr. %d.\n", i);
+
+        // save cloud for visualization purpose
+        points_with_normals_src = reg_result;
+
+        // Estimate
+        reg.setInputSource (points_with_normals_src);
+        reg.align (*reg_result);
+
+        //accumulate transformation between each Iteration
+        Ti = reg.getFinalTransformation () * Ti;
+
+        //if the difference between this transformation and the previous one
+        //is smaller than the threshold, refine the process by reducing
+        //the maximal correspondence distance
+        if (fabs ((reg.getLastIncrementalTransformation () - prev).sum ()) < reg.getTransformationEpsilon ())
+            reg.setMaxCorrespondenceDistance (reg.getMaxCorrespondenceDistance () - 0.001);
+
+        prev = reg.getLastIncrementalTransformation ();
+
+    }
+
+
+
+
+
+    reg.align(*cloud_out);
+    std::cout << "ICP has converged = " << reg.hasConverged() <<endl;
+    // Save the transformed cloud
+    pcl::io::savePCDFileASCII ("cloud_after_icp.pcd", *cloud_out);
+    // Save the transformation
+    std::ofstream out2("transform_icp.txt");
+    Eigen::Affine3f Tr_icp;Tr_icp = reg.getFinalTransformation ();
+    cout<<"ICP transformation: "<<endl;
+    for(int i=0; i<4; i++){
+        for(int j=0; j<4; j++){
+            out2<<" "<<Tr_icp(i,j);
+            cout<<Tr_icp(i,j)<<"\t";
+        }
+        cout<<endl;
+        out2<<endl;
+    }
+    out2.close();
+    return cloud_out;
+}
+
+void registerClouds( std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& clouds,  pcl::PointCloud<pcl::PointXYZRGB>::Ptr& final_cloud){
+
+    unsigned int cloud_number = (unsigned int) clouds.size();
+
+    final_cloud = icp(clouds[0],clouds[1],true);
+
+    for (int i=2; i<5; i++){
+        final_cloud = icp(final_cloud,clouds[i],true);
+    }
 
 }
 
@@ -220,8 +364,10 @@ int main(int argc, char *argv[])
 
     createAllClouds(dataset,clouds);
 
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_cloud;
+    registerClouds(clouds,final_cloud);
 
-//    viewPointCloud(cloud);
+    viewPointCloud(final_cloud);
 
 
 
