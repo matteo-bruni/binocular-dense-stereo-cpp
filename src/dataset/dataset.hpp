@@ -44,6 +44,7 @@
 
 #include <string>
 #include <vector>
+#include <tuple>
 
 #include <opencv2/core/core.hpp>
 
@@ -508,12 +509,15 @@ namespace cv {
 
             std::vector<Ptr<Object> > &getValidation(int splitNum = 0);
 
+            std::vector<std::tuple<int,int>> &getAssociation();
+
             int getNumSplits() const;
 
         protected:
             std::vector<std::vector<Ptr<Object> > > train;
             std::vector<std::vector<Ptr<Object> > > test;
             std::vector<std::vector<Ptr<Object> > > validation;
+            std::vector<std::tuple<int,int>> photo_association;
 
         private:
             std::vector<Ptr<Object> > empty;

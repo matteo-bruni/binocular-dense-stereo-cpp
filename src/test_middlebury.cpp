@@ -129,6 +129,17 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     // translation between img2 and img1
     Mat T = t1 - (R.t()*t2 );
 
+    double tx = atan2 (R.at<double>(3,2), R.at<double>(3,3));
+    double ty = - asin(R.at<double>(3,1));
+    double tz = atan2 (R.at<double>(2,1), R.at<double>(1,1));
+    FILE_LOG(logDEBUG) << "ROTATION " << img1_num << "-" <<img2_num<< " tx="<< tx <<" ty=" << ty << "tz= " << tz;
+
+//    theta_x = arctan(r_{3,2}/r_{3,3})
+//    \theta_y = -arcsin(r_{3,1})
+//    \theta_z = arctan(r_{2,1}/r_{1,1})
+
+
+
     FILE_LOG(logINFO) << "Rectifying images...";
     Rect roi1,roi2;
     stereo::rectifyImages(img1, img2, M1, D1, M2, D2, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
@@ -136,9 +147,9 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
 
     FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
     Mat disp;
-    stereo::computeDisparity(img1, img2, disp,1,roi1,roi2);
+    stereo::computeDisparity(img1_num, img2_num, img1, img2, disp,1,roi1,roi2);
 
-    stereo::display(img1, img2, disp);
+//    stereo::display(img1_num, img2_num, img1, img2, disp);
 
     FILE_LOG(logINFO) << "Creating point cloud..";
     Mat recons3D;
@@ -183,21 +194,40 @@ void createAllClouds(Ptr<MSM_middlebury> &dataset, std::vector<pcl::PointCloud<p
     pcl::io::savePCDFileASCII ("./cloud1.pcd", *cloud);
     unsigned int dataset_size = (unsigned int)dataset->getTrain().size();
 
-    // c'è un problema sull'ultima immagine
-    for (int i=2; i<dataset_size-1;i++){
-        img1_num = i;
-        img2_num = i+1;
+
+    for(std::vector<std::tuple<int,int>>::iterator it = dataset->getAssociation().begin();
+        it != dataset->getAssociation().end(); ++it) {
+        img1_num = std::get<0>(*it);
+        img2_num = std::get<1>(*it);
         cloud = generatePointCloud(dataset, img1_num, img2_num);
         clouds.push_back(cloud);
         if(!(*cloud).empty()){
             ss.str( std::string() );
             ss.clear();
-            ss <<  i;
+            ss << img1_num<< "-" << img2_num ;
             path = "./cloud"+ ss.str() +".pcd";
             pcl::io::savePCDFileASCII (path, *cloud);
         }
 
+        /* std::cout << *it; ... */
     }
+
+
+//    // c'è un problema sull'ultima immagine
+//    for (int i=2; i<dataset_size-1;i++){
+//        img1_num = i;
+//        img2_num = i+1;
+//        cloud = generatePointCloud(dataset, img1_num, img2_num);
+//        clouds.push_back(cloud);
+//        if(!(*cloud).empty()){
+//            ss.str( std::string() );
+//            ss.clear();
+//            ss <<  i;
+//            path = "./cloud"+ ss.str() +".pcd";
+//            pcl::io::savePCDFileASCII (path, *cloud);
+//        }
+//
+//    }
     FILE_LOG(logINFO) << "cloud size" <<clouds.size();
 
 
