@@ -256,10 +256,10 @@ int main(int argc, char *argv[])
 
 
     // TEST SINGLE CLoUD
-//    int img1_num = 1;
-//    int img2_num = 2;
-//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
-//    viewPointCloud(cloud2);
+    int img1_num = 1;
+    int img2_num = 2;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
+    viewPointCloud(cloud2);
 
 
 
