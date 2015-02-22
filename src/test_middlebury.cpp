@@ -61,6 +61,7 @@
 #include <stdint-gcc.h>
 
 #include <pcl/common/projection_matrix.h>
+
 // custom includes
 #include "dataset/msm_middlebury.hpp"
 #include "matching_reproject/stereo_matching.hpp"
@@ -68,10 +69,34 @@
 
 // Include logging facilities
 #include "logger/log.h"
+
+/////////////////////////////
+
+#include <boost/make_shared.hpp>
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_representation.h>
+
+#include <pcl/io/pcd_io.h>
+
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/filter.h>
+
+#include <pcl/features/normal_3d.h>
+
+#include <pcl/registration/icp.h>
+#include <pcl/registration/icp_nl.h>
+#include <pcl/registration/transforms.h>
+
+#include <pcl/visualization/pcl_visualizer.h>
+
+using pcl::visualization::PointCloudColorHandlerGenericField;
+using pcl::visualization::PointCloudColorHandlerCustom;
+class VoxelGrid;
+
 #ifndef FILELOG_MAX_LEVEL
     #define FILELOG_MAX_LEVEL logDEBUG4
 #endif
-
 
 
 using namespace std;
@@ -79,6 +104,7 @@ using namespace cv;
 using namespace cv::datasets;
 using namespace stereo;
 using namespace pcl;
+
 
 
 
@@ -129,10 +155,10 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     // translation between img2 and img1
     Mat T = t1 - (R.t()*t2 );
 
-    double tx = atan2 (R.at<double>(3,2), R.at<double>(3,3));
-    double ty = - asin(R.at<double>(3,1));
-    double tz = atan2 (R.at<double>(2,1), R.at<double>(1,1));
-    FILE_LOG(logDEBUG) << "ROTATION " << img1_num << "-" <<img2_num<< " tx="<< tx <<" ty=" << ty << "tz= " << tz;
+//    double tx = atan2 (R.at<double>(3,2), R.at<double>(3,3));
+//    double ty = - asin(R.at<double>(3,1));
+//    double tz = atan2 (R.at<double>(2,1), R.at<double>(1,1));
+//    FILE_LOG(logDEBUG) << "ROTATION " << img1_num << "-" <<img2_num<< " tx="<< tx <<" ty=" << ty << "tz= " << tz;
 
 //    theta_x = arctan(r_{3,2}/r_{3,3})
 //    \theta_y = -arcsin(r_{3,1})
@@ -149,7 +175,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     Mat disp;
     stereo::computeDisparity(img1_num, img2_num, img1, img2, disp,1,roi1,roi2);
 
-//    stereo::display(img1_num, img2_num, img1, img2, disp);
+   // stereo::display(img1, img2, disp);
 
     FILE_LOG(logINFO) << "Creating point cloud..";
     Mat recons3D;
@@ -200,8 +226,8 @@ void createAllClouds(Ptr<MSM_middlebury> &dataset, std::vector<pcl::PointCloud<p
         img1_num = std::get<0>(*it);
         img2_num = std::get<1>(*it);
         cloud = generatePointCloud(dataset, img1_num, img2_num);
-        clouds.push_back(cloud);
         if(!(*cloud).empty()){
+            clouds.push_back(cloud);
             ss.str( std::string() );
             ss.clear();
             ss << img1_num<< "-" << img2_num ;
@@ -233,6 +259,155 @@ void createAllClouds(Ptr<MSM_middlebury> &dataset, std::vector<pcl::PointCloud<p
 
 }
 
+void icp(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_sr,pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_tg,pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_out,const bool downsample,Eigen::Matrix4f &final_transform){
+
+    ///downsampling
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr src (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr tgt (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::VoxelGrid<PointXYZRGB> grid;
+
+    if (downsample)
+    {
+        grid.setLeafSize (0.05, 0.05, 0.05);
+        grid.setInputCloud (cloud_sr);
+        grid.filter (*src);
+
+        grid.setInputCloud (cloud_tg);
+        grid.filter (*tgt);
+    }
+    else
+    {
+        src = cloud_sr;
+        tgt = cloud_tg;
+    }
+
+
+    // Compute surface normals and curvature
+    pcl::PointCloud<pcl::PointNormal>::Ptr points_with_normals_src (new  pcl::PointCloud<pcl::PointNormal>);
+    pcl::PointCloud<pcl::PointNormal>::Ptr points_with_normals_tgt (new  pcl::PointCloud<pcl::PointNormal>);
+
+    pcl::NormalEstimation<pcl::PointXYZRGB,  pcl::PointNormal> norm_est;
+    pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGB> ());
+    norm_est.setSearchMethod (tree);
+    norm_est.setKSearch (30);
+
+    norm_est.setInputCloud (src);
+    norm_est.compute (*points_with_normals_src);
+    pcl::copyPointCloud (*src, *points_with_normals_src);
+
+    norm_est.setInputCloud (tgt);
+    norm_est.compute (*points_with_normals_tgt);
+    pcl::copyPointCloud (*tgt, *points_with_normals_tgt);
+
+    //run iterativatly icp
+
+    pcl::IterativeClosestPointNonLinear<pcl::PointNormal, pcl::PointNormal> reg;
+
+    //PARAMETRI DA SETTARE
+    //reg.setTransformationEpsilon (1e-8);
+    // Set the maximum distance between two correspondences (src<->tgt) to 10cm
+    // Note: adjust this based on the size of your datasets
+    reg.setMaxCorrespondenceDistance (0.05);
+
+    reg.setInputSource(points_with_normals_src);
+    reg.setInputTarget(points_with_normals_tgt);
+
+
+    Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev, targetToSource;
+    pcl::PointCloud<pcl::PointNormal>::Ptr reg_result = points_with_normals_src;
+
+    reg.setMaximumIterations (5); //era 2
+    //i andava fino a 30
+    for (int i = 0; i < 30; ++i)
+    {
+        PCL_INFO ("Iteration Nr. %d.\n", i);
+
+        // save cloud for visualization purpose
+        points_with_normals_src = reg_result;
+
+        // Estimate
+        reg.setInputSource (points_with_normals_src);
+        reg.align (*reg_result);
+
+        //accumulate transformation between each Iteration
+        Ti = reg.getFinalTransformation () * Ti;
+
+        //if the difference between this transformation and the previous one
+        //is smaller than the threshold, refine the process by reducing
+        //the maximal correspondence distance
+        if (fabs ((reg.getLastIncrementalTransformation () - prev).sum ()) < reg.getTransformationEpsilon ())
+            reg.setMaxCorrespondenceDistance (reg.getMaxCorrespondenceDistance () - 0.001);
+
+        prev = reg.getLastIncrementalTransformation ();
+
+    }
+
+    // Get the transformation from target to source
+    targetToSource = Ti.inverse();
+
+    //
+    // Transform target back in source frame
+    pcl::transformPointCloud (*cloud_tg, *cloud_out, targetToSource);
+
+    //add the source to the transformed target
+    *cloud_out += *cloud_sr;
+
+    final_transform = targetToSource;
+
+//    reg.align(*cloud_out);
+//    std::cout << "ICP has converged = " << reg.hasConverged() <<endl;
+//    // Save the transformed cloud
+//    pcl::io::savePCDFileASCII ("cloud_after_icp.pcd", *cloud_out);
+//    // Save the transformation
+//    std::ofstream out2("transform_icp.txt");
+//    Eigen::Affine3f Tr_icp;Tr_icp = reg.getFinalTransformation ();
+//    cout<<"ICP transformation: "<<endl;
+//    for(int i=0; i<4; i++){
+//        for(int j=0; j<4; j++){
+//            out2<<" "<<Tr_icp(i,j);
+//            cout<<Tr_icp(i,j)<<"\t";
+//        }
+//        cout<<endl;
+//        out2<<endl;
+//    }
+//    out2.close();
+
+//    return cloud_out;
+}
+
+void registerClouds( std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& clouds){
+
+    unsigned int cloud_number = (unsigned int) clouds.size();
+    Eigen::Matrix4f GlobalTransform = Eigen::Matrix4f::Identity (), pairTransform;
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr result (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr source (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr target (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+    for (int i=1; i<cloud_number; i++){
+
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+        source = clouds[i-1];
+        target = clouds[i];
+
+        icp (source, target, temp, true, pairTransform);
+        //transform current pair into the global transform
+        pcl::transformPointCloud (*temp, *result, GlobalTransform);
+        //update the global transform
+        GlobalTransform = GlobalTransform * pairTransform;
+
+        //save aligned pair, transformed into the first cloud's frame
+
+    }
+
+    std::stringstream ss;
+    ss << "registration.pcd";
+    pcl::io::savePCDFile (ss.str (), *result, true);
+    viewPointCloud(result);
+
+}
+
 int main(int argc, char *argv[])
 {
 
@@ -250,8 +425,9 @@ int main(int argc, char *argv[])
 
     createAllClouds(dataset,clouds);
 
+    registerClouds(clouds);
 
-//    viewPointCloud(cloud);
+//    viewPointCloud(final_cloud);
 
 
 
