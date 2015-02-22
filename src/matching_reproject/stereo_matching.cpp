@@ -292,13 +292,18 @@ namespace stereo {
 //        reprojectImageTo3D(disp, recons3D, Q1, true);
 
 
+        // VERSIONE CUSTOM REPROJECT
         double Q03, Q13, Q23, Q32, Q33;
         Q03 = Q.at<double>(0,3);
         Q13 = Q.at<double>(1,3);
         Q23 = Q.at<double>(2,3);
         Q32 = Q.at<double>(3,2);
         Q33 = Q.at<double>(3,3);
-        reprojectImageTo3D(disp, recons3D, Q, true);
+
+
+
+        /// lui   cv::reprojectImageTo3D( img_disparity, recons3D, Q, false, CV_32F );
+//        reprojectImageTo3D(disp, recons3D, Q, true );
 
 
         double px, py, pz;
@@ -308,6 +313,7 @@ namespace stereo {
 
             uchar* rgb_ptr = img1.ptr<uchar>(i);
 
+            // VERSIONE CUSTOM REPROJECT
             uchar* disp_ptr = disp.ptr<uchar>(i);
 
             double* recons_ptr = recons3D.ptr<double>(i);
@@ -315,7 +321,7 @@ namespace stereo {
             for (int j = 0; j < img1.cols; j++) {
 
                 //Get 3D coordinates
-
+                // VERSIONE CUSTOM REPROJECT
                 uchar d = disp_ptr[j];
                 if ( d == 0 ) continue; //Discard bad pixels
                 double pw = -1.0 * static_cast<double>(d) * Q32 + Q33;
@@ -327,6 +333,10 @@ namespace stereo {
                 py = py/pw;
                 pz = pz/pw;
 
+//                px = recons_ptr[3*j];
+//                py = recons_ptr[3*j+1];
+//                pz = recons_ptr[3*j+2];
+
                 //Get RGB info
                 pb = rgb_ptr[3*j];
                 pg = rgb_ptr[3*j+1];
@@ -334,9 +344,9 @@ namespace stereo {
 
                 //Insert info into point cloud structure
                 pcl::PointXYZRGB point;
-                point.x = px;
-                point.y = py;
-                point.z = pz;
+                point.x = static_cast<float>(px);
+                point.y = static_cast<float>(py);
+                point.z = static_cast<float>(pz);
 
                 uint32_t rgb = (static_cast<uint32_t>(pr) << 16 |
                         static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));

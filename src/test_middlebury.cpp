@@ -404,6 +404,8 @@ void registerClouds( std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& clouds
     std::stringstream ss;
     ss << "registration.pcd";
     pcl::io::savePCDFile (ss.str (), *result, true);
+    FILE_LOG(logINFO) << "Registration terminated.. showing";
+
     viewPointCloud(result);
 
 }
@@ -431,11 +433,11 @@ int main(int argc, char *argv[])
 
 
 
-    // TEST SINGLE CLoUD
-    int img1_num = 1;
-    int img2_num = 2;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
-    viewPointCloud(cloud2);
+//    // TEST SINGLE CLoUD
+//    int img1_num = 1;
+//    int img2_num = 2;
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
+//    viewPointCloud(cloud2);
 
 
 
