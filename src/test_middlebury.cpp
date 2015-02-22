@@ -69,6 +69,7 @@
 
 // Include logging facilities
 #include "logger/log.h"
+
 /////////////////////////////
 
 #include <boost/make_shared.hpp>
@@ -104,10 +105,8 @@ using namespace cv::datasets;
 using namespace stereo;
 using namespace pcl;
 
-typedef pcl::PointXYZ PointT;
-typedef pcl::PointCloud<PointT> PointCloud;
-typedef pcl::PointNormal PointNormalT;
-typedef pcl::PointCloud<PointNormalT> PointCloudWithNormals;
+
+
 
 boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizer (pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud)
 {
@@ -156,6 +155,17 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     // translation between img2 and img1
     Mat T = t1 - (R.t()*t2 );
 
+//    double tx = atan2 (R.at<double>(3,2), R.at<double>(3,3));
+//    double ty = - asin(R.at<double>(3,1));
+//    double tz = atan2 (R.at<double>(2,1), R.at<double>(1,1));
+//    FILE_LOG(logDEBUG) << "ROTATION " << img1_num << "-" <<img2_num<< " tx="<< tx <<" ty=" << ty << "tz= " << tz;
+
+//    theta_x = arctan(r_{3,2}/r_{3,3})
+//    \theta_y = -arcsin(r_{3,1})
+//    \theta_z = arctan(r_{2,1}/r_{1,1})
+
+
+
     FILE_LOG(logINFO) << "Rectifying images...";
     Rect roi1,roi2;
     stereo::rectifyImages(img1, img2, M1, D1, M2, D2, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
@@ -163,7 +173,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
 
     FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
     Mat disp;
-    stereo::computeDisparity(img1, img2, disp,1,roi1,roi2);
+    stereo::computeDisparity(img1_num, img2_num, img1, img2, disp,1,roi1,roi2);
 
    // stereo::display(img1, img2, disp);
 
@@ -210,36 +220,52 @@ void createAllClouds(Ptr<MSM_middlebury> &dataset, std::vector<pcl::PointCloud<p
     pcl::io::savePCDFileASCII ("./cloud1.pcd", *cloud);
     unsigned int dataset_size = (unsigned int)dataset->getTrain().size();
 
-    // c'è un problema sull'ultima immagine
-    for (int i=2; i<dataset_size-1;i++){
-        img1_num = i;
-        img2_num = i+1;
+
+    for(std::vector<std::tuple<int,int>>::iterator it = dataset->getAssociation().begin();
+        it != dataset->getAssociation().end(); ++it) {
+        img1_num = std::get<0>(*it);
+        img2_num = std::get<1>(*it);
         cloud = generatePointCloud(dataset, img1_num, img2_num);
         if(!(*cloud).empty()){
             clouds.push_back(cloud);
             ss.str( std::string() );
             ss.clear();
-            ss <<  i;
+            ss << img1_num<< "-" << img2_num ;
             path = "./cloud"+ ss.str() +".pcd";
             pcl::io::savePCDFileASCII (path, *cloud);
         }
 
+        /* std::cout << *it; ... */
     }
+
+
+//    // c'è un problema sull'ultima immagine
+//    for (int i=2; i<dataset_size-1;i++){
+//        img1_num = i;
+//        img2_num = i+1;
+//        cloud = generatePointCloud(dataset, img1_num, img2_num);
+//        clouds.push_back(cloud);
+//        if(!(*cloud).empty()){
+//            ss.str( std::string() );
+//            ss.clear();
+//            ss <<  i;
+//            path = "./cloud"+ ss.str() +".pcd";
+//            pcl::io::savePCDFileASCII (path, *cloud);
+//        }
+//
+//    }
     FILE_LOG(logINFO) << "cloud size" <<clouds.size();
 
 
 }
 
-
-
-
-
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr icp(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_sr,pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_tg,const bool downsample){
+void icp(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_sr,pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_tg,pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_out,const bool downsample,Eigen::Matrix4f &final_transform){
 
     ///downsampling
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr src (new pcl::PointCloud<pcl::PointXYZRGB>);
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr tgt (new pcl::PointCloud<pcl::PointXYZRGB>);
     pcl::VoxelGrid<PointXYZRGB> grid;
+
     if (downsample)
     {
         grid.setLeafSize (0.05, 0.05, 0.05);
@@ -255,12 +281,13 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr icp(pcl::PointCloud<pcl::PointXYZRGB>::Pt
         tgt = cloud_tg;
     }
 
-    // Compute surface normals and curvature
-    PointCloudWithNormals::Ptr points_with_normals_src (new PointCloudWithNormals);
-    PointCloudWithNormals::Ptr points_with_normals_tgt (new PointCloudWithNormals);
 
-    pcl::NormalEstimation<PointT, PointNormalT> norm_est;
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
+    // Compute surface normals and curvature
+    pcl::PointCloud<pcl::PointNormal>::Ptr points_with_normals_src (new  pcl::PointCloud<pcl::PointNormal>);
+    pcl::PointCloud<pcl::PointNormal>::Ptr points_with_normals_tgt (new  pcl::PointCloud<pcl::PointNormal>);
+
+    pcl::NormalEstimation<pcl::PointXYZRGB,  pcl::PointNormal> norm_est;
+    pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGB> ());
     norm_est.setSearchMethod (tree);
     norm_est.setKSearch (30);
 
@@ -272,21 +299,25 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr icp(pcl::PointCloud<pcl::PointXYZRGB>::Pt
     norm_est.compute (*points_with_normals_tgt);
     pcl::copyPointCloud (*tgt, *points_with_normals_tgt);
 
+    //run iterativatly icp
 
-    ////run iterativatly icp
+    pcl::IterativeClosestPointNonLinear<pcl::PointNormal, pcl::PointNormal> reg;
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_out(new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> reg;
-    reg.setInputSource(src);
-    reg.setInputTarget(tgt);
+    //PARAMETRI DA SETTARE
+    //reg.setTransformationEpsilon (1e-8);
+    // Set the maximum distance between two correspondences (src<->tgt) to 10cm
+    // Note: adjust this based on the size of your datasets
+    reg.setMaxCorrespondenceDistance (0.05);
 
- // vedere meglio il numero di iterazioni giusto
-    reg.setMaximumIterations (2);
+    reg.setInputSource(points_with_normals_src);
+    reg.setInputTarget(points_with_normals_tgt);
 
 
     Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev, targetToSource;
-    PointCloudWithNormals::Ptr reg_result = points_with_normals_src;
-    reg.setMaximumIterations (2);
+    pcl::PointCloud<pcl::PointNormal>::Ptr reg_result = points_with_normals_src;
+
+    reg.setMaximumIterations (5); //era 2
+    //i andava fino a 30
     for (int i = 0; i < 30; ++i)
     {
         PCL_INFO ("Iteration Nr. %d.\n", i);
@@ -311,39 +342,69 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr icp(pcl::PointCloud<pcl::PointXYZRGB>::Pt
 
     }
 
+    // Get the transformation from target to source
+    targetToSource = Ti.inverse();
 
+    //
+    // Transform target back in source frame
+    pcl::transformPointCloud (*cloud_tg, *cloud_out, targetToSource);
 
+    //add the source to the transformed target
+    *cloud_out += *cloud_sr;
 
+    final_transform = targetToSource;
 
-    reg.align(*cloud_out);
-    std::cout << "ICP has converged = " << reg.hasConverged() <<endl;
-    // Save the transformed cloud
-    pcl::io::savePCDFileASCII ("cloud_after_icp.pcd", *cloud_out);
-    // Save the transformation
-    std::ofstream out2("transform_icp.txt");
-    Eigen::Affine3f Tr_icp;Tr_icp = reg.getFinalTransformation ();
-    cout<<"ICP transformation: "<<endl;
-    for(int i=0; i<4; i++){
-        for(int j=0; j<4; j++){
-            out2<<" "<<Tr_icp(i,j);
-            cout<<Tr_icp(i,j)<<"\t";
-        }
-        cout<<endl;
-        out2<<endl;
-    }
-    out2.close();
-    return cloud_out;
+//    reg.align(*cloud_out);
+//    std::cout << "ICP has converged = " << reg.hasConverged() <<endl;
+//    // Save the transformed cloud
+//    pcl::io::savePCDFileASCII ("cloud_after_icp.pcd", *cloud_out);
+//    // Save the transformation
+//    std::ofstream out2("transform_icp.txt");
+//    Eigen::Affine3f Tr_icp;Tr_icp = reg.getFinalTransformation ();
+//    cout<<"ICP transformation: "<<endl;
+//    for(int i=0; i<4; i++){
+//        for(int j=0; j<4; j++){
+//            out2<<" "<<Tr_icp(i,j);
+//            cout<<Tr_icp(i,j)<<"\t";
+//        }
+//        cout<<endl;
+//        out2<<endl;
+//    }
+//    out2.close();
+
+//    return cloud_out;
 }
 
-void registerClouds( std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& clouds,  pcl::PointCloud<pcl::PointXYZRGB>::Ptr& final_cloud){
+void registerClouds( std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& clouds){
 
     unsigned int cloud_number = (unsigned int) clouds.size();
+    Eigen::Matrix4f GlobalTransform = Eigen::Matrix4f::Identity (), pairTransform;
 
-    final_cloud = icp(clouds[0],clouds[1],true);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr result (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr source (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr target (new pcl::PointCloud<pcl::PointXYZRGB>);
 
-    for (int i=2; i<5; i++){
-        final_cloud = icp(final_cloud,clouds[i],true);
+    for (int i=1; i<cloud_number; i++){
+
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+        source = clouds[i-1];
+        target = clouds[i];
+
+        icp (source, target, temp, true, pairTransform);
+        //transform current pair into the global transform
+        pcl::transformPointCloud (*temp, *result, GlobalTransform);
+        //update the global transform
+        GlobalTransform = GlobalTransform * pairTransform;
+
+        //save aligned pair, transformed into the first cloud's frame
+
     }
+
+    std::stringstream ss;
+    ss << "registration.pcd";
+    pcl::io::savePCDFile (ss.str (), *result, true);
+    viewPointCloud(result);
 
 }
 
@@ -364,10 +425,9 @@ int main(int argc, char *argv[])
 
     createAllClouds(dataset,clouds);
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_cloud;
-    registerClouds(clouds,final_cloud);
+    registerClouds(clouds);
 
-    viewPointCloud(final_cloud);
+//    viewPointCloud(final_cloud);
 
 
 

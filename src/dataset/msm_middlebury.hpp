@@ -71,6 +71,7 @@ namespace cv {
             virtual void load(const std::string &path) = 0;
 
             static Ptr<MSM_middlebury> create();
+
         };
 
         //! @}

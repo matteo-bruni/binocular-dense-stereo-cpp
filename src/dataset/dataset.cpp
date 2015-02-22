@@ -76,6 +76,11 @@ namespace cv {
             return (int) train.size();
         }
 
+        std::vector<std::tuple<int,int>> &Dataset::getAssociation(){
+            return photo_association;
+        }
+
+
     }
 }
 
