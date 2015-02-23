@@ -19,7 +19,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
-
+if (NOT CMAKE_BUILD_TYPE)
+	message(STATUS "No build type selected, default to Debug")
+	set(CMAKE_BUILD_TYPE "Debug")
+endif()
 
 set(SOURCE_FILES
     src/logger/log.h

@@ -172,13 +172,17 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
 
 
     FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
-    Mat disp;
+    Mat disp(img1.size(), CV_32F);
+    FILE_LOG(logINFO) << "imgsize " << stereo_util::infoMatrix(img1);
+    FILE_LOG(logINFO) << "dispsize " << stereo_util::infoMatrix(disp);
+
     stereo::computeDisparity(img1_num, img2_num, img1, img2, disp,1,roi1,roi2);
 
    // stereo::display(img1, img2, disp);
 
     FILE_LOG(logINFO) << "Creating point cloud..";
-    Mat recons3D;
+    Mat recons3D(disp.size(), CV_32FC3);
+    FILE_LOG(logINFO) << "recons3Dsize " << stereo_util::infoMatrix(recons3D);
 
     // stereo::storePointCloud(disp, Q, recons3D);
 
@@ -425,19 +429,19 @@ int main(int argc, char *argv[])
 
     std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
 
-    createAllClouds(dataset,clouds);
+//    createAllClouds(dataset,clouds);
 
-    registerClouds(clouds);
+//    registerClouds(clouds);
 
 //    viewPointCloud(final_cloud);
 
 
 
-//    // TEST SINGLE CLoUD
-//    int img1_num = 1;
-//    int img2_num = 2;
-//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
-//    viewPointCloud(cloud2);
+    // TEST SINGLE CLoUD
+    int img1_num = 1;
+    int img2_num = 2;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
+    viewPointCloud(cloud2);
 
 
 

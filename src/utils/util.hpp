@@ -11,5 +11,7 @@ namespace stereo_util {
     string infoMatrix(Mat& M);
     void rotate(cv::Mat& src, double angle, cv::Mat& dst);
 
+    void rotate_clockwise(cv::Mat& src, cv::Mat& dst, bool clockwise);
+
 
 }
