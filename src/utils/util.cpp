@@ -64,11 +64,23 @@ namespace stereo_util {
     */
     void rotate(cv::Mat& src, double angle, cv::Mat& dst)
     {
-        int len = std::max(src.cols, src.rows);
-        cv::Point2f pt(len/2., len/2.);
+//        int len = std::max(src.cols, src.rows);
+        cv::Point2f pt((src.cols/2), (src.rows/2) );
         cv::Mat r = cv::getRotationMatrix2D(pt, angle, 1.0);
 
-        cv::warpAffine(src, dst, r, cv::Size(len, len));
+        cv::warpAffine(src, dst, r, cv::Size(src.rows, src.cols));
+    }
+
+    void rotate_clockwise(cv::Mat& src, cv::Mat& dst, bool clockwise){
+        if (clockwise){
+            cv::transpose(src, dst);
+            cv::flip(dst, dst, 1);
+        } else {
+            cv::transpose(src, dst);
+            cv::flip(dst, dst, 0);
+        }
+
+
     }
 
     class WatershedSegmenter{

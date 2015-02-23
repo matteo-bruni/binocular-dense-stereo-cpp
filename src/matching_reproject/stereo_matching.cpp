@@ -127,27 +127,27 @@ namespace stereo {
 
     void computeDisparity(const int img1_num, const int img2_num, Mat& img1, Mat& img2,Mat& disp,int alg,Rect & roi1,Rect &roi2){
 
-
-        /////////////////
-
-
         std::string tipo = "BM";
 
         Mat g1, g2;
 
+        cvtColor(img1, g1, CV_BGR2GRAY);
+        cvtColor(img2, g2, CV_BGR2GRAY);
 
-//        cvtColor(img1, g1, CV_BGR2GRAY);
-//        cvtColor(img2, g2, CV_BGR2GRAY);
+        FILE_LOG(logINFO) << "prima img1 " << stereo_util::infoMatrix(g1);
 
         if (img1_num < 32)
-            stereo_util::rotate(g1, 90, g1);
+            stereo_util::rotate_clockwise(g1, g1, false);
         else
-            stereo_util::rotate(g1, -90, g1);
+            stereo_util::rotate_clockwise(g1, g1, true);
+
+        FILE_LOG(logINFO) << "dopo img1 " << stereo_util::infoMatrix(g1);
+
 
         if (img2_num < 32)
-            stereo_util::rotate(g2, 90, g2);
+            stereo_util::rotate_clockwise(g2, g2, false);
         else
-            stereo_util::rotate(g2, -90, g2);
+            stereo_util::rotate_clockwise(g2, g2, true);
 
         if (tipo == "BM")
         {
@@ -173,7 +173,7 @@ namespace stereo {
             sbm.state->speckleWindowSize = 0;
             sbm.state->speckleRange = 0;
 //            sbm.state->disp12MaxDiff = 1;
-            sbm(g1, g2, disp);
+            sbm(g1, g2, disp, CV_32F);
         }
         else if (tipo == "SGBM")
         {
@@ -190,22 +190,63 @@ namespace stereo {
             sbm.P1 = 8*3*5*5;
             sbm.P2 = 8*3*5*5;
             sbm(g1, g2, disp);
+
+//            StereoSGBM sbm;
+//            sbm.SADWindowSize = 3;
+//            sbm.numberOfDisparities = 144;
+//            sbm.preFilterCap = 63;
+//            sbm.minDisparity = -39;
+//            sbm.uniquenessRatio = 10;
+//            sbm.speckleWindowSize = 100;
+//            sbm.speckleRange = 32;
+//            sbm.disp12MaxDiff = 1;
+//            sbm.fullDP = false;
+//            sbm.P1 = 216;
+//            sbm.P2 = 864;
+//            sbm(g1, g2, disp);
+//            sbm(g1, g2, d\ispar);
         }
 
-
-        normalize(disp, disp, 0, 255, CV_MINMAX, CV_8U);
+        FILE_LOG(logINFO) << "prima dispsize " << stereo_util::infoMatrix(disp);
 
         if (img1_num < 32)
-            stereo_util::rotate(disp, -90, disp);
+            stereo_util::rotate_clockwise(disp, disp, true);
         else
-            stereo_util::rotate(disp, 90, disp);
+            stereo_util::rotate_clockwise(disp, disp, false);
+
+        FILE_LOG(logINFO) << "dopo dispsize " << stereo_util::infoMatrix(disp);
+
+
+        Mat dispSGBMn, dispSGBMheat;
+        normalize(disp, dispSGBMn, 0, 255, CV_MINMAX, CV_8U); // form 0-255
+        equalizeHist(dispSGBMn, dispSGBMn);
+        //imshow( "WindowDispSGBM", dispSGBMn );
+
+        applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
+        imshow( "WindowDispSGBMheat", dispSGBMheat );
+        fflush(stdout);
+        waitKey();
+        destroyAllWindows();
+
 
         // APPLY OPENING
-        cv::Mat const structure_elem = cv::getStructuringElement(
-                cv::MORPH_RECT, cv::Size(3, 3));
-//        cv::Mat open_result;
-        cv::morphologyEx(disp, disp,
-                cv::MORPH_OPEN, structure_elem);
+//        cv::Mat const structure_elem = cv::getStructuringElement(
+//                cv::MORPH_RECT, cv::Size(3, 3));
+//        cv::morphologyEx(disp, disp,
+//                cv::MORPH_OPEN, structure_elem);
+
+//        // normalize
+//        normalize(disp, disp, 0, 255, CV_MINMAX, CV_8U);
+//        // equalize
+//        equalizeHist(disp, disp);     // ausreisser nicht darstellen // remove outliers
+//        Mat dispSGBMheat;
+//        applyColorMap(disp, dispSGBMheat, COLORMAP_JET);
+//
+//        namedWindow( "WindowDispSGBMheat", WINDOW_AUTOSIZE );// Create a window for display.
+//        imshow( "WindowDispSGBMheat", dispSGBMheat );
+//        fflush(stdout);
+//        waitKey();
+//        destroyAllWindows();
 
 
 
@@ -259,7 +300,7 @@ namespace stereo {
     }
 
 
-    void createPointCloud (Mat& img1, Mat& img2, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr){
+    void createPointCloud (Mat& img1, Mat& img2, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
 
 
         Size img_size = img1.size();
@@ -292,70 +333,123 @@ namespace stereo {
 //        reprojectImageTo3D(disp, recons3D, Q1, true);
 
 
-        double Q03, Q13, Q23, Q32, Q33;
-        Q03 = Q.at<double>(0,3);
-        Q13 = Q.at<double>(1,3);
-        Q23 = Q.at<double>(2,3);
-        Q32 = Q.at<double>(3,2);
-        Q33 = Q.at<double>(3,3);
+        // VERSIONE CUSTOM REPROJECT
+//        double Q03, Q13, Q23, Q32, Q33;
+//        Q03 = Q.at<double>(0, 3);
+//        Q13 = Q.at<double>(1, 3);
+//        Q23 = Q.at<double>(2, 3);
+//        Q32 = Q.at<double>(3, 2);
+//        Q33 = Q.at<double>(3, 3);
+//
+//        double px, py, pz;
+//        uchar pr, pg, pb;
+//
+//        for (int i = 0; i < img1.rows; i++) {
+//
+//            uchar *rgb_ptr = img1.ptr<uchar>(i);
+//
+//            // VERSIONE CUSTOM REPROJECT
+//            uchar *disp_ptr = disp.ptr<uchar>(i);
+//
+//
+//            for (int j = 0; j < img1.cols; j++) {
+//
+//                //Get 3D coordinates
+//                // VERSIONE CUSTOM REPROJECT
+//                uchar d = disp_ptr[j];
+//                if (d == 0) continue; //Discard bad pixels
+//                double pw = -1.0 * static_cast<double>(d) * Q32 + Q33;
+//                px = static_cast<double>(j) + Q03;
+//                py = static_cast<double>(i) + Q13;
+//                pz = Q23;
+//
+//                px = px / pw;
+//                py = py / pw;
+//                pz = pz / pw;
+//
+//                //Get RGB info
+//                pb = rgb_ptr[3 * j];
+//                pg = rgb_ptr[3 * j + 1];
+//                pr = rgb_ptr[3 * j + 2];
+//
+//                //Insert info into point cloud structure
+//                pcl::PointXYZRGB point;
+//                point.x = static_cast<float>(px);
+//                point.y = static_cast<float>(py);
+//                point.z = static_cast<float>(pz);
+//
+//                uint32_t rgb = (static_cast<uint32_t>(pr) << 16 |
+//                        static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));
+//                point.rgb = *reinterpret_cast<float *>(&rgb);
+//                point_cloud_ptr->points.push_back(point);
+//            }
+//        }
+//        point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
+//        point_cloud_ptr->height = 1;
+
+
+
+
 
         reprojectImageTo3D(disp, recons3D, Q, true);
+        FILE_LOG(logINFO) << "disp - " <<stereo_util::infoMatrix(disp);
 
+        FILE_LOG(logINFO) << "reconst - " <<stereo_util::infoMatrix(recons3D) << " img - " << stereo_util::infoMatrix(img1);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_xyzrgb(new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz(new pcl::PointCloud<pcl::PointXYZ>);
+        for (int rows = 0; rows < recons3D.rows; ++rows) {
 
+            for (int cols = 0; cols < recons3D.cols; ++cols) {
 
+                cv::Point3f point = recons3D.at<cv::Point3f>(rows, cols);
 
-        double px, py, pz;
-        uchar pr, pg, pb;
+                pcl::PointXYZ pcl_point(point.x, point.y, point.z); // normal PointCloud
+                pcl::PointXYZRGB pcl_point_rgb;
+                pcl_point_rgb.x = point.x;    // rgb PointCloud
+                pcl_point_rgb.y = point.y;
+                pcl_point_rgb.z = point.z;
+                // image_left is the stereo rectified image used in stere reconstruction
+                cv::Vec3b intensity = img1.at<cv::Vec3b>(rows, cols); //BGR
 
-        for (int i = 0; i < img1.rows; i++) {
+                uint32_t rgb = (static_cast<uint32_t>(intensity[2]) << 16 | static_cast<uint32_t>(intensity[1]) << 8 | static_cast<uint32_t>(intensity[0]));
 
-            uchar* rgb_ptr = img1.ptr<uchar>(i);
+                pcl_point_rgb.rgb = *reinterpret_cast<float *>(&rgb);
 
-            uchar* disp_ptr = disp.ptr<uchar>(i);
-
-            double* recons_ptr = recons3D.ptr<double>(i);
-
-            for (int j = 0; j < img1.cols; j++) {
-
-                //Get 3D coordinates
-
-                uchar d = disp_ptr[j];
-                if ( d == 0 ) continue; //Discard bad pixels
-                double pw = -1.0 * static_cast<double>(d) * Q32 + Q33;
-                px = static_cast<double>(j) + Q03;
-                py = static_cast<double>(i) + Q13;
-                pz = Q23;
-
-                px = px/pw;
-                py = py/pw;
-                pz = pz/pw;
-
-//                px = recons_ptr[3*j];
-//                py = recons_ptr[3*j+1];
-//                pz = recons_ptr[3*j+2];
-
-                //Get RGB info
-                pb = rgb_ptr[3*j];
-                pg = rgb_ptr[3*j+1];
-                pr = rgb_ptr[3*j+2];
-
-                //Insert info into point cloud structure
-                pcl::PointXYZRGB point;
-                point.x = px;
-                point.y = py;
-                point.z = pz;
-
-                uint32_t rgb = (static_cast<uint32_t>(pr) << 16 |
-                        static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));
-                point.rgb = *reinterpret_cast<float*>(&rgb);
-                point_cloud_ptr->points.push_back (point);
+                point_cloud_ptr->push_back(pcl_point_rgb);
             }
+
+
         }
         point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
         point_cloud_ptr->height = 1;
+        FILE_LOG(logINFO) << "Esco..";
 
- }
+
+//        cv::Mat_<float> vec(4,1);
+//        for(int y=0; y<disp.rows; ++y) {
+//            for(int x=0; x<disp.cols; ++x) {
+//                vec(0)=x; vec(1)=y; vec(2)=disp.at<float>(y,x); vec(3)=1;
+//                vec = Q*vec;
+//                vec /= vec(3);
+//                cv::Vec3f &point = recons3D.at<cv::Vec3f>(y,x);
+////                point[0] = vec(0);
+////                point[1] = vec(1);
+////                point[2] = vec(2);
+//                pcl::PointXYZRGB pcl_point_rgb;
+//                cv::Vec3b intensity = img1.at<cv::Vec3b>(y, x); //BGR
+//                uint32_t rgb = (static_cast<uint32_t>(intensity[2]) << 16 | static_cast<uint32_t>(intensity[1]) << 8 | static_cast<uint32_t>(intensity[0]));
+//                pcl_point_rgb.rgb = *reinterpret_cast<float *>(&rgb);
+//                pcl_point_rgb.x = vec(0);    // rgb PointCloud
+//                pcl_point_rgb.y = vec(1);
+//                pcl_point_rgb.z = vec(2);
+//                point_cloud_ptr->push_back(pcl_point_rgb);
+//
+//
+//            }
+//        }
 
 
+
+    }
 
 }

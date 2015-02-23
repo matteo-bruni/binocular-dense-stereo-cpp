@@ -12,5 +12,7 @@ namespace stereo_util {
     void rotate(cv::Mat& src, double angle, cv::Mat& dst);
     void segmentation(const int img_num);
 
+    void rotate_clockwise(cv::Mat& src, cv::Mat& dst, bool clockwise);
+
 
 }

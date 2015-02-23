@@ -95,6 +95,9 @@ using pcl::visualization::PointCloudColorHandlerGenericField;
 using pcl::visualization::PointCloudColorHandlerCustom;
 class VoxelGrid;
 
+#ifndef FILELOG_MAX_LEVEL
+    #define FILELOG_MAX_LEVEL logDEBUG4
+#endif
 
 using namespace std;
 using namespace cv;
@@ -169,13 +172,17 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
 
 
     FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
-    Mat disp;
+    Mat disp(img1.size(), CV_32F);
+    FILE_LOG(logINFO) << "imgsize " << stereo_util::infoMatrix(img1);
+    FILE_LOG(logINFO) << "dispsize " << stereo_util::infoMatrix(disp);
+
     stereo::computeDisparity(img1_num, img2_num, img1, img2, disp,1,roi1,roi2);
 
    // stereo::display(img1, img2, disp);
 
     FILE_LOG(logINFO) << "Creating point cloud..";
-    Mat recons3D;
+    Mat recons3D(disp.size(), CV_32FC3);
+    FILE_LOG(logINFO) << "recons3Dsize " << stereo_util::infoMatrix(recons3D);
 
     // stereo::storePointCloud(disp, Q, recons3D);
 
