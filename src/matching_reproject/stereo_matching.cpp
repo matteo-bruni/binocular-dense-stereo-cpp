@@ -136,8 +136,8 @@ namespace stereo {
         Mat g1, g2;
 
 
-        cvtColor(img1, g1, CV_BGR2GRAY);
-        cvtColor(img2, g2, CV_BGR2GRAY);
+//        cvtColor(img1, g1, CV_BGR2GRAY);
+//        cvtColor(img2, g2, CV_BGR2GRAY);
 
         if (img1_num < 32)
             stereo_util::rotate(g1, 90, g1);
@@ -298,7 +298,10 @@ namespace stereo {
         Q23 = Q.at<double>(2,3);
         Q32 = Q.at<double>(3,2);
         Q33 = Q.at<double>(3,3);
+
         reprojectImageTo3D(disp, recons3D, Q, true);
+
+
 
 
         double px, py, pz;
@@ -327,6 +330,10 @@ namespace stereo {
                 py = py/pw;
                 pz = pz/pw;
 
+//                px = recons_ptr[3*j];
+//                py = recons_ptr[3*j+1];
+//                pz = recons_ptr[3*j+2];
+
                 //Get RGB info
                 pb = rgb_ptr[3*j];
                 pg = rgb_ptr[3*j+1];
@@ -348,4 +355,7 @@ namespace stereo {
         point_cloud_ptr->height = 1;
 
  }
+
+
+
 }

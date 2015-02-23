@@ -90,13 +90,10 @@
 
 #include <pcl/visualization/pcl_visualizer.h>
 
+
 using pcl::visualization::PointCloudColorHandlerGenericField;
 using pcl::visualization::PointCloudColorHandlerCustom;
 class VoxelGrid;
-
-#ifndef FILELOG_MAX_LEVEL
-    #define FILELOG_MAX_LEVEL logDEBUG4
-#endif
 
 
 using namespace std;
@@ -104,7 +101,7 @@ using namespace cv;
 using namespace cv::datasets;
 using namespace stereo;
 using namespace pcl;
-
+using namespace stereo_util;
 
 
 
@@ -304,10 +301,10 @@ void icp(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_sr,pcl::PointCloud<pcl::P
     pcl::IterativeClosestPointNonLinear<pcl::PointNormal, pcl::PointNormal> reg;
 
     //PARAMETRI DA SETTARE
-    //reg.setTransformationEpsilon (1e-8);
+    reg.setTransformationEpsilon (1e-8);
     // Set the maximum distance between two correspondences (src<->tgt) to 10cm
     // Note: adjust this based on the size of your datasets
-    reg.setMaxCorrespondenceDistance (0.05);
+    reg.setMaxCorrespondenceDistance (0.02);
 
     reg.setInputSource(points_with_normals_src);
     reg.setInputTarget(points_with_normals_tgt);
@@ -402,7 +399,7 @@ void registerClouds( std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& clouds
     }
 
     std::stringstream ss;
-    ss << "registration.pcd";
+    ss << "registrazione.pcd";
     pcl::io::savePCDFile (ss.str (), *result, true);
     viewPointCloud(result);
 
@@ -423,21 +420,21 @@ int main(int argc, char *argv[])
 
     std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
 
-    createAllClouds(dataset,clouds);
-
-    registerClouds(clouds);
+//    createAllClouds(dataset,clouds);
+//
+//    registerClouds(clouds);
 
 //    viewPointCloud(final_cloud);
 
 
 
-    // TEST SINGLE CLoUD
-//    int img1_num = 1;
+   //  TEST SINGLE CLoUD
+    int img1_num = 1;
 //    int img2_num = 2;
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
 //    viewPointCloud(cloud2);
 
-
+    stereo_util::segmentation(img1_num);
 
 //    // ICP object.
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud(new pcl::PointCloud<pcl::PointXYZRGB>);

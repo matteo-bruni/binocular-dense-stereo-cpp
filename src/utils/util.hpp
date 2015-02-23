@@ -10,6 +10,7 @@ namespace stereo_util {
     string type2str(int type);
     string infoMatrix(Mat& M);
     void rotate(cv::Mat& src, double angle, cv::Mat& dst);
+    void segmentation(const int img_num);
 
 
 }
