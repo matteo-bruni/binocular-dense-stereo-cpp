@@ -100,45 +100,17 @@ namespace stereo_util {
         }
     };
 
-    void segmentation (const int img_num)
+    cv::Mat segmentation(cv::Mat image)
     {
-        std::ostringstream ss;
-        ss << std::setw(2) << std::setfill('0') << img_num;
-        std::string img1_path = "../dataset/dataset_templeRing/templeR00"+ ss.str() +".png";
-        cv::Mat image = cv::imread(img1_path);
+//        std::ostringstream ss;
+//        ss << std::setw(2) << std::setfill('0') << img_num;
+//        std::string img1_path = "../dataset/dataset_templeRing/templeR00"+ ss.str() +".png";
+//        cv::Mat image = cv::imread(img1_path);
+
+
         cv::Mat binary;// = cv::imread(argv[2], 0);
         cv::cvtColor(image, binary, CV_BGR2GRAY);
         cv::threshold(binary, binary, 100, 255, THRESH_BINARY);
-
-        imshow("originalimage", image);
-        imshow("originalbinary", binary);
-
-        // Eliminate noise and smaller objects
-        cv::Mat fg;
-        cv::erode(binary,fg,cv::Mat(),cv::Point(-1,-1),2);
-        imshow("fg", fg);
-
-        // Identify image pixels without objects
-        cv::Mat bg;
-        cv::dilate(binary,bg,cv::Mat(),cv::Point(-1,-1),3);
-        cv::threshold(bg,bg,1, 128,cv::THRESH_BINARY_INV);
-        imshow("bg", bg);
-
-
-        // Create markers image
-        cv::Mat markers(binary.size(),CV_8U,cv::Scalar(0));
-        markers= fg+bg;
-        imshow("markers", markers);
-
-        // Create watershed segmentation object
-        WatershedSegmenter segmenter;
-        segmenter.setMarkers(markers);
-
-        cv::Mat result = segmenter.process(image);
-        result.convertTo(result,CV_8U);
-        imshow("final_result", result);
-
-
 
         cv::Mat const structure_elem = cv::getStructuringElement(
                 cv::MORPH_RECT, cv::Size(7, 7));
@@ -147,15 +119,27 @@ namespace stereo_util {
                 cv::MORPH_CLOSE, structure_elem);
 
 
+        vector<vector<Point>> contours; // Vector for storing contour
+        vector<Vec4i> hierarchy;
+        findContours( binary, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
+        // iterate through each contour.
+        for( int i = 0; i< contours.size(); i++ )
+        {
+            //  Find the area of contour
+            double a=contourArea( contours[i],false);
+            Scalar color( 255,255,255);  // color of the contour in the
+            drawContours( binary, contours,i, 255, CV_FILLED,8,hierarchy);
+
+        }
+
         cv::Mat result1;
         image.copyTo(result1, binary);
 
+        return result1;
 
-        imshow("filtrata",binary);
-
-        cv::waitKey(0);
-
-
+//        imshow("filtrata",result1);
+//
+//        cv::waitKey(0);
 
     }
 

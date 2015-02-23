@@ -170,6 +170,8 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     Rect roi1,roi2;
     stereo::rectifyImages(img1, img2, M1, D1, M2, D2, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
 
+    imshow( "rettificata1", img1 );
+
 
     FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
     Mat disp(img1.size(), CV_32F);
@@ -178,8 +180,8 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
 
     stereo::computeDisparity(img1_num, img2_num, img1, img2, disp,1,roi1,roi2);
 
-   // stereo::display(img1, img2, disp);
-
+//    stereo::display(img1, img2, disp);
+//
     FILE_LOG(logINFO) << "Creating point cloud..";
     Mat recons3D(disp.size(), CV_32FC3);
     FILE_LOG(logINFO) << "recons3Dsize " << stereo_util::infoMatrix(recons3D);
@@ -437,11 +439,16 @@ int main(int argc, char *argv[])
 
    //  TEST SINGLE CLoUD
     int img1_num = 1;
-//    int img2_num = 2;
-//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
-//    viewPointCloud(cloud2);
+    int img2_num = 2;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
+    viewPointCloud(cloud2);
 
-    stereo_util::segmentation(img1_num);
+//    cv::Mat result1 = stereo_util::segmentation(img1_num);
+//
+//    imshow("filtrata",result1);
+//
+//    cv::waitKey(0);
+
 
 //    // ICP object.
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud(new pcl::PointCloud<pcl::PointXYZRGB>);

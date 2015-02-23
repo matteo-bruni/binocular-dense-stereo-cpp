@@ -125,7 +125,15 @@ namespace stereo {
 
 
 
-    void computeDisparity(const int img1_num, const int img2_num, Mat& img1, Mat& img2,Mat& disp,int alg,Rect & roi1,Rect &roi2){
+    void computeDisparity(const int img1_num, const int img2_num, Mat& img_left, Mat& img_right,Mat& disp,int alg,Rect & roi1,Rect &roi2){
+
+
+        imshow( "presegme", img_left );
+        cv::Mat img1 = stereo_util::segmentation(img_left);
+        imshow("postsegme", img1);
+        cv::Mat img2 = stereo_util::segmentation(img_right);
+
+
 
         std::string tipo = "BM";
 
@@ -420,8 +428,7 @@ namespace stereo {
 
 
         }
-        point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
-        point_cloud_ptr->height = 1;
+
         FILE_LOG(logINFO) << "Esco..";
 
 
