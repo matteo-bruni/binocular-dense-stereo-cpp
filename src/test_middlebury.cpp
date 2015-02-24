@@ -170,8 +170,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     Rect roi1,roi2;
     stereo::rectifyImages(img1, img2, M1, D1, M2, D2, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
 
-    imshow( "rettificata1", img1 );
-
+    //imshow( "rettificata1", img1 );
 
     FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
     Mat disp(img1.size(), CV_32F);
@@ -324,7 +323,7 @@ void icp(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_sr,pcl::PointCloud<pcl::P
 
     reg.setMaximumIterations (5); //era 2
     //i andava fino a 30
-    for (int i = 0; i < 30; ++i)
+    for (int i = 0; i < 5; ++i)
     {
         PCL_INFO ("Iteration Nr. %d.\n", i);
 
@@ -430,7 +429,7 @@ int main(int argc, char *argv[])
     std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
 
 //    createAllClouds(dataset,clouds);
-//
+////
 //    registerClouds(clouds);
 
 //    viewPointCloud(final_cloud);
@@ -441,8 +440,9 @@ int main(int argc, char *argv[])
     int img1_num = 1;
     int img2_num = 2;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
-    viewPointCloud(cloud2);
+   // viewPointCloud(cloud2);
 
+    //stereo_util::segmentation(img1_num);
 //    cv::Mat result1 = stereo_util::segmentation(img1_num);
 //
 //    imshow("filtrata",result1);

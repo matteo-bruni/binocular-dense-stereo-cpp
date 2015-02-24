@@ -128,17 +128,21 @@ namespace stereo {
     void computeDisparity(const int img1_num, const int img2_num, Mat& img_left, Mat& img_right,Mat& disp,int alg,Rect & roi1,Rect &roi2){
 
 
-        imshow( "presegme", img_left );
+//        imshow( "presegme", img_left );
+//        imshow( "presegme2", img_right );
+
         cv::Mat img1 = stereo_util::segmentation(img_left);
-        imshow("postsegme", img1);
         cv::Mat img2 = stereo_util::segmentation(img_right);
+//        imshow("postsegme", img1);
+//        imshow("postsegme2", img2);
 
-
+        cv::waitKey(0);
 
         std::string tipo = "BM";
 
         Mat g1, g2;
 
+///da provare
         cvtColor(img1, g1, CV_BGR2GRAY);
         cvtColor(img2, g2, CV_BGR2GRAY);
 
@@ -157,63 +161,70 @@ namespace stereo {
         else
             stereo_util::rotate_clockwise(g2, g2, true);
 
+        imshow("postsegme", g1);
+        imshow("postsegme2", g2);
+        imwrite("./g1.png",g1);
+        imwrite("./g2.png",g2);
+
         if (tipo == "BM")
         {
+            StereoBM sbm;
+            sbm.state->SADWindowSize = 5;
+            sbm.state->numberOfDisparities = 192;
+            sbm.state->preFilterSize = 5;
+            sbm.state->preFilterCap = 51;
+            sbm.state->minDisparity = 25;
+            sbm.state->textureThreshold = 223;
+            sbm.state->uniquenessRatio = 0;
+            sbm.state->speckleWindowSize = 0;
+            sbm.state->speckleRange = 0;
+         //   sbm.state->disp12MaxDiff = 1;
+
 //            StereoBM sbm;
 //            sbm.state->SADWindowSize = 5;
 //            sbm.state->numberOfDisparities = 160;
 //            sbm.state->preFilterSize = 5;
 //            sbm.state->preFilterCap = 11;
-//            sbm.state->minDisparity = -68;
-//            sbm.state->textureThreshold = 130;
+//            sbm.state->minDisparity = 6;
+//            sbm.state->textureThreshold = 173;
 //            sbm.state->uniquenessRatio = 0;
 //            sbm.state->speckleWindowSize = 0;
 //            sbm.state->speckleRange = 0;
-//            sbm.state->disp12MaxDiff = 1;
-            StereoBM sbm;
-            sbm.state->SADWindowSize = 5;
-            sbm.state->numberOfDisparities = 160;
-            sbm.state->preFilterSize = 5;
-            sbm.state->preFilterCap = 11;
-            sbm.state->minDisparity = 6;
-            sbm.state->textureThreshold = 173;
-            sbm.state->uniquenessRatio = 0;
-            sbm.state->speckleWindowSize = 0;
-            sbm.state->speckleRange = 0;
-//            sbm.state->disp12MaxDiff = 1;
-            sbm(g1, g2, disp, CV_32F);
+////            sbm.state->disp12MaxDiff = 1;
+//            sbm(g1, g2, disp, CV_32F);
         }
         else if (tipo == "SGBM")
         {
-            StereoSGBM sbm;
-            sbm.SADWindowSize = 5;
-            sbm.numberOfDisparities = 112;
-            sbm.preFilterCap = 63;
-            sbm.minDisparity = 0;
-            sbm.uniquenessRatio = 10;
-            sbm.speckleWindowSize = 0;
-            sbm.speckleRange = 0;
-            sbm.disp12MaxDiff = 1;
-            sbm.fullDP = false;
-            sbm.P1 = 8*3*5*5;
-            sbm.P2 = 8*3*5*5;
-            sbm(g1, g2, disp);
-
 //            StereoSGBM sbm;
-//            sbm.SADWindowSize = 3;
-//            sbm.numberOfDisparities = 144;
+//            sbm.SADWindowSize = 5;
+//            sbm.numberOfDisparities = 112;
 //            sbm.preFilterCap = 63;
-//            sbm.minDisparity = -39;
+//            sbm.minDisparity = 0;
 //            sbm.uniquenessRatio = 10;
-//            sbm.speckleWindowSize = 100;
-//            sbm.speckleRange = 32;
+//            sbm.speckleWindowSize = 0;
+//            sbm.speckleRange = 0;
 //            sbm.disp12MaxDiff = 1;
 //            sbm.fullDP = false;
-//            sbm.P1 = 216;
-//            sbm.P2 = 864;
+//            sbm.P1 = 8*3*5*5;
+//            sbm.P2 = 8*3*5*5;
 //            sbm(g1, g2, disp);
-//            sbm(g1, g2, d\ispar);
+
+            StereoSGBM sbm;
+            sbm.SADWindowSize = 3;
+            sbm.numberOfDisparities = 144;
+            sbm.preFilterCap = 63;
+            sbm.minDisparity = -39;
+            sbm.uniquenessRatio = 10;
+            sbm.speckleWindowSize = 100;
+            sbm.speckleRange = 32;
+            sbm.disp12MaxDiff = 1;
+            sbm.fullDP = false;
+            sbm.P1 = 216;
+            sbm.P2 = 864;
+            sbm(g1, g2, disp);
+
         }
+
 
         FILE_LOG(logINFO) << "prima dispsize " << stereo_util::infoMatrix(disp);
 
