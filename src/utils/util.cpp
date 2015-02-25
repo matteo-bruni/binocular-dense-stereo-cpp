@@ -100,7 +100,7 @@ namespace stereo_util {
         }
     };
 
-    cv::Mat segmentation(cv::Mat image)
+    std::tuple<cv::Mat,cv::Mat> segmentation(cv::Mat image)
     {
 //        std::ostringstream ss;
 //        ss << std::setw(2) << std::setfill('0') << img_num;
@@ -113,31 +113,35 @@ namespace stereo_util {
         cv::threshold(binary, binary, 100, 255, THRESH_BINARY);
 
         cv::Mat const structure_elem = cv::getStructuringElement(
-                cv::MORPH_RECT, cv::Size(7, 7));
-//        cv::Mat open_result;
+                cv::MORPH_RECT, cv::Size(11, 11));
         cv::morphologyEx(binary, binary,
                 cv::MORPH_CLOSE, structure_elem);
 
+//        imshow("filtrata1",binary);
 
         vector<vector<Point>> contours; // Vector for storing contour
         vector<Vec4i> hierarchy;
-        findContours( binary, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
+        cv::Mat binary_contour;
+        binary.copyTo(binary_contour);
+        findContours( binary_contour, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
         // iterate through each contour.
         for( int i = 0; i< contours.size(); i++ )
         {
             //  Find the area of contour
-            double a=contourArea( contours[i],false);
-            Scalar color( 255,255,255);  // color of the contour in the
-            drawContours( binary, contours,i, 255, CV_FILLED,8,hierarchy);
-
+            double a = contourArea( contours[i],false);
+            if (a < 5000) {
+                Scalar color(255, 255, 255);  // color of the contour in the
+                drawContours(binary, contours, i, 255, CV_FILLED, 8, hierarchy);
+            }
         }
 
         cv::Mat result1;
         image.copyTo(result1, binary);
+//        imshow("filtrata",binary);
+//        imshow("filtrata-c",binary_contour);
 
-        return result1;
+        return std::make_tuple(result1, binary);
 
-//        imshow("filtrata",result1);
 //
 //        cv::waitKey(0);
 

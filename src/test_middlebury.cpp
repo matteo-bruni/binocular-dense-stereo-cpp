@@ -201,15 +201,22 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
 //    \theta_y = -arcsin(r_{3,1})
 //    \theta_z = arctan(r_{2,1}/r_{1,1})
 
+    cv:Mat img1_segm_mask;
 
-    img1 = stereo_util::segmentation(img1);
-    img2 = stereo_util::segmentation(img2);
+    std::tuple<cv::Mat, cv::Mat> segm_tuple1 = stereo_util::segmentation(img1);
+    img1 = std::get<0>(segm_tuple1);
+    img1_segm_mask = std::get<1>(segm_tuple1);
+
+    std::tuple<cv::Mat, cv::Mat> segm_tuple2 = stereo_util::segmentation(img2);
+    img2 = std::get<0>(segm_tuple2);
 
     FILE_LOG(logINFO) << "Rectifying images...";
     Rect roi1,roi2;
     stereo::rectifyImages(img1, img2, M1, D1, M2, D2, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
 
-
+//    cv::Mat img_roi(img1);
+//    rectangle(img_roi, roi1.tl(), roi1.br(), CV_RGB(255, 0,0), 10, 8, 0);
+//    imshow("rect", img_roi );
 
     FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
     Mat disp(img1.size(), CV_32F);
@@ -230,9 +237,9 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
 
     if (opencv_rec)
-        stereo::createPointCloudOpenCV(img1, img2, Q, disp, recons3D, point_cloud_ptr);
+        stereo::createPointCloudOpenCV(img1, img2, img1_segm_mask, Q, disp, recons3D, point_cloud_ptr);
     else
-        stereo::createPointCloudCustom(img1, img2, Q, disp, recons3D, point_cloud_ptr);
+        stereo::createPointCloudCustom(img1, img2, img1_segm_mask, Q, disp, recons3D, point_cloud_ptr);
 
     return point_cloud_ptr;
 }

@@ -188,17 +188,17 @@ namespace stereo {
 //            sbm.state->disp12MaxDiff = 0;
 //          //MICHI DUE
 
-            StereoBM sbm;
-            sbm.state->SADWindowSize = 5;
-            sbm.state->numberOfDisparities = 192;
-            sbm.state->preFilterSize = 5;
-            sbm.state->preFilterCap = 51;
-            sbm.state->minDisparity = -5;
-            sbm.state->textureThreshold = 182;
-            sbm.state->uniquenessRatio = 0;
-            sbm.state->speckleWindowSize = 0;
-            sbm.state->speckleRange = 0;
-            sbm.state->disp12MaxDiff = 0;
+//            StereoBM sbm;
+//            sbm.state->SADWindowSize = 5;
+//            sbm.state->numberOfDisparities = 192;
+//            sbm.state->preFilterSize = 5;
+//            sbm.state->preFilterCap = 51;
+//            sbm.state->minDisparity = -5;
+//            sbm.state->textureThreshold = 182;
+//            sbm.state->uniquenessRatio = 0;
+//            sbm.state->speckleWindowSize = 0;
+//            sbm.state->speckleRange = 0;
+//            sbm.state->disp12MaxDiff = 0;
 
 
 //            StereoBM sbm;
@@ -224,17 +224,17 @@ namespace stereo {
 //            sbm.state->speckleRange = 0;
 //            sbm.state->disp12MaxDiff = 1;
 
-//            StereoBM sbm;
-//            sbm.state->SADWindowSize = 5;
-//            sbm.state->numberOfDisparities = 224;
-//            sbm.state->preFilterSize = 31;
-//            sbm.state->preFilterCap = 59;
-//            sbm.state->minDisparity = -4;
-//            sbm.state->textureThreshold = 182;
-//            sbm.state->uniquenessRatio = 0;
-//            sbm.state->speckleWindowSize = 0;
-//            sbm.state->speckleRange = 0;
-//            sbm.state->disp12MaxDiff = 1;
+            StereoBM sbm;
+            sbm.state->SADWindowSize = 5;
+            sbm.state->numberOfDisparities = 224;
+            sbm.state->preFilterSize = 31;
+            sbm.state->preFilterCap = 59;
+            sbm.state->minDisparity = -4;
+            sbm.state->textureThreshold = 182;
+            sbm.state->uniquenessRatio = 0;
+            sbm.state->speckleWindowSize = 0;
+            sbm.state->speckleRange = 0;
+            sbm.state->disp12MaxDiff = 1;
 
             sbm(g1, g2, disp, CV_32F);
       
@@ -281,17 +281,32 @@ namespace stereo {
 
         FILE_LOG(logINFO) << "dopo dispsize " << stereo_util::infoMatrix(disp);
 
+        cv::Mat disp_smooth;
+        cv::bilateralFilter ( disp, disp_smooth, 9, 60, 30 );
+
+
+
 
         Mat dispSGBMn, dispSGBMheat;
         normalize(disp, dispSGBMn, 0, 255, CV_MINMAX, CV_8U); // form 0-255
         equalizeHist(dispSGBMn, dispSGBMn);
         //imshow( "WindowDispSGBM", dispSGBMn );
 
-//        applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
-//        imshow( "WindowDispSGBMheat", dispSGBMheat );
-//        fflush(stdout);
-//        waitKey();
-//        destroyAllWindows();
+        applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
+        imshow( "WindowDispSGBMheat - NO MOOTH", dispSGBMheat );
+        waitKey(0);
+
+        normalize(disp_smooth, dispSGBMn, 0, 255, CV_MINMAX, CV_8U); // form 0-255
+        equalizeHist(dispSGBMn, dispSGBMn);
+        applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
+        imshow( "WindowDispSGBMhea - SMOOTHt", dispSGBMheat );
+
+
+
+        fflush(stdout);
+        waitKey();
+        destroyAllWindows();
+        disp_smooth.copyTo(disp);
 
 
         // APPLY OPENING
@@ -365,7 +380,7 @@ namespace stereo {
     }
 
 
-    void createPointCloudOpenCV (Mat& img1, Mat& img2, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
+    void createPointCloudOpenCV (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
 
 
         Size img_size = img1.size();
@@ -395,11 +410,15 @@ namespace stereo {
 
                 pcl_point_rgb.rgb = *reinterpret_cast<float *>(&rgb);
 
-                point_cloud_ptr->push_back(pcl_point_rgb);
+//                if (img1.at<uchar>(rows, cols) == 0)
+                    point_cloud_ptr->push_back(pcl_point_rgb);
             }
 
 
         }
+
+        point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
+        point_cloud_ptr->height = 1;
 
         FILE_LOG(logINFO) << "Esco..";
 
@@ -408,7 +427,7 @@ namespace stereo {
 
     }
 
-    void createPointCloudCustom (Mat& img1, Mat& img2, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
+    void createPointCloudCustom (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
 
 
 
@@ -460,7 +479,9 @@ namespace stereo {
                     uint32_t rgb = (static_cast<uint32_t>(pr) << 16 |
                             static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));
                     point.rgb = *reinterpret_cast<float *>(&rgb);
-                    point_cloud_ptr->points.push_back(point);
+
+//                    if (img1.at<uchar>(i, j) == 0)
+                        point_cloud_ptr->points.push_back(point);
                 }
             }
             point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
