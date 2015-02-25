@@ -153,11 +153,28 @@ namespace stereo {
             stereo_util::rotate_clockwise(g2, g2, false);
         else
             stereo_util::rotate_clockwise(g2, g2, true);
+        
+//        imshow("postsegme", g1);
+//        imshow("postsegme2", g2);
+//        imwrite("./g1.png",g1);
+//        imwrite("./g2.png",g2);
 
-        cv::imwrite("segm1.png", g1);
-        cv::imwrite("segm2.png", g2);
         if (tipo == "BM")
         {
+            
+              // MICHI
+//            StereoBM sbm;
+//            sbm.state->SADWindowSize = 5;
+//            sbm.state->numberOfDisparities = 192;
+//            sbm.state->preFilterSize = 5;
+//            sbm.state->preFilterCap = 51;
+//            sbm.state->minDisparity = 25;
+//            sbm.state->textureThreshold = 223;
+//            sbm.state->uniquenessRatio = 0;
+//            sbm.state->speckleWindowSize = 0;
+//            sbm.state->speckleRange = 0;
+//         //   sbm.state->disp12MaxDiff = 1;
+
 //            StereoBM sbm;
 //            sbm.state->SADWindowSize = 5;
 //            sbm.state->numberOfDisparities = 160;
@@ -176,10 +193,11 @@ namespace stereo {
 //            sbm.state->preFilterCap = 11;
 //            sbm.state->minDisparity = 6;
 //            sbm.state->textureThreshold = 173;
-//
 //            sbm.state->uniquenessRatio = 0;
 //            sbm.state->speckleWindowSize = 0;
 //            sbm.state->speckleRange = 0;
+//            sbm.state->disp12MaxDiff = 1;
+
             StereoBM sbm;
             sbm.state->SADWindowSize = 5;
             sbm.state->numberOfDisparities = 224;
@@ -190,8 +208,10 @@ namespace stereo {
             sbm.state->uniquenessRatio = 0;
             sbm.state->speckleWindowSize = 0;
             sbm.state->speckleRange = 0;
-            sbm.state->disp12MaxDiff = 1;
+            sbm.state->disp12MaxDiff = 1;           
+
             sbm(g1, g2, disp, CV_32F);
+      
         }
         else if (tipo == "SGBM")
         {
