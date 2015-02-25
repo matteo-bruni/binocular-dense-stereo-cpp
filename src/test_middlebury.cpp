@@ -135,7 +135,7 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> createDoubleVisualizer (pcl
 
     int v1(0);
     viewer->createViewPort(0.0, 0.0, 0.5, 1.0, v1);
-    viewer->setBackgroundColor (0, 0, 0, v1);
+    viewer->setBackgroundColor (0.3, 0.3, 0.3, v1);
     viewer->addText("Radius: 0.01", 10, 10, "v1 text", v1);
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(cloud);
     viewer->addPointCloud<pcl::PointXYZRGB> (cloud, rgb, "sample cloud1", v1);
@@ -144,8 +144,8 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> createDoubleVisualizer (pcl
     viewer->createViewPort(0.5, 0.0, 1.0, 1.0, v2);
     viewer->setBackgroundColor (0.3, 0.3, 0.3, v2);
     viewer->addText("Radius: 0.1", 10, 10, "v2 text", v2);
-    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> single_color(cloud, 0, 255, 0);
-    viewer->addPointCloud<pcl::PointXYZRGB> (cloud2, single_color, "sample cloud2", v2);
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb2(cloud2);
+    viewer->addPointCloud<pcl::PointXYZRGB> (cloud2, rgb2, "sample cloud2", v2);
 
     viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud1");
     viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud2");
@@ -538,11 +538,11 @@ int main(int argc, char *argv[])
    //  TEST SINGLE CLoUD
     int img1_num = 1;
     int img2_num = 2;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1 = generatePointCloud(dataset, img1_num, img2_num,true);
-    viewPointCloud(cloud1);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num,false);
-    viewPointCloud(cloud2);
-  //  viewDoublePointCloud(cloud1,cloud2);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1 = generatePointCloud(dataset, img1_num, img2_num, true);
+//    viewPointCloud(cloud1);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num, false);
+//    viewPointCloud(cloud2);
+    viewDoublePointCloud(cloud1, cloud2);
 
 
 
