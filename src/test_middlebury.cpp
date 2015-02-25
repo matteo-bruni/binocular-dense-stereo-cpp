@@ -126,7 +126,7 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizer (pcl::Poin
     return (viewer);
 }
 
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &dataset, const int img1_num, const int img2_num){
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &dataset, const int img1_num, const int img2_num,bool opencv_rec){
 
     Mat img1;
     Mat img2;
@@ -178,7 +178,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     Rect roi1,roi2;
     stereo::rectifyImages(img1, img2, M1, D1, M2, D2, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
 
-    //imshow( "rettificata1", img1 );
+
 
     FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
     Mat disp(img1.size(), CV_32F);
@@ -198,7 +198,10 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     //std::cout << "Creating Point Cloud..." <<std::endl;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
 
-    stereo::createPointCloud(img1, img2, Q, disp, recons3D, point_cloud_ptr);
+    if (opencv_rec)
+        stereo::createPointCloudOpenCV(img1, img2, Q, disp, recons3D, point_cloud_ptr);
+    else
+        stereo::createPointCloudCustom(img1, img2, Q, disp, recons3D, point_cloud_ptr);
 
     return point_cloud_ptr;
 }
@@ -227,7 +230,7 @@ void createAllClouds(Ptr<MSM_middlebury> &dataset, std::vector<pcl::PointCloud<p
     std::stringstream ss;
     std::string path;
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = generatePointCloud(dataset, img1_num, img2_num);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = generatePointCloud(dataset, img1_num, img2_num,true);
     clouds.push_back(cloud);
 
     pcl::io::savePCDFileASCII ("./cloud1.pcd", *cloud);
@@ -238,7 +241,7 @@ void createAllClouds(Ptr<MSM_middlebury> &dataset, std::vector<pcl::PointCloud<p
         it != dataset->getAssociation().end(); ++it) {
         img1_num = std::get<0>(*it);
         img2_num = std::get<1>(*it);
-        cloud = generatePointCloud(dataset, img1_num, img2_num);
+        cloud = generatePointCloud(dataset, img1_num, img2_num,true);
         if(!(*cloud).empty()){
             clouds.push_back(cloud);
             ss.str( std::string() );
@@ -317,10 +320,10 @@ void icp(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_sr,pcl::PointCloud<pcl::P
     pcl::IterativeClosestPointNonLinear<pcl::PointNormal, pcl::PointNormal> reg;
 
     //PARAMETRI DA SETTARE
-    reg.setTransformationEpsilon (0.000001);
+    reg.setTransformationEpsilon (1e-8);
     // Set the maximum distance between two correspondences (src<->tgt) to 10cm
     // Note: adjust this based on the size of your datasets
-    reg.setMaxCorrespondenceDistance (0.05);
+    reg.setMaxCorrespondenceDistance (0.02);
 
     reg.setInputSource(points_with_normals_src);
     reg.setInputTarget(points_with_normals_tgt);
@@ -404,7 +407,7 @@ void registerClouds( std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& clouds
         source = clouds[i-1];
         target = clouds[i];
 
-        icp (source, target, temp, false, pairTransform);
+        icp (source, target, temp, true, pairTransform);
         //transform current pair into the global transform
         pcl::transformPointCloud (*temp, *result, GlobalTransform);
         //update the global transform
@@ -420,51 +423,51 @@ void registerClouds( std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& clouds
     viewPointCloud(result);
 
 }
-void surfaceReconstruction(){
-
-//////letto che poisson è pesa va usato convex hull
-
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
-    io::loadPCDFile ("./registrazione.pcd", *cloud);
-
-    MovingLeastSquares<PointXYZRGB, PointXYZRGB> mls;
-    mls.setInputCloud (cloud);
-    mls.setSearchRadius (4);
-    mls.setPolynomialFit (true);
-    mls.setPolynomialOrder (1);
-    mls.setUpsamplingMethod (MovingLeastSquares<PointXYZRGB, PointXYZRGB>::SAMPLE_LOCAL_PLANE);
-    mls.setUpsamplingRadius (1);
-    mls.setUpsamplingStepSize (0.3);
-
-    PointCloud<PointXYZRGB>::Ptr cloud_smoothed (new PointCloud<PointXYZRGB> ());
-    mls.process (*cloud_smoothed);
-
-    NormalEstimationOMP<PointXYZRGB, Normal> ne;
-    ne.setNumberOfThreads (8);
-    ne.setInputCloud (cloud_smoothed);
-    ne.setRadiusSearch (0.8);
-    Eigen::Vector4f centroid;
-    compute3DCentroid (*cloud_smoothed, centroid);
-    ne.setViewPoint (centroid[0], centroid[1], centroid[2]);
-
-    PointCloud<Normal>::Ptr cloud_normals (new PointCloud<Normal> ());
-    ne.compute (*cloud_normals);
-    for (size_t i = 0; i < cloud_normals->size (); ++i)
-    {
-        cloud_normals->points[i].normal_x *= -1;
-        cloud_normals->points[i].normal_y *= -1;
-        cloud_normals->points[i].normal_z *= -1;
-    }
-    PointCloud<PointNormal>::Ptr cloud_smoothed_normals (new PointCloud<PointNormal> ());
-    concatenateFields (*cloud_smoothed, *cloud_normals, *cloud_smoothed_normals);
-
-    Poisson<pcl::PointNormal> poisson;
-    poisson.setDepth (9);
-    poisson.setInputCloud  (cloud_smoothed_normals);
-    PolygonMesh mesh_poisson;
-    poisson.reconstruct (mesh_poisson);
-
-}
+//void surfaceReconstruction(){
+//
+////////letto che poisson è pesa va usato convex hull
+//
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+//    io::loadPCDFile ("./registrazione.pcd", *cloud);
+//
+//    MovingLeastSquares<PointXYZRGB, PointXYZRGB> mls;
+//    mls.setInputCloud (cloud);
+//    mls.setSearchRadius (4);
+//    mls.setPolynomialFit (true);
+//    mls.setPolynomialOrder (1);
+//    mls.setUpsamplingMethod (MovingLeastSquares<PointXYZRGB, PointXYZRGB>::SAMPLE_LOCAL_PLANE);
+//    mls.setUpsamplingRadius (1);
+//    mls.setUpsamplingStepSize (0.3);
+//
+//    PointCloud<PointXYZRGB>::Ptr cloud_smoothed (new PointCloud<PointXYZRGB> ());
+//    mls.process (*cloud_smoothed);
+//
+//    NormalEstimationOMP<PointXYZRGB, Normal> ne;
+//    ne.setNumberOfThreads (8);
+//    ne.setInputCloud (cloud_smoothed);
+//    ne.setRadiusSearch (0.8);
+//    Eigen::Vector4f centroid;
+//    compute3DCentroid (*cloud_smoothed, centroid);
+//    ne.setViewPoint (centroid[0], centroid[1], centroid[2]);
+//
+//    PointCloud<Normal>::Ptr cloud_normals (new PointCloud<Normal> ());
+//    ne.compute (*cloud_normals);
+//    for (size_t i = 0; i < cloud_normals->size (); ++i)
+//    {
+//        cloud_normals->points[i].normal_x *= -1;
+//        cloud_normals->points[i].normal_y *= -1;
+//        cloud_normals->points[i].normal_z *= -1;
+//    }
+//    PointCloud<PointNormal>::Ptr cloud_smoothed_normals (new PointCloud<PointNormal> ());
+//    concatenateFields (*cloud_smoothed, *cloud_normals, *cloud_smoothed_normals);
+//
+//    Poisson<pcl::PointNormal> poisson;
+//    poisson.setDepth (9);
+//    poisson.setInputCloud  (cloud_smoothed_normals);
+//    PolygonMesh mesh_poisson;
+//    poisson.reconstruct (mesh_poisson);
+//
+//}
 int main(int argc, char *argv[])
 {
 
@@ -480,18 +483,20 @@ int main(int argc, char *argv[])
 
     std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
 
-//    createAllClouds(dataset,clouds);
-////
-//    registerClouds(clouds);
+    createAllClouds(dataset,clouds);
+
+    registerClouds(clouds);
 
 //    viewPointCloud(final_cloud);
 
-    surfaceReconstruction();
+  //  surfaceReconstruction();
 
-//   //  TEST SINGLE CLoUD
+   //  TEST SINGLE CLoUD
 //    int img1_num = 1;
 //    int img2_num = 2;
-//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num);
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1 = generatePointCloud(dataset, img1_num, img2_num,true);
+//    viewPointCloud(cloud1);
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num,false);
 //    viewPointCloud(cloud2);
 
     //stereo_util::segmentation(img1_num);
