@@ -128,11 +128,8 @@ namespace stereo {
     void computeDisparity(const int img1_num, const int img2_num, Mat& img_left, Mat& img_right,Mat& disp,int alg,Rect & roi1,Rect &roi2){
 
 
-        imshow( "presegme", img_left );
         cv::Mat img1 = stereo_util::segmentation(img_left);
-        imshow("postsegme", img1);
         cv::Mat img2 = stereo_util::segmentation(img_right);
-
 
 
         std::string tipo = "BM";
@@ -157,6 +154,8 @@ namespace stereo {
         else
             stereo_util::rotate_clockwise(g2, g2, true);
 
+        cv::imwrite("segm1.png", g1);
+        cv::imwrite("segm2.png", g2);
         if (tipo == "BM")
         {
 //            StereoBM sbm;
@@ -170,17 +169,28 @@ namespace stereo {
 //            sbm.state->speckleWindowSize = 0;
 //            sbm.state->speckleRange = 0;
 //            sbm.state->disp12MaxDiff = 1;
+//            StereoBM sbm;
+//            sbm.state->SADWindowSize = 5;
+//            sbm.state->numberOfDisparities = 160;
+//            sbm.state->preFilterSize = 5;
+//            sbm.state->preFilterCap = 11;
+//            sbm.state->minDisparity = 6;
+//            sbm.state->textureThreshold = 173;
+//
+//            sbm.state->uniquenessRatio = 0;
+//            sbm.state->speckleWindowSize = 0;
+//            sbm.state->speckleRange = 0;
             StereoBM sbm;
             sbm.state->SADWindowSize = 5;
-            sbm.state->numberOfDisparities = 160;
-            sbm.state->preFilterSize = 5;
-            sbm.state->preFilterCap = 11;
-            sbm.state->minDisparity = 6;
-            sbm.state->textureThreshold = 173;
+            sbm.state->numberOfDisparities = 224;
+            sbm.state->preFilterSize = 31;
+            sbm.state->preFilterCap = 59;
+            sbm.state->minDisparity = -4;
+            sbm.state->textureThreshold = 182;
             sbm.state->uniquenessRatio = 0;
             sbm.state->speckleWindowSize = 0;
             sbm.state->speckleRange = 0;
-//            sbm.state->disp12MaxDiff = 1;
+            sbm.state->disp12MaxDiff = 1;
             sbm(g1, g2, disp, CV_32F);
         }
         else if (tipo == "SGBM")

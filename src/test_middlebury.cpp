@@ -170,7 +170,6 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<MSM_middlebury> &d
     Rect roi1,roi2;
     stereo::rectifyImages(img1, img2, M1, D1, M2, D2, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
 
-    imshow( "rettificata1", img1 );
 
 
     FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
