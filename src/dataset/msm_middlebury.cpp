@@ -40,6 +40,13 @@
 //M*/
 
 #include <iostream>
+
+#include <opencv2/imgproc/imgproc.hpp>
+#include "opencv2/highgui/highgui.hpp"
+
+
+
+// local includes
 #include "msm_middlebury.hpp"
 #include "util.hpp"
 #include "../logger/log.h"
@@ -79,9 +86,13 @@ namespace cv {
 
             virtual void load(const string &path);
 
+            virtual cv::Mat loadImage(const int num_img);
+
         private:
             void loadDataset(const string &path);
         };
+
+
 
 
         void MSM_middleburyImp::load(const string &path) {
@@ -89,6 +100,8 @@ namespace cv {
         }
 
         void MSM_middleburyImp::loadDataset(const string &path) {
+            dataset_path = path;
+
             train.push_back(vector<Ptr<Object> >());
             test.push_back(vector<Ptr<Object> >());
             validation.push_back(vector<Ptr<Object> >());
@@ -126,6 +139,43 @@ namespace cv {
 
                 train.back().push_back(curr);
             }
+        }
+
+        /*
+            input : images number img1_num, img2_num
+            output: cv:Mat matrices
+        */
+        cv::Mat MSM_middleburyImp::loadImage(const int img_num) {
+
+
+            std::ostringstream ss;
+            ss << std::setw(2) << std::setfill('0') << img_num;
+
+            std::string img_path = dataset_path + "templeR00"+ ss.str() +".png";
+
+            FILE_LOG(logINFO) << " loading " << img_path;
+
+
+            // clear string stream
+//            ss.str(std::string());
+//            ss << std::setw(2) << std::setfill('0') << img2_num;
+//            std::string img2_path = "../dataset/dataset_templeRing/templeR00"+ ss.str() +".png";
+//            FILE_LOG(logINFO) << " loading " << img2_path;
+
+            int color_mode = -1; // = alg == STEREO_BM ? 0 : -1;
+
+            cv::Mat img1 = imread(img_path);
+
+            float scale = 1.f; // TODO check
+            if (1.f != scale) {
+                Mat temp1;
+                int method = scale < 1 ? INTER_AREA : INTER_CUBIC;
+                resize(img1, temp1, Size(), scale, scale, method);
+                img1 = temp1;
+
+            }
+            return img1;
+
         }
 
         Ptr<MSM_middlebury> MSM_middlebury::create() {

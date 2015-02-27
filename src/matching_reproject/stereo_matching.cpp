@@ -23,9 +23,15 @@
 
 #include <stdio.h>
 
+// local includes
 #include "stereo_matching.hpp"
 #include "../utils/util.hpp"
+#include "../dataset/msm_middlebury.hpp"
+
+
+// logger
 #include "../logger/log.h"
+
 
 
 using namespace cv;
@@ -58,39 +64,6 @@ using namespace cv;
 
 namespace stereo {
 
-    /*
-        input : images number img1_num, img2_num
-        output: cv:Mat matrices
-     */
-    void loadImages(const int img1_num, const int img2_num, Mat &img1, Mat &img2) {
-
-
-        std::ostringstream ss;
-        ss << std::setw(2) << std::setfill('0') << img1_num;
-        std::string img1_path = "../dataset/dataset_templeRing/templeR00"+ ss.str() +".png";
-        FILE_LOG(logINFO) << " loading " << img1_path;
-        // clear string stream
-        ss.str(std::string());
-        ss << std::setw(2) << std::setfill('0') << img2_num;
-        std::string img2_path = "../dataset/dataset_templeRing/templeR00"+ ss.str() +".png";
-        FILE_LOG(logINFO) << " loading " << img2_path;
-
-        int color_mode = -1; // = alg == STEREO_BM ? 0 : -1;
-
-        img1 = imread(img1_path);
-        img2 = imread(img2_path);
-
-        float scale = 1.f; // TODO check
-        if (1.f != scale) {
-            Mat temp1, temp2;
-            int method = scale < 1 ? INTER_AREA : INTER_CUBIC;
-            resize(img1, temp1, Size(), scale, scale, method);
-            img1 = temp1;
-            resize(img2, temp2, Size(), scale, scale, method);
-            img2 = temp2;
-        }
-
-    }
 
     /*
         input   :
@@ -429,63 +402,194 @@ namespace stereo {
 
     void createPointCloudCustom (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
 
+        //     VERSIONE CUSTOM REPROJECT
+        double Q03, Q13, Q23, Q32, Q33;
+        Q03 = Q.at<double>(0, 3);
+        Q13 = Q.at<double>(1, 3);
+        Q23 = Q.at<double>(2, 3);
+        Q32 = Q.at<double>(3, 2);
+        Q33 = Q.at<double>(3, 3);
+
+        double px, py, pz;
+        uchar pr, pg, pb;
+
+        for (int i = 0; i < img1.rows; i++) {
+
+            uchar *rgb_ptr = img1.ptr<uchar>(i);
+
+            // VERSIONE CUSTOM REPROJECT
+            uchar *disp_ptr = disp.ptr<uchar>(i);
 
 
-      //     VERSIONE CUSTOM REPROJECT
-            double Q03, Q13, Q23, Q32, Q33;
-            Q03 = Q.at<double>(0, 3);
-            Q13 = Q.at<double>(1, 3);
-            Q23 = Q.at<double>(2, 3);
-            Q32 = Q.at<double>(3, 2);
-            Q33 = Q.at<double>(3, 3);
+            for (int j = 0; j < img1.cols; j++) {
 
-            double px, py, pz;
-            uchar pr, pg, pb;
-
-            for (int i = 0; i < img1.rows; i++) {
-
-                uchar *rgb_ptr = img1.ptr<uchar>(i);
-
+                //Get 3D coordinates
                 // VERSIONE CUSTOM REPROJECT
-                uchar *disp_ptr = disp.ptr<uchar>(i);
+                uchar d = disp_ptr[j];
+                if (d == 0) continue; //Discard bad pixels
+                double pw = -1.0 * static_cast<double>(d) * Q32 + Q33;
+                px = static_cast<double>(j) + Q03;
+                py = static_cast<double>(i) + Q13;
+                pz = Q23;
 
+                px = px / pw;
+                py = py / pw;
+                pz = pz / pw;
 
-                for (int j = 0; j < img1.cols; j++) {
+                //Get RGB info
+                pb = rgb_ptr[3 * j];
+                pg = rgb_ptr[3 * j + 1];
+                pr = rgb_ptr[3 * j + 2];
 
-                    //Get 3D coordinates
-                    // VERSIONE CUSTOM REPROJECT
-                    uchar d = disp_ptr[j];
-                    if (d == 0) continue; //Discard bad pixels
-                    double pw = -1.0 * static_cast<double>(d) * Q32 + Q33;
-                    px = static_cast<double>(j) + Q03;
-                    py = static_cast<double>(i) + Q13;
-                    pz = Q23;
+                //Insert info into point cloud structure
+                pcl::PointXYZRGB point;
+                point.x = static_cast<float>(px);
+                point.y = static_cast<float>(py);
+                point.z = static_cast<float>(pz);
 
-                    px = px / pw;
-                    py = py / pw;
-                    pz = pz / pw;
+                uint32_t rgb = (static_cast<uint32_t>(pr) << 16 |
+                        static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));
+                point.rgb = *reinterpret_cast<float *>(&rgb);
 
-                    //Get RGB info
-                    pb = rgb_ptr[3 * j];
-                    pg = rgb_ptr[3 * j + 1];
-                    pr = rgb_ptr[3 * j + 2];
-
-                    //Insert info into point cloud structure
-                    pcl::PointXYZRGB point;
-                    point.x = static_cast<float>(px);
-                    point.y = static_cast<float>(py);
-                    point.z = static_cast<float>(pz);
-
-                    uint32_t rgb = (static_cast<uint32_t>(pr) << 16 |
-                            static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));
-                    point.rgb = *reinterpret_cast<float *>(&rgb);
-
-//                    if (img1.at<uchar>(i, j) == 0)
-                        point_cloud_ptr->points.push_back(point);
-                }
+        //                    if (img1.at<uchar>(i, j) == 0)
+                    point_cloud_ptr->points.push_back(point);
             }
-            point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
-            point_cloud_ptr->height = 1;
+        }
+        point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
+        point_cloud_ptr->height = 1;
+
+    }
+
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num, bool opencv_rec){
+
+        Mat img1;
+        Mat img2;
+
+        // images path
+
+        // load images data
+        Ptr<cv::datasets::MSM_middleburyObj> data_img1 =
+                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img1_num]);
+        Ptr<cv::datasets::MSM_middleburyObj> data_img2 =
+                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img2_num]);
+
+        // load images
+        img1 = dataset->loadImage(img1_num);
+        img2 = dataset->loadImage(img2_num);
+
+        // init
+        Mat R1,R2,P1,P2,Q;
+
+        // zero distiorsions
+        Mat D1 = Mat::zeros(1, 5, CV_64F);
+        Mat D2 = Mat::zeros(1, 5, CV_64F);
+
+        // load K and R from dataset info
+        Mat M1 = Mat(data_img1->k);
+        Mat M2 = Mat(data_img2->k);
+        Mat r1 = Mat(data_img1->r);
+        Mat r2 = Mat(data_img2->r);
+
+        // init translation vectors from dataset
+        Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->t);
+        Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->t);
+
+        // rotation between img2 and img1
+        Mat R = r2*r1.t();
+        // translation between img2 and img1
+        Mat T = t1 - (R.t()*t2 );
+
+//    double tx = atan2 (R.at<double>(3,2), R.at<double>(3,3));
+//    double ty = - asin(R.at<double>(3,1));
+//    double tz = atan2 (R.at<double>(2,1), R.at<double>(1,1));
+//    FILE_LOG(logDEBUG) << "ROTATION " << img1_num << "-" <<img2_num<< " tx="<< tx <<" ty=" << ty << "tz= " << tz;
+
+//    theta_x = arctan(r_{3,2}/r_{3,3})
+//    \theta_y = -arcsin(r_{3,1})
+//    \theta_z = arctan(r_{2,1}/r_{1,1})
+
+        cv:Mat img1_segm_mask;
+
+        std::tuple<cv::Mat, cv::Mat> segm_tuple1 = stereo_util::segmentation(img1);
+        img1 = std::get<0>(segm_tuple1);
+        img1_segm_mask = std::get<1>(segm_tuple1);
+
+        std::tuple<cv::Mat, cv::Mat> segm_tuple2 = stereo_util::segmentation(img2);
+        img2 = std::get<0>(segm_tuple2);
+
+        FILE_LOG(logINFO) << "Rectifying images...";
+        Rect roi1,roi2;
+        stereo::rectifyImages(img1, img2, M1, D1, M2, D2, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
+
+//    cv::Mat img_roi(img1);
+//    rectangle(img_roi, roi1.tl(), roi1.br(), CV_RGB(255, 0,0), 10, 8, 0);
+//    imshow("rect", img_roi );
+
+        FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
+        Mat disp(img1.size(), CV_32F);
+        FILE_LOG(logINFO) << "imgsize " << stereo_util::infoMatrix(img1);
+        FILE_LOG(logINFO) << "dispsize " << stereo_util::infoMatrix(disp);
+
+        stereo::computeDisparity(img1_num, img2_num, img1, img2, disp,1,roi1,roi2);
+
+//    stereo::display(img1, img2, disp);
+//
+        FILE_LOG(logINFO) << "Creating point cloud..";
+        Mat recons3D(disp.size(), CV_32FC3);
+        FILE_LOG(logINFO) << "recons3Dsize " << stereo_util::infoMatrix(recons3D);
+
+        // stereo::storePointCloud(disp, Q, recons3D);
+
+        //std::cout << "Creating Point Cloud..." <<std::endl;
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+        if (opencv_rec)
+            stereo::createPointCloudOpenCV(img1, img2, img1_segm_mask, Q, disp, recons3D, point_cloud_ptr);
+        else
+            stereo::createPointCloudCustom(img1, img2, img1_segm_mask, Q, disp, recons3D, point_cloud_ptr);
+
+        return point_cloud_ptr;
+
+    }
+
+
+
+    void createAllClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds){
+
+
+        int img1_num=1;
+        int img2_num=2;
+
+
+        std::stringstream ss;
+        std::string path;
+
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = generatePointCloud(dataset, img1_num, img2_num,true);
+        clouds.push_back(cloud);
+
+        pcl::io::savePCDFileASCII ("./cloud1.pcd", *cloud);
+        unsigned int dataset_size = (unsigned int)dataset->getTrain().size();
+
+
+        for(std::vector<std::tuple<int,int>>::iterator it = dataset->getAssociation().begin();
+            it != dataset->getAssociation().end(); ++it) {
+            img1_num = std::get<0>(*it);
+            img2_num = std::get<1>(*it);
+            cloud = generatePointCloud(dataset, img1_num, img2_num,true);
+            if(!(*cloud).empty()){
+                clouds.push_back(cloud);
+                ss.str( std::string() );
+                ss.clear();
+                ss << img1_num<< "-" << img2_num ;
+                path = "./cloud"+ ss.str() +".pcd";
+                pcl::io::savePCDFileASCII (path, *cloud);
+            }
+
+            /* std::cout << *it; ... */
+        }
+
+        FILE_LOG(logINFO) << "cloud size" <<clouds.size();
 
     }
 

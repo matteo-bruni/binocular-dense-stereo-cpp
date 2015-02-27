@@ -37,6 +37,10 @@ set(SOURCE_FILES
     src/test_middlebury.cpp
     src/matching_reproject/stereo_matching.cpp
     src/matching_reproject/stereo_matching.hpp
+    src/stereo_viewer/viewer.cpp
+    src/stereo_viewer/viewer.hpp
+    src/registration/registration.cpp
+    src/registration/registration.hpp
 )
 
 

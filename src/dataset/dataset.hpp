@@ -502,6 +502,7 @@ namespace cv {
             }
 
             virtual void load(const std::string &path) = 0;
+            virtual cv::Mat loadImage(const int img_num) = 0;
 
             std::vector<Ptr<Object> > &getTrain(int splitNum = 0);
 
@@ -513,10 +514,15 @@ namespace cv {
 
             int getNumSplits() const;
 
+
         protected:
+
+            std::string dataset_path;
+
             std::vector<std::vector<Ptr<Object> > > train;
             std::vector<std::vector<Ptr<Object> > > test;
             std::vector<std::vector<Ptr<Object> > > validation;
+
             std::vector<std::tuple<int,int>> photo_association;
 
         private:

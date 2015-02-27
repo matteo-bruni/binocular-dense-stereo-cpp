@@ -69,8 +69,9 @@ namespace cv {
 
         public:
             virtual void load(const std::string &path) = 0;
-
             static Ptr<MSM_middlebury> create();
+
+            virtual cv::Mat loadImage(const int img_num) = 0;
 
         };
 
