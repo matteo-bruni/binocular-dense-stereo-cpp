@@ -43,11 +43,22 @@ set(SOURCE_FILES
     src/registration/registration.hpp
 )
 
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+
+#################################### libconfig  ############################################
+
+#INCLUDE(${CMAKE_SOURCE_DIR}/cmake/FindLibConfig.cmake)
+find_package(LibConfig REQUIRED)
+
+#link_directories(${LIBCONFIG_LIBRARIES})
+#include_directories(${LIBCONFIG_INCLUDE_DIR})
+set(LIBS ${LIBS} ${LIBCONFIGPP_LIBRARY})
+
 
 #################################### Locate OpenCV ############################################
 
 find_package(OpenCV REQUIRED)
-#INCLUDE(${CMAKE_SOURCE_DIR}/cmake/modules/FindLibXML2.cmake)
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 message(${OpenCV_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${OpenCV_LIBS})
@@ -58,7 +69,18 @@ find_package(PCL 1.2 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
-set(LIBS ${LIBS} ${PCL_LIBRARIES})
+#set(LIBS ${LIBS} ${PCL_LIBRARIES})
+set(LIBS ${LIBS} ${PCL_COMMON_LIBRARIES})
+set(LIBS ${LIBS} ${PCL_IO_LIBRARIES})
+set(LIBS ${LIBS} ${PCL_VISUALIZATION_LIBRARIES})
+set(LIBS ${LIBS} ${PCL_FILTERS_LIBRARIES})
+set(LIBS ${LIBS} ${PCL_FEATURES_LIBRARIES})
+
+
+
+
+message(${LIBS})
+
 
 
 #################################### target build ############################################
