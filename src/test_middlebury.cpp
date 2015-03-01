@@ -57,7 +57,7 @@
 
 #include <boost/thread/thread.hpp>
 #include <stdint.h>
-#include <stdint-gcc.h>
+
 
 #include <pcl/common/projection_matrix.h>
 
@@ -66,7 +66,9 @@
 #include "matching_reproject/stereo_matching.hpp"
 #include "utils/util.hpp"
 #include "stereo_viewer/viewer.hpp"
-
+#include "registration/registration.hpp"
+#include "registration/registerPointCloudsApp.h"
+#include "registration/PointCloud.h"
 // Include logging facilities
 #include "logger/log.h"
 
@@ -94,10 +96,6 @@
 using namespace std;
 using namespace cv;
 using namespace cv::datasets;
-using namespace stereo;
-using namespace pcl;
-using namespace stereo_util;
-
 
 
 int main(int argc, char *argv[])
@@ -113,24 +111,24 @@ int main(int argc, char *argv[])
     // dataset contains camera parameters for each image.
     FILE_LOG(logINFO) << "images number: " << (unsigned int)dataset->getTrain().size();
 
-    std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
-
-//    createAllClouds(dataset,clouds);
+    std::vector< PointCloudC::Ptr> clouds;
 //
-//    stereo_registration::registerClouds(clouds);
+    stereo::createAllClouds(dataset,clouds);
+
+    main_registration(clouds);
 
 //    viewPointCloud(final_cloud);
 
   //  surfaceReconstruction();
 
-   //  TEST SINGLE CLoUD
-    int img1_num = 1;
-    int img2_num = 2;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1 = generatePointCloud(dataset, img1_num, img2_num, true);
-//    viewPointCloud(cloud1);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = generatePointCloud(dataset, img1_num, img2_num, false);
-//    viewPointCloud(cloud2);
-    stereo::viewDoublePointCloud(cloud1, cloud2);
+//    //TEST SINGLE CLoUD
+//    int img1_num = 1;
+//    int img2_num = 2;
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1 = stereo::generatePointCloud(dataset, img1_num, img2_num, true);
+////    viewPointCloud(cloud1);
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = stereo::generatePointCloud(dataset, img1_num, img2_num, false);
+////    viewPointCloud(cloud2);
+//    stereo::viewDoublePointCloud(cloud1, cloud2);
 
 
 

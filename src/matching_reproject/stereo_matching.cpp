@@ -27,7 +27,7 @@
 #include "stereo_matching.hpp"
 #include "../utils/util.hpp"
 #include "../dataset/msm_middlebury.hpp"
-
+#include "../registration/PointCloud.h"
 
 // logger
 #include "../logger/log.h"
@@ -122,8 +122,9 @@ namespace stereo {
         cvtColor(img_left, g1, CV_BGR2GRAY);
         cvtColor(img_right, g2, CV_BGR2GRAY);
 
-        FILE_LOG(logINFO) << "prima img1 " << stereo_util::infoMatrix(g1);
 
+        FILE_LOG(logINFO) << "prima"
+        " img1 " << stereo_util::infoMatrix(g1);
         if (img1_num < 32)
             stereo_util::rotate_clockwise(g1, g1, false);
         else
@@ -147,18 +148,18 @@ namespace stereo {
         if (tipo == "BM")
         {
             
-              // MICHI
-//            StereoBM sbm;
-//            sbm.state->SADWindowSize = 5;
-//            sbm.state->numberOfDisparities = 192;
-//            sbm.state->preFilterSize = 5;
-//            sbm.state->preFilterCap = 51;
-//            sbm.state->minDisparity = 25;
-//            sbm.state->textureThreshold = 223;
-//            sbm.state->uniquenessRatio = 0;
-//            sbm.state->speckleWindowSize = 0;
-//            sbm.state->speckleRange = 0;
-//            sbm.state->disp12MaxDiff = 0;
+             // MICHI
+            StereoBM sbm;
+            sbm.state->SADWindowSize = 5;
+            sbm.state->numberOfDisparities = 192;
+            sbm.state->preFilterSize = 5;
+            sbm.state->preFilterCap = 51;
+            sbm.state->minDisparity = 25;
+            sbm.state->textureThreshold = 223;
+            sbm.state->uniquenessRatio = 0;
+            sbm.state->speckleWindowSize = 0;
+            sbm.state->speckleRange = 0;
+            sbm.state->disp12MaxDiff = 0;
 //          //MICHI DUE
 
 //            StereoBM sbm;
@@ -197,17 +198,17 @@ namespace stereo {
 //            sbm.state->speckleRange = 0;
 //            sbm.state->disp12MaxDiff = 1;
 
-            StereoBM sbm;
-            sbm.state->SADWindowSize = 5;
-            sbm.state->numberOfDisparities = 224;
-            sbm.state->preFilterSize = 31;
-            sbm.state->preFilterCap = 59;
-            sbm.state->minDisparity = -4;
-            sbm.state->textureThreshold = 182;
-            sbm.state->uniquenessRatio = 0;
-            sbm.state->speckleWindowSize = 0;
-            sbm.state->speckleRange = 0;
-            sbm.state->disp12MaxDiff = 1;
+//            StereoBM sbm;
+//            sbm.state->SADWindowSize = 5;
+//            sbm.state->numberOfDisparities = 224;
+//            sbm.state->preFilterSize = 31;
+//            sbm.state->preFilterCap = 59;
+//            sbm.state->minDisparity = -4;
+//            sbm.state->textureThreshold = 182;
+//            sbm.state->uniquenessRatio = 0;
+//            sbm.state->speckleWindowSize = 0;
+//            sbm.state->speckleRange = 0;
+//            sbm.state->disp12MaxDiff = 1;
 
             sbm(g1, g2, disp, CV_32F);
       
@@ -257,6 +258,7 @@ namespace stereo {
         cv::Mat disp_smooth;
         cv::bilateralFilter ( disp, disp_smooth, 9, 60, 30 );
 
+        disp_smooth.copyTo(disp);
 
 
 
@@ -265,21 +267,21 @@ namespace stereo {
         equalizeHist(dispSGBMn, dispSGBMn);
         //imshow( "WindowDispSGBM", dispSGBMn );
 
-        applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
-        imshow( "WindowDispSGBMheat - NO MOOTH", dispSGBMheat );
-        waitKey(0);
+//        applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
+//        imshow( "WindowDispSGBMheat - NO MOOTH", dispSGBMheat );
+//        waitKey(0);
 
-        normalize(disp_smooth, dispSGBMn, 0, 255, CV_MINMAX, CV_8U); // form 0-255
-        equalizeHist(dispSGBMn, dispSGBMn);
-        applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
-        imshow( "WindowDispSGBMhea - SMOOTHt", dispSGBMheat );
+//        normalize(disp_smooth, dispSGBMn, 0, 255, CV_MINMAX, CV_8U); // form 0-255
+//        equalizeHist(dispSGBMn, dispSGBMn);
+//        applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
+//        imshow( "WindowDispSGBMhea - SMOOTHt", dispSGBMheat );
 
 
 
-        fflush(stdout);
-        waitKey();
-        destroyAllWindows();
-        disp_smooth.copyTo(disp);
+//        fflush(stdout);
+//        waitKey();
+//        destroyAllWindows();
+//        disp_smooth.copyTo(disp);
 
 
         // APPLY OPENING
@@ -353,7 +355,7 @@ namespace stereo {
     }
 
 
-    void createPointCloudOpenCV (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
+    void createPointCloudOpenCV (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D,  PointCloudC::Ptr &point_cloud_ptr) {
 
 
         Size img_size = img1.size();
@@ -363,16 +365,16 @@ namespace stereo {
         FILE_LOG(logINFO) << "disp - " <<stereo_util::infoMatrix(disp);
 
         FILE_LOG(logINFO) << "reconst - " <<stereo_util::infoMatrix(recons3D) << " img - " << stereo_util::infoMatrix(img1);
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_xyzrgb(new pcl::PointCloud<pcl::PointXYZRGB>);
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz(new pcl::PointCloud<pcl::PointXYZ>);
+        PointCloudC::Ptr cloud_xyzrgb(new  PointCloudC);
+        PointCloudC::Ptr cloud_xyz(new  PointCloudC);
         for (int rows = 0; rows < recons3D.rows; ++rows) {
 
             for (int cols = 0; cols < recons3D.cols; ++cols) {
 
                 cv::Point3f point = recons3D.at<cv::Point3f>(rows, cols);
 
-                pcl::PointXYZ pcl_point(point.x, point.y, point.z); // normal PointCloud
-                pcl::PointXYZRGB pcl_point_rgb;
+                PointXYZ pcl_point(point.x, point.y, point.z); // normal PointCloud
+                PointC pcl_point_rgb;
                 pcl_point_rgb.x = point.x;    // rgb PointCloud
                 pcl_point_rgb.y = point.y;
                 pcl_point_rgb.z = point.z;
@@ -395,12 +397,9 @@ namespace stereo {
 
         FILE_LOG(logINFO) << "Esco..";
 
-
-
-
     }
 
-    void createPointCloudCustom (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
+    void createPointCloudCustom (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D,  PointCloudC::Ptr &point_cloud_ptr) {
 
         //     VERSIONE CUSTOM REPROJECT
         double Q03, Q13, Q23, Q32, Q33;
@@ -442,7 +441,7 @@ namespace stereo {
                 pr = rgb_ptr[3 * j + 2];
 
                 //Insert info into point cloud structure
-                pcl::PointXYZRGB point;
+                PointC point;
                 point.x = static_cast<float>(px);
                 point.y = static_cast<float>(py);
                 point.z = static_cast<float>(pz);
@@ -461,7 +460,7 @@ namespace stereo {
     }
 
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num, bool opencv_rec){
+    PointCloudC::Ptr generatePointCloud(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num, bool opencv_rec){
 
         Mat img1;
         Mat img2;
@@ -542,7 +541,8 @@ namespace stereo {
         // stereo::storePointCloud(disp, Q, recons3D);
 
         //std::cout << "Creating Point Cloud..." <<std::endl;
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+        PointCloudC::Ptr point_cloud_ptr(new PointCloudC);
+//        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
 
         if (opencv_rec)
             stereo::createPointCloudOpenCV(img1, img2, img1_segm_mask, Q, disp, recons3D, point_cloud_ptr);
@@ -555,7 +555,7 @@ namespace stereo {
 
 
 
-    void createAllClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds){
+    void createAllClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, std::vector< PointCloudC::Ptr> & clouds){
 
 
         int img1_num=1;
@@ -565,7 +565,7 @@ namespace stereo {
         std::stringstream ss;
         std::string path;
 
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = generatePointCloud(dataset, img1_num, img2_num,true);
+        PointCloudC::Ptr cloud = generatePointCloud(dataset, img1_num, img2_num,true);
         clouds.push_back(cloud);
 
         pcl::io::savePCDFileASCII ("./cloud1.pcd", *cloud);

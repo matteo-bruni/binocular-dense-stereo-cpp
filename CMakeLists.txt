@@ -41,6 +41,14 @@ set(SOURCE_FILES
     src/stereo_viewer/viewer.hpp
     src/registration/registration.cpp
     src/registration/registration.hpp
+    src/registration/constants.h
+    src/registration/includes.h
+    src/registration/PointCloud.cpp
+    src/registration/PointCloud.h
+    src/registration/PointCloudPairRegistration.h
+    src/registration/PointCloudPairRegistration.cpp
+    src/registration/registerPointCloudsApp.h
+    src/registration/registerPointCloudsApp.cpp
 )
 
 
