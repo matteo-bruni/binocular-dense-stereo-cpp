@@ -20,14 +20,18 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/contrib/contrib.hpp"
+#include <libconfig.h++>
+
+
 
 #include <stdio.h>
+#include <libconfig.h>
 
 // local includes
 #include "stereo_matching.hpp"
 #include "../utils/util.hpp"
 #include "../dataset/msm_middlebury.hpp"
-#include "../registration/PointCloud.h"
+
 
 // logger
 #include "../logger/log.h"
@@ -101,30 +105,16 @@ namespace stereo {
     void computeDisparity(const int img1_num, const int img2_num, Mat& img_left, Mat& img_right,Mat& disp,int alg,Rect & roi1,Rect &roi2){
 
 
-//        imshow( "presegme", img_left );
-//        imshow( "presegme2", img_right );
-
-//        cv::Mat img1 = stereo_util::segmentation(img_left);
-//        cv::Mat img2 = stereo_util::segmentation(img_right);
-//
-//        cvtColor(img1, g1, CV_BGR2GRAY);
-//        cvtColor(img2, g2, CV_BGR2GRAY);
-//        imshow("postsegme", img1);
-//        imshow("postsegme2", img2);
-
-//        cv::waitKey(0);
-
         std::string tipo = "BM";
 
         Mat g1, g2;
 
-///da provare
+        ///da provare
         cvtColor(img_left, g1, CV_BGR2GRAY);
         cvtColor(img_right, g2, CV_BGR2GRAY);
 
+        FILE_LOG(logINFO) << "prima img1 " << stereo_util::infoMatrix(g1);
 
-        FILE_LOG(logINFO) << "prima"
-        " img1 " << stereo_util::infoMatrix(g1);
         if (img1_num < 32)
             stereo_util::rotate_clockwise(g1, g1, false);
         else
@@ -137,78 +127,68 @@ namespace stereo {
             stereo_util::rotate_clockwise(g2, g2, false);
         else
             stereo_util::rotate_clockwise(g2, g2, true);
-//
-//        imshow("postsegme", g1);
-//        imshow("postsegme2", g2);
-//        imwrite("./g1.png",g1);
-//        imwrite("./g2.png",g2);
 
-       
+
+
+
+
+        libconfig::Config cfg;
+        // Read the file. If there is an error, report it and exit.
+        try
+        {
+            cfg.readFile("../config/config.cfg");
+        }
+        catch(const libconfig::FileIOException &fioex)
+        {
+            std::cerr << "I/O error while reading file." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        catch(const libconfig::ParseException &pex)
+        {
+            std::cerr << "Parse error at " << pex.getFile() << ":" << pex.getLine()
+                    << " - " << pex.getError() << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
 
         if (tipo == "BM")
         {
-            
-             // MICHI
+
             StereoBM sbm;
-            sbm.state->SADWindowSize = 5;
-            sbm.state->numberOfDisparities = 192;
-            sbm.state->preFilterSize = 5;
-            sbm.state->preFilterCap = 51;
-            sbm.state->minDisparity = 25;
-            sbm.state->textureThreshold = 223;
-            sbm.state->uniquenessRatio = 0;
-            sbm.state->speckleWindowSize = 0;
-            sbm.state->speckleRange = 0;
-            sbm.state->disp12MaxDiff = 0;
-//          //MICHI DUE
 
-//            StereoBM sbm;
-//            sbm.state->SADWindowSize = 5;
-//            sbm.state->numberOfDisparities = 192;
-//            sbm.state->preFilterSize = 5;
-//            sbm.state->preFilterCap = 51;
-//            sbm.state->minDisparity = -5;
-//            sbm.state->textureThreshold = 182;
-//            sbm.state->uniquenessRatio = 0;
-//            sbm.state->speckleWindowSize = 0;
-//            sbm.state->speckleRange = 0;
-//            sbm.state->disp12MaxDiff = 0;
+            // Get the store name.
+            try
+            {
+                const libconfig::Setting & root = cfg.getRoot();
+                const libconfig::Setting & StereoBMSettings  = root["StereoBM"];
+
+                sbm.state->SADWindowSize = (int) StereoBMSettings["SADWindowSize"];
+                sbm.state->numberOfDisparities = (int) StereoBMSettings["numberOfDisparities"];
+                sbm.state->preFilterSize = (int) StereoBMSettings["preFilterSize"];
+                sbm.state->preFilterCap = (int) StereoBMSettings["preFilterCap"];
+                sbm.state->minDisparity = (int) StereoBMSettings["minDisparity"];
+                sbm.state->textureThreshold = (int) StereoBMSettings["textureThreshold"];
+                sbm.state->uniquenessRatio = (int) StereoBMSettings["uniquenessRatio"];
+                sbm.state->speckleWindowSize = (int) StereoBMSettings["speckleWindowSize"];
+                sbm.state->speckleRange = (int) StereoBMSettings["speckleRange"];
+                sbm.state->disp12MaxDiff = (int) StereoBMSettings["disp12MaxDiff"];
 
 
-//            StereoBM sbm;
-//            sbm.state->SADWindowSize = 5;
-//            sbm.state->numberOfDisparities = 160;
-//            sbm.state->preFilterSize = 5;
-//            sbm.state->preFilterCap = 11;
-//            sbm.state->minDisparity = -68;
-//            sbm.state->textureThreshold = 130;
-//            sbm.state->uniquenessRatio = 0;
-//            sbm.state->speckleWindowSize = 0;
-//            sbm.state->speckleRange = 0;
-//            sbm.state->disp12MaxDiff = 1;
-//            StereoBM sbm;
-//            sbm.state->SADWindowSize = 5;
-//            sbm.state->numberOfDisparities = 160;
-//            sbm.state->preFilterSize = 5;
-//            sbm.state->preFilterCap = 11;
-//            sbm.state->minDisparity = 6;
-//            sbm.state->textureThreshold = 173;
-//            sbm.state->uniquenessRatio = 0;
-//            sbm.state->speckleWindowSize = 0;
-//            sbm.state->speckleRange = 0;
-//            sbm.state->disp12MaxDiff = 1;
+            }
+            catch(const libconfig::SettingNotFoundException &nfex)
+            {
+                sbm.state->SADWindowSize = 5;
+                sbm.state->numberOfDisparities = 192;
+                sbm.state->preFilterSize = 5;
+                sbm.state->preFilterCap = 51;
+                sbm.state->minDisparity = 25;
+                sbm.state->textureThreshold = 223;
+                sbm.state->uniquenessRatio = 0;
+                sbm.state->speckleWindowSize = 0;
+                sbm.state->speckleRange = 0;
+                sbm.state->disp12MaxDiff = 0;
 
-//            StereoBM sbm;
-//            sbm.state->SADWindowSize = 5;
-//            sbm.state->numberOfDisparities = 224;
-//            sbm.state->preFilterSize = 31;
-//            sbm.state->preFilterCap = 59;
-//            sbm.state->minDisparity = -4;
-//            sbm.state->textureThreshold = 182;
-//            sbm.state->uniquenessRatio = 0;
-//            sbm.state->speckleWindowSize = 0;
-//            sbm.state->speckleRange = 0;
-//            sbm.state->disp12MaxDiff = 1;
+            }
 
             sbm(g1, g2, disp, CV_32F);
       
@@ -255,33 +235,61 @@ namespace stereo {
 
         FILE_LOG(logINFO) << "dopo dispsize " << stereo_util::infoMatrix(disp);
 
+
+        bool show_disparity_smooth = false;
         cv::Mat disp_smooth;
-        cv::bilateralFilter ( disp, disp_smooth, 9, 60, 30 );
+
+        try
+        {
+            const libconfig::Setting & root = cfg.getRoot();
+            const libconfig::Setting & SmoothingSettings  = root["Smoothing"];
+
+            cv::bilateralFilter ( disp, disp_smooth,
+                    (int) SmoothingSettings["sigmaColor"],
+                    (double) SmoothingSettings["sigmaSpace"],
+                    (double) SmoothingSettings["borderType"] );
+
+            show_disparity_smooth = (bool) SmoothingSettings["show"];
+
+        }
+        catch(const libconfig::SettingNotFoundException &nfex)
+        {
+            cv::bilateralFilter ( disp, disp_smooth, 9, 60, 30 );
+        }
+
+
+
+        if (show_disparity_smooth){
+
+            Mat dispSGBMn,dispSGBMnSmooth, dispSGBMheat, dispSGBMheatSmooth;
+
+            // prepare disparity
+            normalize(disp, dispSGBMn, 0, 255, CV_MINMAX, CV_8U); // form 0-255
+            equalizeHist(dispSGBMn, dispSGBMn);
+            applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
+
+            // prepare disparity smoothed
+            normalize(disp_smooth, dispSGBMnSmooth, 0, 255, CV_MINMAX, CV_8U); // form 0-255
+            equalizeHist(dispSGBMnSmooth, dispSGBMnSmooth);
+            applyColorMap(dispSGBMnSmooth, dispSGBMheatSmooth, COLORMAP_JET);
+
+            // create single view
+            Size sz1 = dispSGBMheat.size();
+            Size sz2 = dispSGBMheatSmooth.size();
+            Mat im3(sz1.height, sz1.width+sz2.width, CV_8UC3);
+            Mat left(im3, Rect(0, 0, sz1.width, sz1.height));
+            dispSGBMheat.copyTo(left);
+            Mat right(im3, Rect(sz1.width, 0, sz2.width, sz2.height));
+            dispSGBMheatSmooth.copyTo(right);
+//            imshow("Disparity - Disparity Smoothed", im3);
+//
+//            fflush(stdout);
+//            waitKey();
+//            destroyAllWindows();
+        }
+
 
         disp_smooth.copyTo(disp);
-
-
-
-        Mat dispSGBMn, dispSGBMheat;
-        normalize(disp, dispSGBMn, 0, 255, CV_MINMAX, CV_8U); // form 0-255
-        equalizeHist(dispSGBMn, dispSGBMn);
-        //imshow( "WindowDispSGBM", dispSGBMn );
-
-//        applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
-//        imshow( "WindowDispSGBMheat - NO MOOTH", dispSGBMheat );
-//        waitKey(0);
-
-//        normalize(disp_smooth, dispSGBMn, 0, 255, CV_MINMAX, CV_8U); // form 0-255
-//        equalizeHist(dispSGBMn, dispSGBMn);
-//        applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
-//        imshow( "WindowDispSGBMhea - SMOOTHt", dispSGBMheat );
-
-
-
-//        fflush(stdout);
-//        waitKey();
-//        destroyAllWindows();
-//        disp_smooth.copyTo(disp);
 
 
         // APPLY OPENING
@@ -355,7 +363,7 @@ namespace stereo {
     }
 
 
-    void createPointCloudOpenCV (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D,  PointCloudC::Ptr &point_cloud_ptr) {
+    void createPointCloudOpenCV (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
 
 
         Size img_size = img1.size();
@@ -365,16 +373,16 @@ namespace stereo {
         FILE_LOG(logINFO) << "disp - " <<stereo_util::infoMatrix(disp);
 
         FILE_LOG(logINFO) << "reconst - " <<stereo_util::infoMatrix(recons3D) << " img - " << stereo_util::infoMatrix(img1);
-        PointCloudC::Ptr cloud_xyzrgb(new  PointCloudC);
-        PointCloudC::Ptr cloud_xyz(new  PointCloudC);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_xyzrgb(new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz(new pcl::PointCloud<pcl::PointXYZ>);
         for (int rows = 0; rows < recons3D.rows; ++rows) {
 
             for (int cols = 0; cols < recons3D.cols; ++cols) {
 
                 cv::Point3f point = recons3D.at<cv::Point3f>(rows, cols);
 
-                PointXYZ pcl_point(point.x, point.y, point.z); // normal PointCloud
-                PointC pcl_point_rgb;
+                pcl::PointXYZ pcl_point(point.x, point.y, point.z); // normal PointCloud
+                pcl::PointXYZRGB pcl_point_rgb;
                 pcl_point_rgb.x = point.x;    // rgb PointCloud
                 pcl_point_rgb.y = point.y;
                 pcl_point_rgb.z = point.z;
@@ -397,9 +405,12 @@ namespace stereo {
 
         FILE_LOG(logINFO) << "Esco..";
 
+
+
+
     }
 
-    void createPointCloudCustom (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D,  PointCloudC::Ptr &point_cloud_ptr) {
+    void createPointCloudCustom (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
 
         //     VERSIONE CUSTOM REPROJECT
         double Q03, Q13, Q23, Q32, Q33;
@@ -441,7 +452,7 @@ namespace stereo {
                 pr = rgb_ptr[3 * j + 2];
 
                 //Insert info into point cloud structure
-                PointC point;
+                pcl::PointXYZRGB point;
                 point.x = static_cast<float>(px);
                 point.y = static_cast<float>(py);
                 point.z = static_cast<float>(pz);
@@ -460,7 +471,8 @@ namespace stereo {
     }
 
 
-    PointCloudC::Ptr generatePointCloud(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num, bool opencv_rec){
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num, bool opencv_rec){
 
         Mat img1;
         Mat img2;
@@ -541,8 +553,7 @@ namespace stereo {
         // stereo::storePointCloud(disp, Q, recons3D);
 
         //std::cout << "Creating Point Cloud..." <<std::endl;
-        PointCloudC::Ptr point_cloud_ptr(new PointCloudC);
-//        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
 
         if (opencv_rec)
             stereo::createPointCloudOpenCV(img1, img2, img1_segm_mask, Q, disp, recons3D, point_cloud_ptr);
@@ -555,7 +566,7 @@ namespace stereo {
 
 
 
-    void createAllClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, std::vector< PointCloudC::Ptr> & clouds){
+    void createAllClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds){
 
 
         int img1_num=1;
@@ -565,7 +576,7 @@ namespace stereo {
         std::stringstream ss;
         std::string path;
 
-        PointCloudC::Ptr cloud = generatePointCloud(dataset, img1_num, img2_num,true);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = generatePointCloud(dataset, img1_num, img2_num,false);
         clouds.push_back(cloud);
 
         pcl::io::savePCDFileASCII ("./cloud1.pcd", *cloud);
@@ -576,7 +587,7 @@ namespace stereo {
             it != dataset->getAssociation().end(); ++it) {
             img1_num = std::get<0>(*it);
             img2_num = std::get<1>(*it);
-            cloud = generatePointCloud(dataset, img1_num, img2_num,true);
+            cloud = generatePointCloud(dataset, img1_num, img2_num,false);
             if(!(*cloud).empty()){
                 clouds.push_back(cloud);
                 ss.str( std::string() );

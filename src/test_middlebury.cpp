@@ -67,8 +67,7 @@
 #include "utils/util.hpp"
 #include "stereo_viewer/viewer.hpp"
 #include "registration/registration.hpp"
-#include "registration/registerPointCloudsApp.h"
-#include "registration/PointCloud.h"
+
 // Include logging facilities
 #include "logger/log.h"
 
@@ -93,6 +92,7 @@
     #define FILELOG_MAX_LEVEL logDEBUG4
 #endif
 
+
 using namespace std;
 using namespace cv;
 using namespace cv::datasets;
@@ -111,26 +111,69 @@ int main(int argc, char *argv[])
     // dataset contains camera parameters for each image.
     FILE_LOG(logINFO) << "images number: " << (unsigned int)dataset->getTrain().size();
 
-    std::vector< PointCloudC::Ptr> clouds;
+    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
 //
-    stereo::createAllClouds(dataset,clouds);
+//    stereo::createAllClouds(dataset,clouds);
+//    stereo_registration::registerClouds(clouds);
 
-    main_registration(clouds);
 
 //    viewPointCloud(final_cloud);
 
   //  surfaceReconstruction();
 
 //    //TEST SINGLE CLoUD
-//    int img1_num = 1;
-//    int img2_num = 2;
-//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1 = stereo::generatePointCloud(dataset, img1_num, img2_num, true);
-////    viewPointCloud(cloud1);
-//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = stereo::generatePointCloud(dataset, img1_num, img2_num, false);
-////    viewPointCloud(cloud2);
-//    stereo::viewDoublePointCloud(cloud1, cloud2);
+    int img1_num = 6;
+    int img2_num = 7;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1 = stereo::generatePointCloud(dataset, 1, 2, true);
+//    viewPointCloud(cloud1);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = stereo::generatePointCloud(dataset, 3, 4, true);
+//    viewPointCloud(cloud2);
+   // stereo::viewDoublePointCloud(cloud1, cloud2);
+
+    Ptr<cv::datasets::MSM_middleburyObj> data_img1 =
+            static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[1]);
+    Ptr<cv::datasets::MSM_middleburyObj> data_img2 =
+            static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[3]);
 
 
+    Mat r1 = Mat(data_img1->r);
+    Mat r2 = Mat(data_img2->r);
+
+    // init translation vectors from dataset
+    Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->t);
+    Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->t);
+
+    // rotation between img2 and img1
+    Mat R = r2*r1.t();
+    // translation between img2 and img1
+    Mat T = t1 - (R.t()*t2 );
+
+    Eigen::Matrix4f transform_1 = Eigen::Matrix4f::Identity();
+
+    transform_1 (0,0) = R.at<float>(0,0);
+    transform_1 (0,1) = R.at<float>(0,1);
+    transform_1 (0,2) = R.at<float>(0,2);
+
+    transform_1 (1,0) = R.at<float>(1,0);
+    transform_1 (1,1) = R.at<float>(1,1);
+    transform_1 (1,2) = R.at<float>(1,2);
+    transform_1 (2,0) = R.at<float>(2,0);
+    transform_1 (2,1) = R.at<float>(2,1);
+    transform_1 (2,2) = R.at<float>(2,2);
+
+    transform_1 (0,3) = T.at<float>(0);
+    transform_1 (1,3) = T.at<float>(1);
+    transform_1 (2,3) = T.at<float>(2);
+
+
+
+
+    // Executing the transformation
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+    // You can either apply transform_1 or transform_2; they are the same
+    pcl::transformPointCloud (*cloud2, *transformed_cloud, transform_1);
+
+    stereo::viewDoublePointCloud(transformed_cloud, cloud2);
 
 //    cv::Mat result1 = stereo_util::segmentation(img1_num);
 //

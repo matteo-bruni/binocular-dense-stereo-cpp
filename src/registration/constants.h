@@ -1,4 +1,0 @@
-
-
-#define DOWNSAMPLE_LEVELS 4
-#define LEAF_SIZE 0.005f
