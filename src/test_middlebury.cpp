@@ -88,11 +88,6 @@
 #include <pcl/io/vtk_io.h>
 
 
-#ifndef FILELOG_MAX_LEVEL
-    #define FILELOG_MAX_LEVEL logDEBUG4
-#endif
-
-
 using namespace std;
 using namespace cv;
 using namespace cv::datasets;
@@ -113,7 +108,7 @@ int main(int argc, char *argv[])
 
     std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
 //
-//    stereo::createAllClouds(dataset,clouds);
+    stereo::createAllClouds(dataset, clouds);
 //    stereo_registration::registerClouds(clouds);
 
 
@@ -121,60 +116,33 @@ int main(int argc, char *argv[])
 
   //  surfaceReconstruction();
 
-//    //TEST SINGLE CLoUD
-    int img1_num = 6;
-    int img2_num = 7;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1 = stereo::generatePointCloud(dataset, 1, 2, true);
-//    viewPointCloud(cloud1);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = stereo::generatePointCloud(dataset, 3, 4, true);
-//    viewPointCloud(cloud2);
-   // stereo::viewDoublePointCloud(cloud1, cloud2);
-
-    Ptr<cv::datasets::MSM_middleburyObj> data_img1 =
-            static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[1]);
-    Ptr<cv::datasets::MSM_middleburyObj> data_img2 =
-            static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[3]);
+////    //TEST SINGLE CLoUD
+//    int img1_num = 6;
+//    int img2_num = 7;
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1 = stereo::generatePointCloud(dataset, 1, 2, true);
+//    //    viewPointCloud(cloud1);
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2 = stereo::generatePointCloud(dataset, 3, 4, true);
+//    //    viewPointCloud(cloud2);
+//    // stereo::viewDoublePointCloud(cloud1, cloud2);
 
 
-    Mat r1 = Mat(data_img1->r);
-    Mat r2 = Mat(data_img2->r);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud = clouds[0];
 
-    // init translation vectors from dataset
-    Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->t);
-    Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->t);
+    for(int i = 1; i<clouds.size(); i++) {
 
-    // rotation between img2 and img1
-    Mat R = r2*r1.t();
-    // translation between img2 and img1
-    Mat T = t1 - (R.t()*t2 );
+            *finalCloud += *(clouds[i]);
 
-    Eigen::Matrix4f transform_1 = Eigen::Matrix4f::Identity();
-
-    transform_1 (0,0) = R.at<float>(0,0);
-    transform_1 (0,1) = R.at<float>(0,1);
-    transform_1 (0,2) = R.at<float>(0,2);
-
-    transform_1 (1,0) = R.at<float>(1,0);
-    transform_1 (1,1) = R.at<float>(1,1);
-    transform_1 (1,2) = R.at<float>(1,2);
-    transform_1 (2,0) = R.at<float>(2,0);
-    transform_1 (2,1) = R.at<float>(2,1);
-    transform_1 (2,2) = R.at<float>(2,2);
-
-    transform_1 (0,3) = T.at<float>(0);
-    transform_1 (1,3) = T.at<float>(1);
-    transform_1 (2,3) = T.at<float>(2);
+    }
 
 
+//    stereo::viewDoublePointCloud(transformed_cloud, cloud2);
+//
+//    FILE_LOG(logINFO) << "cloud1 : "<< cloud1->size();
+//    FILE_LOG(logINFO) << "cloud2 : "<< transformed_cloud->size();
+//
+//    *cloud1 += *transformed_cloud;
 
-
-    // Executing the transformation
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
-    // You can either apply transform_1 or transform_2; they are the same
-    pcl::transformPointCloud (*cloud2, *transformed_cloud, transform_1);
-
-    stereo::viewDoublePointCloud(transformed_cloud, cloud2);
-
+    stereo::viewPointCloud(finalCloud);
 //    cv::Mat result1 = stereo_util::segmentation(img1_num);
 //
 //    imshow("filtrata",result1);

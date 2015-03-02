@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <libconfig.h>
+#include <pcl/common/transforms.h>
 
 // local includes
 #include "stereo_matching.hpp"
@@ -82,7 +83,7 @@ namespace stereo {
         M1 *= scale;
         M2 *= scale;
 
-        FILE_LOG(logINFO) << stereo_util::infoMatrix(T);
+        FILE_LOG(logDEBUG) << stereo_util::infoMatrix(T);
 
 
         stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, P1, P2, Q, CALIB_ZERO_DISPARITY, -1, img_size, &roi1, &roi2 );
@@ -113,14 +114,16 @@ namespace stereo {
         cvtColor(img_left, g1, CV_BGR2GRAY);
         cvtColor(img_right, g2, CV_BGR2GRAY);
 
-        FILE_LOG(logINFO) << "prima img1 " << stereo_util::infoMatrix(g1);
+        FILE_LOG(logDEBUG) << "prima img1 " << stereo_util::infoMatrix(g1);
 
         if (img1_num < 32)
             stereo_util::rotate_clockwise(g1, g1, false);
         else
             stereo_util::rotate_clockwise(g1, g1, true);
 
-        FILE_LOG(logINFO) << "dopo img1 " << stereo_util::infoMatrix(g1);
+        imshow("Ruotata", g1);
+
+        FILE_LOG(logDEBUG) << "dopo img1 " << stereo_util::infoMatrix(g1);
 
 
         if (img2_num < 32)
@@ -129,6 +132,7 @@ namespace stereo {
             stereo_util::rotate_clockwise(g2, g2, true);
 
 
+        imshow("Ruotata2", g2);
 
 
 
@@ -226,14 +230,14 @@ namespace stereo {
         }
 
 
-        FILE_LOG(logINFO) << "prima dispsize " << stereo_util::infoMatrix(disp);
+        FILE_LOG(logDEBUG) << "prima dispsize " << stereo_util::infoMatrix(disp);
 
         if (img1_num < 32)
             stereo_util::rotate_clockwise(disp, disp, true);
         else
             stereo_util::rotate_clockwise(disp, disp, false);
 
-        FILE_LOG(logINFO) << "dopo dispsize " << stereo_util::infoMatrix(disp);
+        FILE_LOG(logDEBUG) << "dopo dispsize " << stereo_util::infoMatrix(disp);
 
 
         bool show_disparity_smooth = false;
@@ -281,11 +285,11 @@ namespace stereo {
             dispSGBMheat.copyTo(left);
             Mat right(im3, Rect(sz1.width, 0, sz2.width, sz2.height));
             dispSGBMheatSmooth.copyTo(right);
-//            imshow("Disparity - Disparity Smoothed", im3);
-//
-//            fflush(stdout);
-//            waitKey();
-//            destroyAllWindows();
+            imshow("Disparity - Disparity Smoothed", im3);
+
+            fflush(stdout);
+            waitKey();
+            destroyAllWindows();
         }
 
 
@@ -366,13 +370,18 @@ namespace stereo {
     void createPointCloudOpenCV (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
 
 
+        //                if (img1.at<uchar>(rows, cols) == 0)
+
+//        FILE_LOG(logINFO) << "disp at 0,0 - " << img_1_segm.at<double>(0,0);
+
+
         Size img_size = img1.size();
 
 
         reprojectImageTo3D(disp, recons3D, Q, true);
-        FILE_LOG(logINFO) << "disp - " <<stereo_util::infoMatrix(disp);
+        FILE_LOG(logDEBUG) << "disp - " <<stereo_util::infoMatrix(disp);
 
-        FILE_LOG(logINFO) << "reconst - " <<stereo_util::infoMatrix(recons3D) << " img - " << stereo_util::infoMatrix(img1);
+        FILE_LOG(logDEBUG) << "reconst - " <<stereo_util::infoMatrix(recons3D) << " img - " << stereo_util::infoMatrix(img1);
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_xyzrgb(new pcl::PointCloud<pcl::PointXYZRGB>);
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz(new pcl::PointCloud<pcl::PointXYZ>);
         for (int rows = 0; rows < recons3D.rows; ++rows) {
@@ -393,7 +402,7 @@ namespace stereo {
 
                 pcl_point_rgb.rgb = *reinterpret_cast<float *>(&rgb);
 
-//                if (img1.at<uchar>(rows, cols) == 0)
+//                if (img_1_segm.at<unsigned int>(rows, cols) != 0)
                     point_cloud_ptr->push_back(pcl_point_rgb);
             }
 
@@ -403,7 +412,7 @@ namespace stereo {
         point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
         point_cloud_ptr->height = 1;
 
-        FILE_LOG(logINFO) << "Esco..";
+        FILE_LOG(logDEBUG) << "Esco..";
 
 
 
@@ -422,6 +431,10 @@ namespace stereo {
 
         double px, py, pz;
         uchar pr, pg, pb;
+
+//        FILE_LOG(logINFO) << "imgsize " << stereo_util::infoMatrix(img1);
+//        FILE_LOG(logINFO) << "imgsize " << stereo_util::infoMatrix(img_1_segm);
+//        FILE_LOG(logINFO) << "imgsize i:" <<img_1_segm.at<unsigned int>(479, 588);
 
         for (int i = 0; i < img1.rows; i++) {
 
@@ -461,7 +474,8 @@ namespace stereo {
                         static_cast<uint32_t>(pg) << 8 | static_cast<uint32_t>(pb));
                 point.rgb = *reinterpret_cast<float *>(&rgb);
 
-        //                    if (img1.at<uchar>(i, j) == 0)
+
+//                if (img_1_segm.at<unsigned int>(i, j) != 0)
                     point_cloud_ptr->points.push_back(point);
             }
         }
@@ -511,14 +525,14 @@ namespace stereo {
         // translation between img2 and img1
         Mat T = t1 - (R.t()*t2 );
 
-//    double tx = atan2 (R.at<double>(3,2), R.at<double>(3,3));
-//    double ty = - asin(R.at<double>(3,1));
-//    double tz = atan2 (R.at<double>(2,1), R.at<double>(1,1));
-//    FILE_LOG(logDEBUG) << "ROTATION " << img1_num << "-" <<img2_num<< " tx="<< tx <<" ty=" << ty << "tz= " << tz;
+        //    double tx = atan2 (R.at<double>(3,2), R.at<double>(3,3));
+        //    double ty = - asin(R.at<double>(3,1));
+        //    double tz = atan2 (R.at<double>(2,1), R.at<double>(1,1));
+        //    FILE_LOG(logDEBUG) << "ROTATION " << img1_num << "-" <<img2_num<< " tx="<< tx <<" ty=" << ty << "tz= " << tz;
 
-//    theta_x = arctan(r_{3,2}/r_{3,3})
-//    \theta_y = -arcsin(r_{3,1})
-//    \theta_z = arctan(r_{2,1}/r_{1,1})
+        //    theta_x = arctan(r_{3,2}/r_{3,3})
+        //    \theta_y = -arcsin(r_{3,1})
+        //    \theta_z = arctan(r_{2,1}/r_{1,1})
 
         cv:Mat img1_segm_mask;
 
@@ -533,19 +547,19 @@ namespace stereo {
         Rect roi1,roi2;
         stereo::rectifyImages(img1, img2, M1, D1, M2, D2, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
 
-//    cv::Mat img_roi(img1);
-//    rectangle(img_roi, roi1.tl(), roi1.br(), CV_RGB(255, 0,0), 10, 8, 0);
-//    imshow("rect", img_roi );
+        //    cv::Mat img_roi(img1);
+        //    rectangle(img_roi, roi1.tl(), roi1.br(), CV_RGB(255, 0,0), 10, 8, 0);
+//        imshow("rect", img1 );
 
         FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
         Mat disp(img1.size(), CV_32F);
-        FILE_LOG(logINFO) << "imgsize " << stereo_util::infoMatrix(img1);
-        FILE_LOG(logINFO) << "dispsize " << stereo_util::infoMatrix(disp);
+        FILE_LOG(logDEBUG) << "imgsize " << stereo_util::infoMatrix(img1);
+        FILE_LOG(logDEBUG) << "dispsize " << stereo_util::infoMatrix(disp);
 
         stereo::computeDisparity(img1_num, img2_num, img1, img2, disp,1,roi1,roi2);
 
-//    stereo::display(img1, img2, disp);
-//
+        //    stereo::display(img1, img2, disp);
+        //
         FILE_LOG(logINFO) << "Creating point cloud..";
         Mat recons3D(disp.size(), CV_32FC3);
         FILE_LOG(logINFO) << "recons3Dsize " << stereo_util::infoMatrix(recons3D);
@@ -569,27 +583,43 @@ namespace stereo {
     void createAllClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds){
 
 
-        int img1_num=1;
-        int img2_num=2;
+        int img1_num;
+        int img2_num;
 
 
         std::stringstream ss;
         std::string path;
 
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud = generatePointCloud(dataset, img1_num, img2_num,false);
-        clouds.push_back(cloud);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;// = generatePointCloud(dataset, img1_num, img2_num,false);
+//        clouds.push_back(cloud);
 
-        pcl::io::savePCDFileASCII ("./cloud1.pcd", *cloud);
+//        pcl::io::savePCDFileASCII ("./cloud1.pcd", *cloud);
         unsigned int dataset_size = (unsigned int)dataset->getTrain().size();
 
+        int image_reference = std::get<0>(dataset->getAssociation()[0]);
 
         for(std::vector<std::tuple<int,int>>::iterator it = dataset->getAssociation().begin();
             it != dataset->getAssociation().end(); ++it) {
             img1_num = std::get<0>(*it);
             img2_num = std::get<1>(*it);
-            cloud = generatePointCloud(dataset, img1_num, img2_num,false);
+            cloud = generatePointCloud(dataset, img1_num, img2_num, true);
             if(!(*cloud).empty()){
-                clouds.push_back(cloud);
+
+//                if (img1_num != 1) {
+//                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, img1_num);
+//                    // Executing the transformation
+//                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+//                    // You can either apply transform_1 or transform_2; they are the same
+//                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+//
+//                    clouds.push_back(transformed_cloud);
+//
+//                } else {
+                    clouds.push_back(cloud);
+
+//                }
+
+                // save
                 ss.str( std::string() );
                 ss.clear();
                 ss << img1_num<< "-" << img2_num ;

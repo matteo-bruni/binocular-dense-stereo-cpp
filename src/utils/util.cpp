@@ -6,6 +6,7 @@
 #include "opencv2/objdetect/objdetect.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include "../logger/log.h"
 
 namespace stereo_util {
 
@@ -147,4 +148,47 @@ namespace stereo_util {
 
     }
 
+    Eigen::Matrix4f getTransformBetweenClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num) {
+
+
+
+        Ptr<cv::datasets::MSM_middleburyObj> data_img1 =
+                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img1_num]);
+        Ptr<cv::datasets::MSM_middleburyObj> data_img2 =
+                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img2_num]);
+
+
+        Mat r1 = Mat(data_img1->r);
+        Mat r2 = Mat(data_img2->r);
+
+        // init translation vectors from dataset
+        Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->t);
+        Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->t);
+
+        // rotation between img2 and img1
+        Mat R = r2*r1.t();
+        // translation between img2 and img1
+        Mat T = t1 - (R.t()*t2 );
+
+        Eigen::Matrix4f transformMatrix = Eigen::Matrix4f::Identity();
+
+        FILE_LOG(logINFO) << "R float: " <<  R.at<float>(0,0) << " double:" << R.at<double>(0,0);
+
+        transformMatrix (0,0) = R.at<double>(0,0);
+        transformMatrix (0,1) = R.at<double>(0,1);
+        transformMatrix (0,2) = R.at<double>(0,2);
+
+        transformMatrix (1,0) = R.at<double>(1,0);
+        transformMatrix (1,1) = R.at<double>(1,1);
+        transformMatrix (1,2) = R.at<double>(1,2);
+        transformMatrix (2,0) = R.at<double>(2,0);
+        transformMatrix (2,1) = R.at<double>(2,1);
+        transformMatrix (2,2) = R.at<double>(2,2);
+
+        transformMatrix (0,3) = T.at<double>(0);
+        transformMatrix (1,3) = T.at<double>(1);
+        transformMatrix (2,3) = T.at<double>(2);
+
+        return transformMatrix;
+    }
 }

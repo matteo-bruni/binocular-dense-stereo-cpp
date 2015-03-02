@@ -21,6 +21,7 @@ namespace stereo {
         boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
         viewer = createVisualizer( point_cloud_ptr );
 
+        viewer->resetCameraViewpoint ("reconstruction");
         //Main loop
         while ( !viewer->wasStopped())
         {
@@ -48,7 +49,7 @@ namespace stereo {
     boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizer (pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud) {
 
         boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-        viewer->setBackgroundColor (0, 0, 0);
+        viewer->setBackgroundColor (0.3, 0.3, 0.3);
 
         pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(cloud);
         viewer->addPointCloud<pcl::PointXYZRGB> (cloud, rgb, "reconstruction");
