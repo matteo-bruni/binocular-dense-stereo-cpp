@@ -121,7 +121,6 @@ namespace stereo {
         else
             stereo_util::rotate_clockwise(g1, g1, true);
 
-        imshow("Ruotata", g1);
 
         FILE_LOG(logDEBUG) << "dopo img1 " << stereo_util::infoMatrix(g1);
 
@@ -132,9 +131,15 @@ namespace stereo {
             stereo_util::rotate_clockwise(g2, g2, true);
 
 
-        imshow("Ruotata2", g2);
+//        if (show_disparity_smooth) {
+//
+//            imshow("Ruotata", g1);
+//            imshow("Ruotata2", g2);
+//        }
 
 
+        imwrite("img_l_"+std::to_string(img1_num)+".png", g1);
+        imwrite("img_r_"+std::to_string(img2_num)+".png", g2);
 
         libconfig::Config cfg;
         // Read the file. If there is an error, report it and exit.
@@ -261,6 +266,7 @@ namespace stereo {
             cv::bilateralFilter ( disp, disp_smooth, 9, 60, 30 );
         }
 
+        imwrite("disp_"+std::to_string(img1_num)+"_"+std::to_string(img2_num)+".png", disp_smooth);
 
 
         if (show_disparity_smooth){

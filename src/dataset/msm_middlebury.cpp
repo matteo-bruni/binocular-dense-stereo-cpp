@@ -63,24 +63,30 @@ namespace cv {
 
                 photo_association =
                         {
-//                                std::make_tuple(1,2),   std::make_tuple(2,3),   std::make_tuple(3,4),
-//                                std::make_tuple(4,5),
+                                std::make_tuple(1,2),
+
+                                std::make_tuple(2,3),   std::make_tuple(3,4),
+                                std::make_tuple(4,5),
+
+                                std::make_tuple(6,7),   std::make_tuple(7,8),   std::make_tuple(8,9),
+                                std::make_tuple(9,10),  std::make_tuple(10,11), std::make_tuple(11,12),
+
+                                std::make_tuple(13,14), std::make_tuple(14,15), std::make_tuple(15,16),
+                                std::make_tuple(16,17), std::make_tuple(17,18), std::make_tuple(18,19),
+                                std::make_tuple(19,20), std::make_tuple(20,21), std::make_tuple(21,22),
+                                std::make_tuple(22,23), std::make_tuple(23,24), std::make_tuple(24,25),
+                                std::make_tuple(25,26), std::make_tuple(26,27), std::make_tuple(27,28),
+                                std::make_tuple(28,29), std::make_tuple(29,30), std::make_tuple(30,31),
+
+                                // solo colonna
+                                // allineati sinistra <----
+                                std::make_tuple(32,33), std::make_tuple(33,34), std::make_tuple(34,35),
+                                std::make_tuple(35,36), std::make_tuple(36,37), std::make_tuple(37,38),
+                                std::make_tuple(38,39),
 //
-//                                std::make_tuple(6,7),   std::make_tuple(7,8),   std::make_tuple(8,9),
-//                                std::make_tuple(9,10),  std::make_tuple(10,11), std::make_tuple(11,12),
-//
-//                                std::make_tuple(13,14), std::make_tuple(14,15), std::make_tuple(15,16),
-//                                std::make_tuple(16,17), std::make_tuple(17,18), std::make_tuple(18,19),
-//                                std::make_tuple(19,20), std::make_tuple(20,21), std::make_tuple(21,22),
-//                                std::make_tuple(22,23), std::make_tuple(23,24), std::make_tuple(24,25),
-//                                std::make_tuple(25,26), std::make_tuple(26,27), std::make_tuple(27,28),
-//                                std::make_tuple(28,29), std::make_tuple(29,30), std::make_tuple(30,31),
-//
-//                                std::make_tuple(32,33), std::make_tuple(33,34), std::make_tuple(34,35),
-//                                std::make_tuple(35,36), std::make_tuple(36,37), std::make_tuple(37,38),
-//                                std::make_tuple(38,39),
-//
-//                                std::make_tuple(40,41),
+                                // boh niente non fa neanche rect
+                                // allineati sinistra <----
+                                std::make_tuple(40,41),
 
                                 // ricostruiscono solo una colonna
                                 // allineati sinistra <----
