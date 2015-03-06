@@ -14,33 +14,33 @@ using namespace std;
 
 int window_size = 9;
 int temp1;
-int number_of_disparities = 80;
+int number_of_disparities = 90;
 int temp2;
 int pre_filter_size = 5;
 int temp3;
-int pre_filter_cap = 23;
+int pre_filter_cap = 32;
 int temp4;
 int min_disparity = 30;
 int temp5;
-int texture_threshold = 500;
+int texture_threshold = 170;
 int temp6;
-int uniqueness_ratio = 0;
+int uniqueness_ratio = 1;
 int temp7;
-int max_diff = 100;
+int max_diff = 1;
 float temp8;
 int speckle_window_size = 0;
 int temp9;
 
 int main(int argc, char* argv[])
 {
-    Mat img1, img2, g1, g2;
-    Mat disp, disp8;
-    Mat dispHeath;
+	Mat img1, img2, g1, g2;
+	Mat disp, disp8;
+	Mat dispHeath;
 
-    img1 = imread(argv[1]);
-    img2 = imread(argv[2]);
-    cvtColor(img1, g1, CV_BGR2GRAY);
-    cvtColor(img2, g2, CV_BGR2GRAY);
+	img1 = imread(argv[1]);
+	img2 = imread(argv[2]);
+	cvtColor(img1, g1, CV_BGR2GRAY);
+	cvtColor(img2, g2, CV_BGR2GRAY);
 	int i1;
 	int i2;
 	int i3;
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 	namedWindow("disp");
 	createTrackbar("WindowSize", "disp", &window_size,255, NULL);
 	createTrackbar("no_of_disparities", "disp", &number_of_disparities,255, NULL);
-	createTrackbar("min_disparity", "disp", &min_disparity,60, NULL);
+	createTrackbar("min_disparity (NEGATIVE!)", "disp", &min_disparity,60, NULL);
 
 	createTrackbar("filter_size", "disp", &pre_filter_size,255, NULL);
 	createTrackbar("filter_cap", "disp", &pre_filter_cap,63, NULL);
@@ -61,121 +61,137 @@ int main(int argc, char* argv[])
 	createTrackbar("uniquness", "disp", &uniqueness_ratio,30, NULL);
 	createTrackbar("disp12MaxDiff", "disp", &max_diff,100, NULL);
 	createTrackbar("Speckle Window", "disp", &speckle_window_size,5000, NULL);
-	
-   while(1)
-	{ 
+
+	while(1)
+	{
 		i1 = window_size;
-        StereoBM sbm;
+		StereoBM sbm;
 		if(i1%2==0 && i1>=7)
 		{
-			temp1 = i1-1;		
+			temp1 = i1-1;
 			sbm.state->SADWindowSize = temp1;
-		}	
+		}
 		if(i1<7)
 		{
-			temp1 =	7;	
+			temp1 =	7;
 			sbm.state->SADWindowSize = temp1;
-		}	
-	if(i1%2!=0 && i1>=7)
-        {
-		temp1 =	i1;
-		sbm.state->SADWindowSize = temp1;
+		}
+		if(i1%2!=0 && i1>=7)
+		{
+			temp1 =	i1;
+			sbm.state->SADWindowSize = temp1;
+		}
+
+
+		i2 = number_of_disparities;
+		if(i2%16!=0 && i2>16)
+		{
+			temp2 = i2 - i2%16;
+			sbm.state->numberOfDisparities = temp2;
+		}
+		if(i2%16==0 && i2>16)
+		{
+			temp2 =	i2;
+			sbm.state->numberOfDisparities = temp2;
+		}
+		if(i2<=16)
+		{
+			temp2 =	16;
+			sbm.state->numberOfDisparities = temp2;
+
+		}
+
+
+		i3 = pre_filter_size;
+		if(i3%2==0 && i3>=7)
+		{
+			temp3 = i3-1;
+			sbm.state->preFilterSize = temp3;
+		}
+		if(i3<7)
+		{
+			temp3 =	7;
+			sbm.state->preFilterSize = temp3;
+
+		}
+		if(i3%2!=0 && i3>=7)
+		{
+			temp3 =	i3;
+			sbm.state->preFilterSize = temp3;
+		}
+
+
+		i4 = pre_filter_cap;
+		if(i4>0)
+		{
+			temp4 = i4;
+			sbm.state->preFilterCap = temp4;
+		}
+		if(i4==0)
+		{
+			temp4 = 1;
+			sbm.state->preFilterCap = temp4;
+		}
+
+
+		i5 = min_disparity;
+		temp5 = -i5;
+		sbm.state->minDisparity = temp5;
+
+
+
+		i6 = texture_threshold;
+		temp6 = i6;
+		sbm.state->textureThreshold = temp6;
+
+
+		i7 = uniqueness_ratio;
+		temp7 = i7;
+		sbm.state->uniquenessRatio = temp7;
+
+
+		i8 = max_diff;
+		temp8 = i8;//0.01*((float)i8);
+		sbm.state->disp12MaxDiff = temp8;
+
+
+		i9 = speckle_window_size;
+		temp9 = i9;
+		sbm.state->speckleWindowSize = temp9;
+
+
+
+
+		sbm.state->speckleRange = 8;
+
+		sbm(g1, g2, disp, CV_32F);
+		imshow("left", img1);
+		imshow("right", img2);
+		//imshow("disp", disp8);
+
+		// APPLY MORPH OPENING
+
+
+		Mat disp_smooth;
+
+		// APPLY BILATERAL SMOOTHING
+		//cv::bilateralFilter ( disp, disp_smooth, 5, 30, 10 );			// size sigmacolor sigmaspace
+		//normalize(disp_smooth, disp8, 0, 255, CV_MINMAX, CV_8U);
+		//imshow("disp", disp8);
+
+		// APPLY ADAPTIVE BILATERAL
+		normalize(disp, disp8, 0, 255, CV_MINMAX, CV_8U);
+		cv::adaptiveBilateralFilter(disp8, disp_smooth, cv::Size(5,5), 30, 30); // size sigmaspace sigmacolor
+		imshow("disp", disp_smooth);
+
+
+
+//		applyColorMap(disp8, dispHeath, COLORMAP_JET);
+
+
+
+		waitKey(1);
 	}
 
-	
-	i2 = number_of_disparities;
-	if(i2%16!=0 && i2>16)
-	{
-		temp2 = i2 - i2%16;		
-		sbm.state->numberOfDisparities = temp2;
-	}
-	if(i2%16==0 && i2>16)
-    {
-		temp2 =	i2;
-		sbm.state->numberOfDisparities = temp2;
-	}
-	if(i2<=16)
-	{
-		temp2 =	16;	
-		sbm.state->numberOfDisparities = temp2;
-		
-	}
-
-	
-	i3 = pre_filter_size;
-	if(i3%2==0 && i3>=7)
-	{
-		temp3 = i3-1;		
-		sbm.state->preFilterSize = temp3;
-	}	
-	if(i3<7)
-	{
-		temp3 =	7;	
-		sbm.state->preFilterSize = temp3;
-		
-	}	
-	if(i3%2!=0 && i3>=7)
-    {
-		temp3 =	i3;
-		sbm.state->preFilterSize = temp3;
-	}
-	
-	
-	i4 = pre_filter_cap;
-	if(i4>0)
-	{
-		temp4 = i4;
-		sbm.state->preFilterCap = temp4;
-	}
-	if(i4==0)
-	{
-		temp4 = 1;
-		sbm.state->preFilterCap = temp4;
-	}
-        
-       
-	i5 = min_disparity;
-	temp5 = -i5;
-	sbm.state->minDisparity = temp5;
-
-
-
-	i6 = texture_threshold;
-	temp6 = i6;
-	sbm.state->textureThreshold = temp6;
-
-
-	i7 = uniqueness_ratio;
-	temp7 = i7;
-	sbm.state->uniquenessRatio = temp7;
-	
-    
-	i8 = max_diff;
-	temp8 = 0.01*((float)i8);
-	sbm.state->disp12MaxDiff = temp8;   
-
-
-	i9 = speckle_window_size;
-	temp9 = i9;
-	sbm.state->speckleWindowSize = temp9;
-
-
-
-	
-	sbm.state->speckleRange = 8;
-
-    sbm(g1, g2, disp);
-    normalize(disp, disp8, 0, 255, CV_MINMAX, CV_8U);
-    imshow("left", img1);
-    imshow("right", img2);
-    //imshow("disp", disp8);
-
-
-    applyColorMap(disp8, dispHeath, COLORMAP_JET);
-
-    imshow("disp", dispHeath);
-
-	waitKey(1);
-}
-    return(0);
+	return(0);
 }

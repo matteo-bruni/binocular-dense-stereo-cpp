@@ -85,8 +85,9 @@ namespace stereo {
 
         FILE_LOG(logDEBUG) << stereo_util::infoMatrix(T);
 
+        // dopo Q: 0 o CV_CALIB_ZERO_DISPARITY
 
-        stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, P1, P2, Q, CALIB_ZERO_DISPARITY, -1, img_size, &roi1, &roi2 );
+        stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, P1, P2, Q, 0, -1, img_size, &roi1, &roi2 );
 
 
         Mat map11, map12, map21, map22;
