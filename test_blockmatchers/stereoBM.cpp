@@ -30,6 +30,12 @@ int max_diff = 1;
 float temp8;
 int speckle_window_size = 0;
 int temp9;
+int smooth_kernel = 5;
+int temp_smooth_kernel;
+int smooth_sigma_color = 10;
+int temp_smooth_sigma_color;
+int smooth_sigma_space = 10;
+int temp_smooth_sigma_space;
 
 int main(int argc, char* argv[])
 {
@@ -50,17 +56,24 @@ int main(int argc, char* argv[])
 	int i7;
 	int i8;
 	int i9;
+	int i10;
+	int i11;
+	int i12;
+
 	namedWindow("disp");
 	createTrackbar("WindowSize", "disp", &window_size,255, NULL);
 	createTrackbar("no_of_disparities", "disp", &number_of_disparities,255, NULL);
 	createTrackbar("min_disparity (NEGATIVE!)", "disp", &min_disparity,60, NULL);
-
 	createTrackbar("filter_size", "disp", &pre_filter_size,255, NULL);
 	createTrackbar("filter_cap", "disp", &pre_filter_cap,63, NULL);
 	createTrackbar("texture_thresh", "disp", &texture_threshold,2000, NULL);
 	createTrackbar("uniquness", "disp", &uniqueness_ratio,30, NULL);
 	createTrackbar("disp12MaxDiff", "disp", &max_diff,100, NULL);
-	createTrackbar("Speckle Window", "disp", &speckle_window_size,5000, NULL);
+	createTrackbar("Speckle_Window", "disp", &speckle_window_size,5000, NULL);
+
+	createTrackbar("Smooth_Kernel", "disp", &smooth_kernel,100, NULL);
+	createTrackbar("Smooth_colorsize", "disp", &smooth_sigma_color,500, NULL);
+	createTrackbar("Smooth_sigmasize", "disp", &smooth_sigma_space,500, NULL);
 
 	while(1)
 	{
@@ -174,14 +187,33 @@ int main(int argc, char* argv[])
 
 		Mat disp_smooth;
 
+
+		i10 = smooth_kernel;
+		if(i10 == 0)
+			temp_smooth_kernel = 1;
+
+		else {
+			if (i10 %2==0)
+				temp_smooth_kernel = i10 -1;
+			else
+				temp_smooth_kernel = i10;
+
+		}
+
+
+		i11 = smooth_sigma_color;
+		temp_smooth_sigma_color = i11;
+		i12 = smooth_sigma_space;
+		temp_smooth_sigma_space = i12;
+
 		// APPLY BILATERAL SMOOTHING
-		//cv::bilateralFilter ( disp, disp_smooth, 5, 30, 10 );			// size sigmacolor sigmaspace
-		//normalize(disp_smooth, disp8, 0, 255, CV_MINMAX, CV_8U);
-		//imshow("disp", disp8);
+//		cv::bilateralFilter ( disp, disp_smooth, temp_smooth_kernel, temp_smooth_sigma_color, temp_smooth_sigma_space );			// size sigmacolor sigmaspace
+//		normalize(disp_smooth, disp8, 0, 255, CV_MINMAX, CV_8U);
+//		imshow("disp", disp8);
 
 		// APPLY ADAPTIVE BILATERAL
 		normalize(disp, disp8, 0, 255, CV_MINMAX, CV_8U);
-		cv::adaptiveBilateralFilter(disp8, disp_smooth, cv::Size(5,5), 30, 30); // size sigmaspace sigmacolor
+		cv::adaptiveBilateralFilter(disp8, disp_smooth, cv::Size(temp_smooth_kernel, temp_smooth_kernel), temp_smooth_sigma_space, temp_smooth_sigma_color); // size sigmaspace sigmacolor
 		imshow("disp", disp_smooth);
 
 
