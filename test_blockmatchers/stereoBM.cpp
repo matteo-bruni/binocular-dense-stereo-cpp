@@ -6,6 +6,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include "opencv2/contrib/contrib.hpp"
+
+#include "opencv2/photo/photo.hpp"
+
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
@@ -217,12 +220,33 @@ int main(int argc, char* argv[])
 		imshow("disp", disp_smooth);
 
 
+		//APPLY INPAINTING
+		Mat inpaintMask;
+		Mat img = Mat(disp8.rows, disp8.cols, CV_8U);
 
+
+		img = disp8.clone();
+		inpaintMask = Mat::zeros(img.size(), CV_8U);
+		imshow("inpaintMask", img);
+
+		for (int rows = 0; rows < img.rows; ++rows) {
+			for (int cols = 0; cols < img.cols; ++cols) {
+				if ((img.at<unsigned char>(rows, cols)) > 180)
+					inpaintMask.at<unsigned char>(rows, cols) = 255;
+			}
+
+		}
+		imshow("inpaintMask", inpaintMask);
+
+		Mat inpainted;
+		cv::inpaint(img, inpaintMask, inpainted, 5, INPAINT_TELEA);
+
+		imshow("inpainted image", inpainted);
 //		applyColorMap(disp8, dispHeath, COLORMAP_JET);
 
 
 
-		waitKey(1);
+		waitKey(5);
 	}
 
 	return(0);

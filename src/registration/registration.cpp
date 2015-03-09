@@ -186,7 +186,7 @@
 ////
 ////    //add the source to the transformed target
 ////    *cloud_out += *cloud_sr;
-////
+////mo delle partite con 4 giocatori per tavolo.
 ////    final_transform = targetToSource;
 ////
 ////    //    reg.align(*cloud_out);

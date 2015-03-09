@@ -163,7 +163,29 @@ int main(int argc, char* argv[])
 	    applyColorMap(disp8, dispHeath, COLORMAP_JET);
 
 	    imshow("disp", dispHeath);
-		waitKey(1);
+
+		Mat inpaintMask;
+		Mat img = Mat(disp8.rows, disp8.cols, CV_8U);
+
+
+		img = disp8.clone();
+		inpaintMask = Mat::zeros(img.size(), CV_8U);
+		imshow("inpaintMask", img);
+
+		for (int rows = 0; rows < img.rows; ++rows) {
+			for (int cols = 0; cols < img.cols; ++cols) {
+				if ((img.at<unsigned char>(rows, cols)) > 180)
+					inpaintMask.at<unsigned char>(rows, cols) = 255;
+			}
+
+		}
+		imshow("inpaintMask", inpaintMask);
+
+		Mat inpainted;
+		cv::inpaint(img, inpaintMask, inpainted, 5, INPAINT_TELEA);
+
+		imshow("inpainted image", inpainted);
+		waitKey(5);
 	}
     return(0);
 }
