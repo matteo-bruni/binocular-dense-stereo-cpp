@@ -14,6 +14,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <boost/thread/thread.hpp>
+#include "opencv2/photo/photo.hpp"
 
 
 #include "opencv2/calib3d/calib3d.hpp"
@@ -132,26 +133,17 @@ namespace stereo {
         cvtColor(img_left, g1, CV_BGR2GRAY);
         cvtColor(img_right, g2, CV_BGR2GRAY);
 
-//        FILE_LOG(logDEBUG) << "prima img1 " << stereo_util::infoMatrix(g1);
-
+        // ROTATE IMAGES
         if (img1_num < 32)
             stereo_util::rotate_clockwise(g1, g1, false);
         else
             stereo_util::rotate_clockwise(g1, g1, true);
-
-
-//        FILE_LOG(logDEBUG) << "dopo img1 " << stereo_util::infoMatrix(g1);
-
 
         if (img2_num < 32)
             stereo_util::rotate_clockwise(g2, g2, false);
         else
             stereo_util::rotate_clockwise(g2, g2, true);
 
-
-
-        imwrite("img_l_"+std::to_string(img1_num)+".png", g1);
-        imwrite("img_r_"+std::to_string(img2_num)+".png", g2);
 
         libconfig::Config cfg;
         // Read the file. If there is an error, report it and exit.
@@ -229,82 +221,104 @@ namespace stereo {
             sbm.P1 = 8*3*5*5;
             sbm.P2 = 8*3*5*5;
             sbm(g1, g2, disp);
-
-//            StereoSGBM sbm;
-//            sbm.SADWindowSize = 3;
-//            sbm.numberOfDisparities = 144;
-//            sbm.preFilterCap = 63;
-//            sbm.minDisparity = -39;
-//            sbm.uniquenessRatio = 10;
-//            sbm.speckleWindowSize = 100;
-//            sbm.speckleRange = 32;
-//            sbm.disp12MaxDiff = 1;
-//            sbm.fullDP = false;
-//            sbm.P1 = 216;
-//            sbm.P2 = 864;
-//            sbm(g1, g2, disp);
-//            sbm(g1, g2, d\ispar);
         }
 
 
-        FILE_LOG(logDEBUG) << "prima dispsize " << stereo_util::infoMatrix(disp);
-
-        if (img1_num < 32)
-            stereo_util::rotate_clockwise(disp, disp, true);
-        else
-            stereo_util::rotate_clockwise(disp, disp, false);
-
-        FILE_LOG(logDEBUG) << "dopo dispsize " << stereo_util::infoMatrix(disp);
-
 
         bool show_disparity_smooth = false;
-        cv::Mat disp_smooth;
+        cv::Mat disp_smooth, disp8;
 
+        // apply smoothing
+//        normalize(disp, disp8, 0, 255, CV_MINMAX, CV_8U);
+
+        int smooth_kernel_size;
+        double smooth_sigma_color, smooth_sigma_space;
         try
         {
             const libconfig::Setting & root = cfg.getRoot();
             const libconfig::Setting & SmoothingSettings  = root["Smoothing"];
 
-            cv::bilateralFilter ( disp, disp_smooth,
-                    (int) SmoothingSettings["kernel"],
-                    (double) SmoothingSettings["sigmaColor"],
-                    (double) SmoothingSettings["sigmaSpace"] );
+//            cv::bilateralFilter ( disp, disp_smooth,
+//                    (int) SmoothingSettings["kernel"],
+//                    (double) SmoothingSettings["sigmaColor"],
+//                    (double) SmoothingSettings["sigmaSpace"] );
+
+            smooth_kernel_size = (int) SmoothingSettings["kernel"];
+            smooth_sigma_color = (double) SmoothingSettings["sigmaColor"];
+            smooth_sigma_space =  (double) SmoothingSettings["sigmaSpace"];
 
             show_disparity_smooth = (bool) SmoothingSettings["show"];
 
         }
         catch(const libconfig::SettingNotFoundException &nfex)
         {
-            cv::bilateralFilter ( disp, disp_smooth, 9, 60, 30 );
+//            cv::bilateralFilter ( disp, disp_smooth, 9, 60, 30 );
+            smooth_kernel_size = 5;
+            smooth_sigma_color = 20.;
+            smooth_sigma_space =  20.;
         }
+
+        cv::bilateralFilter ( disp, disp_smooth,
+                    smooth_kernel_size,
+                    smooth_sigma_color,
+                    smooth_sigma_space );
+
+        // apply bilateral filtering
+//        cv::adaptiveBilateralFilter(disp8, disp_smooth,
+//                cv::Size(smooth_kernel_size, smooth_kernel_size),
+//                smooth_sigma_space, smooth_sigma_color); // size sigmaspace sigmacolor
+
+//
+//        //APPLY INPAINTING
+//        Mat inpaintMask;
+//        Mat img = Mat(disp_smooth.rows, disp_smooth.cols, CV_8U);
+//        img = disp_smooth.clone();
+//        inpaintMask = Mat::zeros(img.size(), CV_8U);
+//        for (int rows = 0; rows < img.rows; ++rows) {
+//            for (int cols = 0; cols < img.cols; ++cols) {
+//                if ((img.at<unsigned char>(rows, cols)) > 150)
+//                    inpaintMask.at<unsigned char>(rows, cols) = 255;
+//            }
+//
+//        }
+//        Mat inpainted;
+//        cv::inpaint(img, inpaintMask, inpainted, 3, INPAINT_TELEA);
+//
+//        // apply bilateral filtering
+//        cv::adaptiveBilateralFilter(disp8, disp_smooth,
+//                cv::Size(smooth_kernel_size, smooth_kernel_size),
+//                smooth_sigma_space, smooth_sigma_color);
+
 
         imwrite("disp_"+std::to_string(img1_num)+"_"+std::to_string(img2_num)+".png", disp_smooth);
 
 
         if (show_disparity_smooth){
 
-            Mat dispSGBMn,dispSGBMnSmooth, dispSGBMheat, dispSGBMheatSmooth;
+            cv::Mat dispHeath;
+            applyColorMap(disp_smooth, dispHeath, COLORMAP_JET);
 
-            // prepare disparity
-            normalize(disp, dispSGBMn, 0, 255, CV_MINMAX, CV_8U); // form 0-255
-            equalizeHist(dispSGBMn, dispSGBMn);
-            applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
-
-            // prepare disparity smoothed
-            normalize(disp_smooth, dispSGBMnSmooth, 0, 255, CV_MINMAX, CV_8U); // form 0-255
-            equalizeHist(dispSGBMnSmooth, dispSGBMnSmooth);
-            applyColorMap(dispSGBMnSmooth, dispSGBMheatSmooth, COLORMAP_JET);
-
-            // create single view
-            Size sz1 = dispSGBMheat.size();
-            Size sz2 = dispSGBMheatSmooth.size();
-            Mat im3(sz1.height, sz1.width+sz2.width, CV_8UC3);
-            Mat left(im3, Rect(0, 0, sz1.width, sz1.height));
-            dispSGBMheat.copyTo(left);
-            Mat right(im3, Rect(sz1.width, 0, sz2.width, sz2.height));
-            dispSGBMheatSmooth.copyTo(right);
-            imshow("Disparity - Disparity Smoothed "+std::to_string(img1_num)+"_"+std::to_string(img2_num), im3);
-
+            imshow("inpainted image- smooth", dispHeath);
+//            Mat dispSGBMn,dispSGBMnSmooth, dispSGBMheat, dispSGBMheatSmooth;
+//
+//            // prepare disparity
+//            normalize(disp, dispSGBMn, 0, 255, CV_MINMAX, CV_8U); // form 0-255
+//            applyColorMap(dispSGBMn, dispSGBMheat, COLORMAP_JET);
+//
+//            // prepare disparity smoothed
+//            normalize(disp_smooth, dispSGBMnSmooth, 0, 255, CV_MINMAX, CV_8U); // form 0-255
+//            applyColorMap(dispSGBMnSmooth, dispSGBMheatSmooth, COLORMAP_JET);
+//
+//            // create single view
+//            Size sz1 = dispSGBMheat.size();
+//            Size sz2 = dispSGBMheatSmooth.size();
+//            Mat im3(sz1.height, sz1.width+sz2.width, CV_8UC3);
+//            Mat left(im3, Rect(0, 0, sz1.width, sz1.height));
+//            dispSGBMheat.copyTo(left);
+//            Mat right(im3, Rect(sz1.width, 0, sz2.width, sz2.height));
+//            dispSGBMheatSmooth.copyTo(right);
+//            imshow("Disparity - Disparity Smoothed "+std::to_string(img1_num)+"_"+std::to_string(img2_num), im3);
+//
 
             fflush(stdout);
             waitKey();
@@ -314,32 +328,12 @@ namespace stereo {
 
         disp_smooth.copyTo(disp);
 
-//        normalize(disp, disp, 0, 255, CV_MINMAX, CV_8U); // form 0-255
+        // RESTORE ROTATION
+        if (img1_num < 32)
+            stereo_util::rotate_clockwise(disp, disp, true);
+        else
+            stereo_util::rotate_clockwise(disp, disp, false);
 
-
-        // APPLY OPENING
-//        cv::Mat const structure_elem = cv::getStructuringElement(
-//                cv::MORPH_RECT, cv::Size(3, 3));
-//        cv::morphologyEx(disp, disp,
-//                cv::MORPH_OPEN, structure_elem);
-
-//        // normalize
-//        normalize(disp, disp, 0, 255, CV_MINMAX, CV_8U);
-//        // equalize
-//        equalizeHist(disp, disp);     // ausreisser nicht darstellen // remove outliers
-//        Mat dispSGBMheat;
-//        applyColorMap(disp, dispSGBMheat, COLORMAP_JET);
-//
-//        namedWindow( "WindowDispSGBMheat", WINDOW_AUTOSIZE );// Create a window for display.
-//        imshow( "WindowDispSGBMheat", dispSGBMheat );
-//        fflush(stdout);
-//        waitKey();
-//        destroyAllWindows();
-
-
-
-//        stereo::display(img1_num, img2_num, g1, g2, disp);
-//        stereo::display(img1_num, img2_num, g1, disp, open_result);
 
     }
 
@@ -557,13 +551,32 @@ namespace stereo {
         //    \theta_z = arctan(r_{2,1}/r_{1,1})
 
         cv:Mat img1_segm_mask;
+//
+//        std::tuple<cv::Mat, cv::Mat> segm_tuple1 = stereo_util::segmentation(img1);
+//        img1 = std::get<0>(segm_tuple1);
+//        img1_segm_mask = std::get<1>(segm_tuple1);
+//
+//        std::tuple<cv::Mat, cv::Mat> segm_tuple2 = stereo_util::segmentation(img2);
+//        img2 = std::get<0>(segm_tuple2);
 
-        std::tuple<cv::Mat, cv::Mat> segm_tuple1 = stereo_util::segmentation(img1);
-        img1 = std::get<0>(segm_tuple1);
-        img1_segm_mask = std::get<1>(segm_tuple1);
+        // SEGMENTATION
+//        img1 = stereo_util::segmentationGrabcut(img1);
+//        img2 = stereo_util::segmentationGrabcut(img2);
+//
+//
+//        std::ostringstream ss;
+//        ss << std::setw(2) << std::setfill('0') << img1_num;
+//        std::string img_path = "templeR00"+ ss.str() +"_segm.png";
+//        imwrite(img_path, img1);
+//
+//        ss.str(std::string());
+//        ss.clear();
+//        ss << std::setw(2) << std::setfill('0') << img2_num;
+//        img_path = "templeR00"+ ss.str() +"_segm.png";
+//        imwrite(img_path, img1);
 
-        std::tuple<cv::Mat, cv::Mat> segm_tuple2 = stereo_util::segmentation(img2);
-        img2 = std::get<0>(segm_tuple2);
+        cv::Mat img1_original = img1.clone();
+        cv::Mat img2_original = img2.clone();
 
         FILE_LOG(logINFO) << "Rectifying images...";
         Rect roi1,roi2;
@@ -578,7 +591,7 @@ namespace stereo {
         FILE_LOG(logDEBUG) << "imgsize " << stereo_util::infoMatrix(img1);
         FILE_LOG(logDEBUG) << "dispsize " << stereo_util::infoMatrix(disp);
 
-        stereo::computeDisparity(img1_num, img2_num, img1, img2, disp,1,roi1,roi2);
+        stereo::computeDisparity(img1_num, img2_num, img1_original, img2_original, disp,1,roi1,roi2);
 
         //    stereo::display(img1, img2, disp);
         //

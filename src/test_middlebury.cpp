@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
     FILE_LOG(logINFO) << "Binocular Dense Stereo";
 
-    string path("../dataset/dataset_templeRing/");
+    string path("../dataset/dataset_templeRing_segm/");
 
     Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
     dataset->load(path);
