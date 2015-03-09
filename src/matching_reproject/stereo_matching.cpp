@@ -85,6 +85,14 @@ namespace stereo {
 
         FILE_LOG(logDEBUG) << stereo_util::infoMatrix(T);
 
+
+
+//        Mat im1_dritta, img2_dritta;
+//        stereo_util::rotate_clockwise(img1, im1_dritta, false);
+//        stereo_util::rotate_clockwise(img2, img2_dritta, false);
+//        imshow("pre img left", im1_dritta);
+//        imshow("pre img right", img2_dritta);
+
         // dopo Q: 0 o CV_CALIB_ZERO_DISPARITY
 
         stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, P1, P2, Q, 0, -1, img_size, &roi1, &roi2 );
@@ -100,6 +108,15 @@ namespace stereo {
 
         img1 = img1r;
         img2 = img2r;
+
+//        Mat im1_dritta_rect, img2_dritta_rect;
+//        stereo_util::rotate_clockwise(img1, im1_dritta_rect, false);
+//        stereo_util::rotate_clockwise(img2, img2_dritta_rect, false);
+//        imshow("post img left", im1_dritta_rect);
+//        imshow("post img right", img2_dritta_rect);
+//        fflush(stdout);
+//        waitKey();
+//        destroyAllWindows();
     }
 
 
@@ -115,7 +132,7 @@ namespace stereo {
         cvtColor(img_left, g1, CV_BGR2GRAY);
         cvtColor(img_right, g2, CV_BGR2GRAY);
 
-        FILE_LOG(logDEBUG) << "prima img1 " << stereo_util::infoMatrix(g1);
+//        FILE_LOG(logDEBUG) << "prima img1 " << stereo_util::infoMatrix(g1);
 
         if (img1_num < 32)
             stereo_util::rotate_clockwise(g1, g1, false);
@@ -123,7 +140,7 @@ namespace stereo {
             stereo_util::rotate_clockwise(g1, g1, true);
 
 
-        FILE_LOG(logDEBUG) << "dopo img1 " << stereo_util::infoMatrix(g1);
+//        FILE_LOG(logDEBUG) << "dopo img1 " << stereo_util::infoMatrix(g1);
 
 
         if (img2_num < 32)
@@ -131,12 +148,6 @@ namespace stereo {
         else
             stereo_util::rotate_clockwise(g2, g2, true);
 
-
-//        if (show_disparity_smooth) {
-//
-//            imshow("Ruotata", g1);
-//            imshow("Ruotata2", g2);
-//        }
 
 
         imwrite("img_l_"+std::to_string(img1_num)+".png", g1);
@@ -255,9 +266,9 @@ namespace stereo {
             const libconfig::Setting & SmoothingSettings  = root["Smoothing"];
 
             cv::bilateralFilter ( disp, disp_smooth,
-                    (int) SmoothingSettings["sigmaColor"],
-                    (double) SmoothingSettings["sigmaSpace"],
-                    (double) SmoothingSettings["borderType"] );
+                    (int) SmoothingSettings["kernel"],
+                    (double) SmoothingSettings["sigmaColor"],
+                    (double) SmoothingSettings["sigmaSpace"] );
 
             show_disparity_smooth = (bool) SmoothingSettings["show"];
 
@@ -292,7 +303,8 @@ namespace stereo {
             dispSGBMheat.copyTo(left);
             Mat right(im3, Rect(sz1.width, 0, sz2.width, sz2.height));
             dispSGBMheatSmooth.copyTo(right);
-            imshow("Disparity - Disparity Smoothed", im3);
+            imshow("Disparity - Disparity Smoothed "+std::to_string(img1_num)+"_"+std::to_string(img2_num), im3);
+
 
             fflush(stdout);
             waitKey();
@@ -301,6 +313,8 @@ namespace stereo {
 
 
         disp_smooth.copyTo(disp);
+
+//        normalize(disp, disp, 0, 255, CV_MINMAX, CV_8U); // form 0-255
 
 
         // APPLY OPENING
@@ -509,6 +523,7 @@ namespace stereo {
         // load images
         img1 = dataset->loadImage(img1_num);
         img2 = dataset->loadImage(img2_num);
+
 
         // init
         Mat R1,R2,P1,P2,Q;

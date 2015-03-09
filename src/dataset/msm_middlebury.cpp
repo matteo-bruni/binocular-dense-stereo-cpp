@@ -63,35 +63,68 @@ namespace cv {
 
                 photo_association =
                         {
-                                std::make_tuple(1,2),
+                                // 1st group
+                                std::make_tuple(1,2), //ok
 
-                                std::make_tuple(2,3),   std::make_tuple(3,4),
-                                std::make_tuple(4,5),
-
-                                std::make_tuple(6,7),   std::make_tuple(7,8),   std::make_tuple(8,9),
-                                std::make_tuple(9,10),  std::make_tuple(10,11), std::make_tuple(11,12),
-
-                                std::make_tuple(13,14), std::make_tuple(14,15), std::make_tuple(15,16),
-                                std::make_tuple(16,17), std::make_tuple(17,18), std::make_tuple(18,19),
-                                std::make_tuple(19,20), std::make_tuple(20,21), std::make_tuple(21,22),
-                                std::make_tuple(22,23), std::make_tuple(23,24), std::make_tuple(24,25),
-                                std::make_tuple(25,26), std::make_tuple(26,27), std::make_tuple(27,28),
-                                std::make_tuple(28,29), std::make_tuple(29,30), std::make_tuple(30,31),
-
-                                // solo colonna
-                                // allineati sinistra <----
-                                std::make_tuple(32,33), std::make_tuple(33,34), std::make_tuple(34,35),
-                                std::make_tuple(35,36), std::make_tuple(36,37), std::make_tuple(37,38),
-                                std::make_tuple(38,39),
+                                // 2nd group
+                                std::make_tuple(2,3), // ok
+                                std::make_tuple(3,4), //
+//                                std::make_tuple(4,5), // sminchia TOTALMENTE rectify forse a causa di segmentazione aggressiva?
 //
-                                // boh niente non fa neanche rect
-                                // allineati sinistra <----
-                                std::make_tuple(40,41),
+                                // 3rd group
+                                std::make_tuple(6,7),  // ok ma segmentazione troppo aggressiva
+                                std::make_tuple(7,8),  // ok ma segmentazione troppo aggressiva
+                                std::make_tuple(8,9),  // ok ma segmentazione troppo aggressiva
+                                std::make_tuple(9,10), // ok ma segmentazione troppo aggressiva
+                                std::make_tuple(10,11), // ok ma segmentazione troppo aggressiva
+//                                std::make_tuple(11,12),// sminchia TOTALMENTE rectify
 
-                                // ricostruiscono solo una colonna
-                                // allineati sinistra <----
-                                std::make_tuple(42,43), std::make_tuple(43,44), std::make_tuple(44,45),
-                                std::make_tuple(45,46)
+
+                                // 4th group
+                                std::make_tuple(13,14), // OK
+                                std::make_tuple(14,15), // OK
+                                std::make_tuple(15,16), // OK
+                                std::make_tuple(16,17), // OK
+                                std::make_tuple(17,18), //  OK segmentazione forse leva un po' di roba
+                                std::make_tuple(18,19), // OK segmentazione forse leva un po' di roba
+                                std::make_tuple(19,20), //OK segmentazione forse leva un po' di roba (colonne interne)
+                                std::make_tuple(20,21), // OK
+                                std::make_tuple(21,22), // OK
+                                std::make_tuple(22,23), // OK segmentazione forse leva un po' di roba
+                                std::make_tuple(23,24), // OK
+                                std::make_tuple(24,25), // OK
+                                std::make_tuple(25,26), // OK
+                                std::make_tuple(26,27), // OK
+                                std::make_tuple(27,28), // OK segmentazione perde un pezzettino
+                                std::make_tuple(28,29), // OK segmentazione perde un pezzettino
+                                std::make_tuple(29,30), // OK segmentazione perde un pezzettino
+//                                std::make_tuple(30,31), // segmentazione ok rectify morte schifo
+//
+                                // 5th group
+//                                // solo colonna
+//                                // allineati sinistra <----
+                                std::make_tuple(32,33), // OK
+                                std::make_tuple(33,34), //  OK
+                                std::make_tuple(34,35), // OK
+                                std::make_tuple(35,36), //  OK
+                                std::make_tuple(36,37), //OK segmentazione forse leva un po' di roba
+                                std::make_tuple(37,38), // OK segmentazione forse leva un po' di roba
+//                                std::make_tuple(38,39), //   segmentazione ok rectify morte schifo
+
+                                // 6th group
+//                                // boh niente non fa neanche rect
+//                                // allineati sinistra <----
+//                                std::make_tuple(40,41), // sminchia TOTALMENTE rectify forse a causa di segmentazione aggressiva?
+//
+
+
+                                // 7th group
+//                                // ricostruiscono solo una colonna
+//                                // allineati sinistra <----
+                                std::make_tuple(42,43), // OK
+                                std::make_tuple(43,44), // OK
+                                std::make_tuple(44,45), //OK segmentazione forse leva un po' di roba
+                                std::make_tuple(45,46) //OK segmentazione forse leva un po' di roba
 
                         };
 

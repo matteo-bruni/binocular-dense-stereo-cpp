@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
 	        
 	       
 		i5 = min_disparity;
-		temp5 = i5;
+		temp5 = -i5;
 		sbm.minDisparity = temp5;
 
 
