@@ -241,4 +241,16 @@ namespace stereo_util {
 
         return transformMatrix;
     }
+
+    cv::Mat createPINVFromRT(cv::Mat R, cv::Mat T) {
+
+        Mat P = Mat(4, 4, CV_64FC1);
+        Mat h_concat;
+        cv::hconcat(R, T, h_concat);
+        Mat vect = Mat::zeros(1, 4, CV_64F);
+        vect.at<double>(0, 3) = 1;
+        cv::vconcat(h_concat, vect, P);
+
+        return P.inv();
+    }
 }

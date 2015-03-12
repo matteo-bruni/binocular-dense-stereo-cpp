@@ -514,6 +514,17 @@ namespace stereo {
         Ptr<cv::datasets::MSM_middleburyObj> data_img2 =
                 static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img2_num]);
 
+
+        Ptr<cv::datasets::MSM_middleburyObj> data_img_origin =
+                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[1]);
+
+
+        Mat r_origin = Mat(data_img_origin->r);
+        // init translation vectors from dataset
+        Mat t_origin = Mat(3, 1, CV_64FC1, &data_img_origin->t);
+        Mat P_origin_inv = stereo_util::createPINVFromRT(r_origin, t_origin);
+
+
         // load images
         img1 = dataset->loadImage(img1_num);
         img2 = dataset->loadImage(img2_num);
@@ -529,12 +540,42 @@ namespace stereo {
         // load K and R from dataset info
         Mat M1 = Mat(data_img1->k);
         Mat M2 = Mat(data_img2->k);
-        Mat r1 = Mat(data_img1->r);
-        Mat r2 = Mat(data_img2->r);
 
-        // init translation vectors from dataset
+        // First image
+        Mat r1 = Mat(data_img1->r);
         Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->t);
+        // create P = KT for image 1
+        Mat p1_;
+        cv::hconcat(r1, t1, p1_);
+        // move p1*P_origin_inv
+        p1_ = p1_*P_origin_inv;
+        // extract new r1 and t1
+        r1 = p1_(cv::Rect(0,0,3,3));
+        t1 = p1_(cv::Rect(3,0,0,3));
+
+
+        // Second image
+        Mat r2 = Mat(data_img2->r);
         Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->t);
+        // create P = KT for image 1
+        Mat p2_;
+        cv::hconcat(r2, t2, p2_);
+        p2_ = p2_*P_origin_inv;
+        r2 = p2_(cv::Rect(0,0,3,3));
+        t2 = p2_(cv::Rect(3,0,0,3));
+
+
+
+//        Mat h_concat;
+//        cv::hconcat(r_origin, t_origin, h_concat);
+//        Mat vect = Mat::zeros(1, 4, CV_64F);
+//        vect.at<CV_64FC1>(0, 3) = 1;
+//        cv::vconcat(h_concat, vect, P_origin);
+//        Mat P_origin_inv = P_origin.inv();
+
+
+
+
 
         // rotation between img2 and img1
         Mat R = r2*r1.t();

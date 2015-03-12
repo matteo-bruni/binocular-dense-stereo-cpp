@@ -1,6 +1,6 @@
 #include <boost/make_shared.hpp>
 #include <pcl/visualization/pcl_visualizer.h>
-
+#include <pcl/impl/point_types.hpp>
 
 // local include
 #include "viewer.hpp"
@@ -29,7 +29,35 @@ namespace stereo {
             boost::this_thread::sleep (boost::posix_time::microseconds (100000));
         }
     }
-
+//
+//    inline pcl::PointXYZRGB Eigen2PointXYZRGB(Eigen::Vector3f v, Eigen::Vector3f rgb) { pcl::PointXYZRGB p(rgb[0],rgb[1],rgb[2]); p.x = v[0]; p.y = v[1]; p.z = v[2]; return p; }
+//
+//    pcl::PolygonMesh visualizerGetCameraMesh(const Eigen::Matrix3f& R, const Eigen::Vector3f& t, float r, float g, float b,
+//            Eigen::Vector3f& vforward, Eigen::Vector3f& rgb, double s = 0.01
+//    )
+//    {
+//        Eigen::Vector3f vright = R.row(0).normalized() * s;
+//        Eigen::Vector3f vup = -R.row(1).normalized() * s;
+//        vforward = R.row(2).normalized() * s;
+//
+//        rgb = Eigen::Vector3f(r,g,b);
+//
+//        pcl::PointCloud<pcl::PointXYZRGB> mesh_cld;
+//        mesh_cld.push_back(Eigen2PointXYZRGB(t,rgb));
+//        mesh_cld.push_back(Eigen2PointXYZRGB(t + vforward + vright/2.0 + vup/2.0,rgb));
+//        mesh_cld.push_back(Eigen2PointXYZRGB(t + vforward + vright/2.0 - vup/2.0,rgb));
+//        mesh_cld.push_back(Eigen2PointXYZRGB(t + vforward - vright/2.0 + vup/2.0,rgb));
+//        mesh_cld.push_back(Eigen2PointXYZRGB(t + vforward - vright/2.0 - vup/2.0,rgb));
+//
+//        pcl::PolygonMesh pm;
+//        pm.polygons.resize(6);
+//        for(int i=0;i<6;i++)
+//            for(int _v=0;_v<3;_v++)
+//                pm.polygons[i].vertices.push_back(ipolygon[i*3 + _v]);
+////        pcl::toROSMsg(mesh_cld, pm.cloud);
+//
+//        return pm;
+//    }
 
 
     void viewDoublePointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr, pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr2) {

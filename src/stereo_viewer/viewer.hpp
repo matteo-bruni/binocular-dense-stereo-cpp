@@ -20,4 +20,7 @@ namespace stereo {
             pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud, pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud2);
 
 
+    pcl::PolygonMesh visualizerGetCameraMesh(const Eigen::Matrix3f& R, const Eigen::Vector3f& t, float r, float g, float b,
+            Eigen::Vector3f& vforward, Eigen::Vector3f& rgb, double s = 0.01
+    );
 }
