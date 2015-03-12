@@ -66,11 +66,11 @@ namespace cv {
                                 // 1st group
                                 std::make_tuple(1,2), //ok
 
-                                // 2nd group
-                                std::make_tuple(2,3), // ok
-                                std::make_tuple(3,4), //
-//                                std::make_tuple(4,5), // sminchia TOTALMENTE rectify forse a causa di segmentazione aggressiva?
-
+//                                // 2nd group
+//                                std::make_tuple(2,3), // ok
+//                                std::make_tuple(3,4), //
+////                                std::make_tuple(4,5), // sminchia TOTALMENTE rectify forse a causa di segmentazione aggressiva?
+//
 //                                // 3rd group
 //                                std::make_tuple(6,7),  // ok ma segmentazione troppo aggressiva
 //                                std::make_tuple(7,8),  // ok ma segmentazione troppo aggressiva

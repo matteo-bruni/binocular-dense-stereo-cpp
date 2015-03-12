@@ -407,9 +407,9 @@ namespace stereo {
 
                 pcl::PointXYZ pcl_point(point.x, point.y, point.z); // normal PointCloud
                 pcl::PointXYZRGB pcl_point_rgb;
-                pcl_point_rgb.x = point.x;    // rgb PointCloud
-                pcl_point_rgb.y = point.y;
-                pcl_point_rgb.z = point.z;
+                pcl_point_rgb.x = -point.x;    // rgb PointCloud
+                pcl_point_rgb.y = -point.y;
+                pcl_point_rgb.z = -point.z;
                 // image_left is the stereo rectified image used in stere reconstruction
                 cv::Vec3b intensity = img1.at<cv::Vec3b>(rows, cols); //BGR
 
@@ -633,10 +633,34 @@ namespace stereo {
 
         int image_reference = std::get<0>(dataset->getAssociation()[0]);
 
-        for(std::vector<std::tuple<int,int>>::iterator it = dataset->getAssociation().begin();
-            it != dataset->getAssociation().end(); ++it) {
-            img1_num = std::get<0>(*it);
-            img2_num = std::get<1>(*it);
+
+        libconfig::Config cfg;
+        // Read the file. If there is an error, report it and exit.
+        try
+        {
+            cfg.readFile("../config/config.cfg");
+        }
+        catch(const libconfig::FileIOException &fioex)
+        {
+            std::cerr << "I/O error while reading file." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        catch(const libconfig::ParseException &pex)
+        {
+            std::cerr << "Parse error at " << pex.getFile() << ":" << pex.getLine()
+                    << " - " << pex.getError() << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        const libconfig::Setting & root = cfg.getRoot();
+        const libconfig::Setting & DatasetSettings  = root["Dataset"];
+
+        libconfig::Setting & lista = DatasetSettings["associations"];
+
+        for (int i=0; i<lista.getLength(); i++){
+
+            img1_num = (int) lista[i][0];
+            img2_num = (int) lista[i][1];
             cloud = generatePointCloud(dataset, img1_num, img2_num, true);
             if(!(*cloud).empty()){
 
@@ -650,7 +674,7 @@ namespace stereo {
 //                    clouds.push_back(transformed_cloud);
 //
 //                } else {
-                    clouds.push_back(cloud);
+                clouds.push_back(cloud);
 
 //                }
 
@@ -662,8 +686,40 @@ namespace stereo {
                 pcl::io::savePCDFileASCII (path, *cloud);
             }
 
-            /* std::cout << *it; ... */
         }
+
+
+//        for(std::vector<std::tuple<int,int>>::iterator it = dataset->getAssociation().begin();
+//            it != dataset->getAssociation().end(); ++it) {
+//            img1_num = std::get<0>(*it);
+//            img2_num = std::get<1>(*it);
+//            cloud = generatePointCloud(dataset, img1_num, img2_num, true);
+//            if(!(*cloud).empty()){
+//
+////                if (img1_num != 1) {
+////                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, img1_num);
+////                    // Executing the transformation
+////                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+////                    // You can either apply transform_1 or transform_2; they are the same
+////                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+////
+////                    clouds.push_back(transformed_cloud);
+////
+////                } else {
+//                    clouds.push_back(cloud);
+//
+////                }
+//
+//                // save
+//                ss.str( std::string() );
+//                ss.clear();
+//                ss << img1_num<< "-" << img2_num ;
+//                path = "./cloud"+ ss.str() +".pcd";
+//                pcl::io::savePCDFileASCII (path, *cloud);
+//            }
+//
+//            /* std::cout << *it; ... */
+//        }
 
         FILE_LOG(logINFO) << "cloud size" <<clouds.size();
 
