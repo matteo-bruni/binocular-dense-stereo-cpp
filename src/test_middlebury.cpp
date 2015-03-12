@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
     FILE_LOG(logINFO) << "Binocular Dense Stereo";
 
-    string path("../dataset/dataset_templeRing/");
+    string path("../dataset/dataset_templeRing_segm/");
 
     Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
     dataset->load(path);
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
             *finalCloud += *(clouds[i]);
 
     }
-
+   stereo::viewPointCloud(finalCloud);
 
 //    stereo::viewDoublePointCloud(transformed_cloud, cloud2);
 //
@@ -141,8 +141,8 @@ int main(int argc, char *argv[])
 //    FILE_LOG(logINFO) << "cloud2 : "<< transformed_cloud->size();
 //
 //    *cloud1 += *transformed_cloud;
-
-    stereo::viewPointCloud(finalCloud);
+//     stereo_registration::registerClouds(clouds);
+//     stereo::viewPointCloud(finalCloud);
 //    cv::Mat result1 = stereo_util::segmentation(img1_num);
 //
 //    imshow("filtrata",result1);

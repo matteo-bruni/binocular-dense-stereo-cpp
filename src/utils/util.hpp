@@ -17,6 +17,7 @@ namespace stereo_util {
     void rotate(cv::Mat& src, double angle, cv::Mat& dst);
 
     std::tuple<cv::Mat,cv::Mat> segmentation(cv::Mat image);
+    cv::Mat segmentationGrabcut(cv::Mat image);
 
     void rotate_clockwise(cv::Mat& src, cv::Mat& dst, bool clockwise);
 
