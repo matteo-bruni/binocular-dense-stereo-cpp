@@ -501,7 +501,7 @@ namespace stereo {
 
 
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num, bool opencv_rec, cv::Mat& R,cv::Mat& T){
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num, bool opencv_rec){
 
         Mat img1;
         Mat img2;
@@ -552,8 +552,8 @@ namespace stereo {
         // move p1*P_origin_inv
         p1_ = p1_*P_origin_inv;
         // extract new r1 and t1
-        r1 = p1_(cv::Rect(0,0,3,3));
-        t1 = p1_(cv::Rect(3,0,1,3));
+//        r1 = p1_(cv::Rect(0,0,3,3));
+//        t1 = p1_(cv::Rect(3,0,1,3));
 
 
         // Second image
@@ -565,8 +565,8 @@ namespace stereo {
 //        Mat vect2 = Mat::zeros(1, 4, CV_64F);
 //        cv::vconcat(p2_, vect2, p2_);
         p2_ = p2_*P_origin_inv;
-        r2 = p2_(cv::Rect(0,0,3,3));
-        t2 = p2_(cv::Rect(3,0,1,3));
+//        r2 = p2_(cv::Rect(0,0,3,3));
+//        t2 = p2_(cv::Rect(3,0,1,3));
 
 
 
@@ -582,9 +582,9 @@ namespace stereo {
 
 
         // rotation between img2 and img1
-         R = r2*r1.t();
+        cv::Mat R = r2*r1.t();
         // translation between img2 and img1
-         T = t1 - (R.t()*t2 );
+        cv::Mat T = t1 - (R.t()*t2 );
 
         //    double tx = atan2 (R.at<double>(3,2), R.at<double>(3,3));
         //    double ty = - asin(R.at<double>(3,1));
@@ -665,7 +665,7 @@ namespace stereo {
 
         int img1_num;
         int img2_num;
-        cv::Mat R,T;
+
 
         std::stringstream ss;
         std::string path;
@@ -676,7 +676,6 @@ namespace stereo {
 //        pcl::io::savePCDFileASCII ("./cloud1.pcd", *cloud);
         unsigned int dataset_size = (unsigned int)dataset->getTrain().size();
 
-        int image_reference = std::get<0>(dataset->getAssociation()[0]);
 
 
         libconfig::Config cfg;
@@ -702,15 +701,17 @@ namespace stereo {
 
         libconfig::Setting & lista = DatasetSettings["associations"];
 
+        int image_reference = (int) lista[0][0];
+
         for (int i=0; i<lista.getLength(); i++){
 
             img1_num = (int) lista[i][0];
             img2_num = (int) lista[i][1];
-            cloud = generatePointCloud(dataset, img1_num, img2_num, true, R, T);
+            cloud = generatePointCloud(dataset, img1_num, img2_num, true);
             if(!(*cloud).empty()){
 
-//                if (img1_num != 1) {
-                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(R,T);
+                if (img1_num != image_reference) {
+                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, img1_num);
                     // Executing the transformation
                     pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
                     // You can either apply transform_1 or transform_2; they are the same
@@ -718,10 +719,10 @@ namespace stereo {
 
                     clouds.push_back(transformed_cloud);
 
-//                } else {
-//                clouds.push_back(cloud);
+                } else {
+                clouds.push_back(cloud);
 
-//                }
+                }
 
                 // save
                 ss.str( std::string() );

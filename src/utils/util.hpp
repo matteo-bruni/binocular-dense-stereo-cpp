@@ -23,7 +23,7 @@ namespace stereo_util {
 
     cv::Mat createPINVFromRT(cv::Mat R, cv::Mat T);
 
-    Eigen::Matrix4f getTransformBetweenClouds(cv::Mat R, cv::Mat T);
+    Eigen::Matrix4f getTransformBetweenClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num);
 
 
 }
