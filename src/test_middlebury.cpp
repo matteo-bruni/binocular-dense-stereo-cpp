@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
     }
    stereo::viewPointCloud(finalCloud);
 
-//    stereo::viewDoublePointCloud(transformed_cloud, cloud2);
+//    stereo::viewDoublePointCloud(clouds[0], clouds[1]);
 //
 //    FILE_LOG(logINFO) << "cloud1 : "<< cloud1->size();
 //    FILE_LOG(logINFO) << "cloud2 : "<< transformed_cloud->size();

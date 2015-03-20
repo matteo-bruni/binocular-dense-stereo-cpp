@@ -198,31 +198,32 @@ namespace stereo_util {
 
 
 
-    Eigen::Matrix4f getTransformBetweenClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num) {
+    Eigen::Matrix4f getTransformBetweenClouds( cv::Mat R, cv::Mat T) {
 
+        FILE_LOG(logINFO) << "R: " << stereo_util::infoMatrix(R);
+        FILE_LOG(logINFO) << "T: " << stereo_util::infoMatrix(T);
 
-
-        Ptr<cv::datasets::MSM_middleburyObj> data_img1 =
-                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img1_num]);
-        Ptr<cv::datasets::MSM_middleburyObj> data_img2 =
-                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img2_num]);
-
-
-        Mat r1 = Mat(data_img1->r);
-        Mat r2 = Mat(data_img2->r);
-
-        // init translation vectors from dataset
-        Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->t);
-        Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->t);
-
-        // rotation between img2 and img1
-        Mat R = r2*r1.t();
-        // translation between img2 and img1
-        Mat T = t1 - (R.t()*t2 );
+//        Ptr<cv::datasets::MSM_middleburyObj> data_img1 =
+//                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img1_num]);
+//        Ptr<cv::datasets::MSM_middleburyObj> data_img2 =
+//                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img2_num]);
+//
+//
+//        Mat r1 = Mat(data_img1->r);
+//        Mat r2 = Mat(data_img2->r);
+//
+//        // init translation vectors from dataset
+//        Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->t);
+//        Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->t);
+//
+//        // rotation between img2 and img1
+//        Mat R = r2*r1.t();
+//        // translation between img2 and img1
+//        Mat T = t1 - (R.t()*t2 );
 
         Eigen::Matrix4f transformMatrix = Eigen::Matrix4f::Identity();
 
-        FILE_LOG(logINFO) << "R float: " <<  R.at<float>(0,0) << " double:" << R.at<double>(0,0);
+//        FILE_LOG(logINFO) << "R float: " <<  R.at<float>(0,0) << " double:" << R.at<double>(0,0);
 
         transformMatrix (0,0) = R.at<double>(0,0);
         transformMatrix (0,1) = R.at<double>(0,1);
@@ -240,5 +241,17 @@ namespace stereo_util {
         transformMatrix (2,3) = T.at<double>(2);
 
         return transformMatrix;
+    }
+
+    cv::Mat createPINVFromRT(cv::Mat R, cv::Mat T) {
+
+        Mat P = Mat(4, 4, CV_64FC1);
+        Mat h_concat;
+        cv::hconcat(R, T, h_concat);
+        Mat vect = Mat::zeros(1, 4, CV_64F);
+        vect.at<double>(0, 3) = 1;
+        cv::vconcat(h_concat, vect, P);
+        FILE_LOG(logINFO) << "P matrix: " << P ;
+        return P.inv();
     }
 }

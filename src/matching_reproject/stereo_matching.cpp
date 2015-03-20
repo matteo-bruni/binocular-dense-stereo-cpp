@@ -501,7 +501,7 @@ namespace stereo {
 
 
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num, bool opencv_rec){
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num, bool opencv_rec, cv::Mat& R,cv::Mat& T){
 
         Mat img1;
         Mat img2;
@@ -513,6 +513,17 @@ namespace stereo {
                 static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img1_num]);
         Ptr<cv::datasets::MSM_middleburyObj> data_img2 =
                 static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img2_num]);
+
+
+        Ptr<cv::datasets::MSM_middleburyObj> data_img_origin =
+                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[1]);
+
+
+        Mat r_origin = Mat(data_img_origin->r);
+        // init translation vectors from dataset
+        Mat t_origin = Mat(3, 1, CV_64FC1, &data_img_origin->t);
+        Mat P_origin_inv = stereo_util::createPINVFromRT(r_origin, t_origin);
+
 
         // load images
         img1 = dataset->loadImage(img1_num);
@@ -529,17 +540,51 @@ namespace stereo {
         // load K and R from dataset info
         Mat M1 = Mat(data_img1->k);
         Mat M2 = Mat(data_img2->k);
-        Mat r1 = Mat(data_img1->r);
-        Mat r2 = Mat(data_img2->r);
 
-        // init translation vectors from dataset
+        // First image
+        Mat r1 = Mat(data_img1->r);
         Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->t);
+        // create P = KT for image 1
+        Mat p1_ = Mat(3, 4, CV_64FC1);
+        cv::hconcat(r1, t1, p1_);
+//        Mat vect = Mat::zeros(1, 4, CV_64F);
+//        cv::vconcat(p1_, vect, p1_);
+        // move p1*P_origin_inv
+        p1_ = p1_*P_origin_inv;
+        // extract new r1 and t1
+        r1 = p1_(cv::Rect(0,0,3,3));
+        t1 = p1_(cv::Rect(3,0,1,3));
+
+
+        // Second image
+        Mat r2 = Mat(data_img2->r);
         Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->t);
+        // create P = KT for image 1
+        Mat p2_ = Mat(3, 4, CV_64FC1);
+        cv::hconcat(r2, t2, p2_);
+//        Mat vect2 = Mat::zeros(1, 4, CV_64F);
+//        cv::vconcat(p2_, vect2, p2_);
+        p2_ = p2_*P_origin_inv;
+        r2 = p2_(cv::Rect(0,0,3,3));
+        t2 = p2_(cv::Rect(3,0,1,3));
+
+
+
+//        Mat h_concat;
+//        cv::hconcat(r_origin, t_origin, h_concat);
+//        Mat vect = Mat::zeros(1, 4, CV_64F);
+//        vect.at<CV_64FC1>(0, 3) = 1;
+//        cv::vconcat(h_concat, vect, P_origin);
+//        Mat P_origin_inv = P_origin.inv();
+
+
+
+
 
         // rotation between img2 and img1
-        Mat R = r2*r1.t();
+         R = r2*r1.t();
         // translation between img2 and img1
-        Mat T = t1 - (R.t()*t2 );
+         T = t1 - (R.t()*t2 );
 
         //    double tx = atan2 (R.at<double>(3,2), R.at<double>(3,3));
         //    double ty = - asin(R.at<double>(3,1));
@@ -620,7 +665,7 @@ namespace stereo {
 
         int img1_num;
         int img2_num;
-
+        cv::Mat R,T;
 
         std::stringstream ss;
         std::string path;
@@ -633,24 +678,48 @@ namespace stereo {
 
         int image_reference = std::get<0>(dataset->getAssociation()[0]);
 
-        for(std::vector<std::tuple<int,int>>::iterator it = dataset->getAssociation().begin();
-            it != dataset->getAssociation().end(); ++it) {
-            img1_num = std::get<0>(*it);
-            img2_num = std::get<1>(*it);
-            cloud = generatePointCloud(dataset, img1_num, img2_num, true);
+
+        libconfig::Config cfg;
+        // Read the file. If there is an error, report it and exit.
+        try
+        {
+            cfg.readFile("../config/config.cfg");
+        }
+        catch(const libconfig::FileIOException &fioex)
+        {
+            std::cerr << "I/O error while reading file." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        catch(const libconfig::ParseException &pex)
+        {
+            std::cerr << "Parse error at " << pex.getFile() << ":" << pex.getLine()
+                    << " - " << pex.getError() << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        const libconfig::Setting & root = cfg.getRoot();
+        const libconfig::Setting & DatasetSettings  = root["Dataset"];
+
+        libconfig::Setting & lista = DatasetSettings["associations"];
+
+        for (int i=0; i<lista.getLength(); i++){
+
+            img1_num = (int) lista[i][0];
+            img2_num = (int) lista[i][1];
+            cloud = generatePointCloud(dataset, img1_num, img2_num, true, R, T);
             if(!(*cloud).empty()){
 
 //                if (img1_num != 1) {
-//                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, img1_num);
-//                    // Executing the transformation
-//                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
-//                    // You can either apply transform_1 or transform_2; they are the same
-//                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
-//
-//                    clouds.push_back(transformed_cloud);
-//
+                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(R,T);
+                    // Executing the transformation
+                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+                    // You can either apply transform_1 or transform_2; they are the same
+                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+
+                    clouds.push_back(transformed_cloud);
+
 //                } else {
-                    clouds.push_back(cloud);
+//                clouds.push_back(cloud);
 
 //                }
 
@@ -662,8 +731,40 @@ namespace stereo {
                 pcl::io::savePCDFileASCII (path, *cloud);
             }
 
-            /* std::cout << *it; ... */
         }
+
+
+//        for(std::vector<std::tuple<int,int>>::iterator it = dataset->getAssociation().begin();
+//            it != dataset->getAssociation().end(); ++it) {
+//            img1_num = std::get<0>(*it);
+//            img2_num = std::get<1>(*it);
+//            cloud = generatePointCloud(dataset, img1_num, img2_num, true);
+//            if(!(*cloud).empty()){
+//
+////                if (img1_num != 1) {
+////                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, img1_num);
+////                    // Executing the transformation
+////                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+////                    // You can either apply transform_1 or transform_2; they are the same
+////                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+////
+////                    clouds.push_back(transformed_cloud);
+////
+////                } else {
+//                    clouds.push_back(cloud);
+//
+////                }
+//
+//                // save
+//                ss.str( std::string() );
+//                ss.clear();
+//                ss << img1_num<< "-" << img2_num ;
+//                path = "./cloud"+ ss.str() +".pcd";
+//                pcl::io::savePCDFileASCII (path, *cloud);
+//            }
+//
+//            /* std::cout << *it; ... */
+//        }
 
         FILE_LOG(logINFO) << "cloud size" <<clouds.size();
 
