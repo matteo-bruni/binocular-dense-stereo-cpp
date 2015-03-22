@@ -33,6 +33,8 @@ set(SOURCE_FILES
     src/dataset/util.hpp
     src/dataset/dataset.cpp
     src/dataset/msm_middlebury.cpp
+    src/dataset/tsukuba_dataset.cpp
+    src/dataset/tsukuba_dataset.h
     src/dataset/util.cpp
     src/test_middlebury.cpp
     src/matching_reproject/stereo_matching.cpp
@@ -86,5 +88,5 @@ message(${LIBS})
 
 #################################### target build ############################################
 
-add_executable(binocular_dense_stereo ${SOURCE_FILES})
+add_executable(binocular_dense_stereo ${SOURCE_FILES} src/dataset/tsukuba_dataset.cpp src/dataset/tsukuba_dataset.h)
 target_link_libraries(binocular_dense_stereo ${LIBS})

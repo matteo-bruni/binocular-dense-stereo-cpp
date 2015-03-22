@@ -33,11 +33,12 @@
 #include "stereo_matching.hpp"
 #include "../utils/util.hpp"
 #include "../dataset/msm_middlebury.hpp"
+#include "../dataset/tsukuba_dataset.h"
+#include "../dataset/dataset.hpp"
 
 
 // logger
 #include "../logger/log.h"
-
 
 
 using namespace cv;
@@ -337,6 +338,73 @@ namespace stereo {
 
     }
 
+    void computeDisparityTsukuba(const int img_frame, Mat& img_left, Mat& img_right,Mat& disp,int alg,Rect & roi1,Rect &roi2){
+
+
+        std::string tipo = "BM";
+
+        Mat g1, g2;
+
+        ///da provare
+        cvtColor(img_left, g1, CV_BGR2GRAY);
+        cvtColor(img_right, g2, CV_BGR2GRAY);
+
+
+        if (tipo == "BM")
+        {
+            StereoBM sbm;
+
+            int numberOfDisparities = numberOfDisparities > 0 ? numberOfDisparities : ((img_left.rows/8) + 15) & -16;
+
+            sbm.state->roi1 = roi1;
+            sbm.state->roi2 = roi2;
+            sbm.state->preFilterCap = 31;
+            sbm.state->SADWindowSize = 5;
+            sbm.state->minDisparity = 0;
+            sbm.state->numberOfDisparities = numberOfDisparities;
+            sbm.state->textureThreshold = 10;
+            sbm.state->uniquenessRatio = 15;
+            sbm.state->speckleWindowSize = 100;
+            sbm.state->speckleRange = 32;
+            sbm.state->disp12MaxDiff = 1;
+
+//
+//            sbm.state->SADWindowSize = 5;
+//            sbm.state->numberOfDisparities = 192;
+//            sbm.state->preFilterSize = 5;
+//            sbm.state->preFilterCap = 51;
+//            sbm.state->minDisparity = 25;
+//            sbm.state->textureThreshold = 223;
+//            sbm.state->uniquenessRatio = 0;
+//            sbm.state->speckleWindowSize = 0;
+//            sbm.state->speckleRange = 0;
+//            sbm.state->disp12MaxDiff = 0;
+
+            sbm(g1, g2, disp, CV_32F);
+
+        }
+        else if (tipo == "SGBM")
+        {
+            StereoSGBM sbm;
+            sbm.SADWindowSize = 5;
+            sbm.numberOfDisparities = 112;
+            sbm.preFilterCap = 63;
+            sbm.minDisparity = 0;
+            sbm.uniquenessRatio = 10;
+            sbm.speckleWindowSize = 0;
+            sbm.speckleRange = 0;
+            sbm.disp12MaxDiff = 1;
+            sbm.fullDP = false;
+            sbm.P1 = 8*3*5*5;
+            sbm.P2 = 8*3*5*5;
+            sbm(g1, g2, disp);
+        }
+
+
+        imwrite("disp_"+std::to_string(img_frame)+".png", disp);
+
+    }
+
     void display(const int img1_num, const int img2_num, Mat& img1, Mat& img2,Mat& disp){
 
 //        namedWindow("left ", 1);
@@ -499,6 +567,110 @@ namespace stereo {
 
     }
 
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloudTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, const int frame_num, const int frame_reference){
+
+        FILE_LOG(logINFO) << "Loading data..";
+
+        // load images data
+        Ptr<cv::datasets::tsukuba_datasetObj> data_stereo_img =
+                static_cast< Ptr<cv::datasets::tsukuba_datasetObj> >  (dataset->getTrain()[frame_num]);
+
+        Ptr<cv::datasets::tsukuba_datasetObj> data_stereo_reference =
+                static_cast< Ptr<cv::datasets::tsukuba_datasetObj> >  (dataset->getTrain()[frame_reference]);
+
+        // ORIGIN DATA
+        Mat r_origin = Mat(data_stereo_reference->r);
+        // init translation vectors from dataset
+        Mat t_origin = Mat(3, 1, CV_64FC1, &data_stereo_reference->tl);
+        Mat P_origin_inv = stereo_util::createPINVFromRT(r_origin, t_origin);
+
+
+        FILE_LOG(logINFO) << "Loading images..";
+
+        // load images
+        cv::Mat img_left, img_right;
+        cv::datasets::FramePair tuple_img = dataset->load_stereo_images(frame_num+1);
+        img_left = tuple_img.frame_left;
+        img_right = tuple_img.frame_right;
+
+
+        // init
+        Mat R1,R2,P1,P2,Q;
+        // zero distiorsions
+        Mat D_left = Mat::zeros(1, 5, CV_64F);
+        Mat D_right = Mat::zeros(1, 5, CV_64F);
+
+        // load K and R from dataset info
+        Mat M_left = Mat(data_stereo_img->k);
+        Mat M_right = Mat(data_stereo_img->k);
+
+        // Left image
+        Mat r_left = Mat(data_stereo_img->r);
+        Mat t_left = Mat(3, 1, CV_64FC1, &data_stereo_img->tl);
+
+//        // CHANGE SYSTEM REFERENCE MOVING TO FRAME_REFERENCE
+//        // create P = KT for image 1
+//        Mat p1_ = Mat(3, 4, CV_64FC1);
+//        cv::hconcat(r_left, t_left, p1_);
+//        p1_ = p1_*P_origin_inv;
+//        // extract new r1 and t1
+//        r_left = p1_(cv::Rect(0,0,3,3));
+//        t_left = p1_(cv::Rect(3,0,1,3));
+
+
+//        // Second image
+        Mat r_right = Mat(data_stereo_img->r);
+        Mat t_right = Mat(3, 1, CV_64FC1, &data_stereo_img->tr);
+
+//        // CHANGE SYSTEM REFERENCE MOVING TO FRAME_REFERENCE
+//        // create P = KT for image 1
+//        Mat p2_ = Mat(3, 4, CV_64FC1);
+//        cv::hconcat(r_right, t_right, p2_);
+//        p2_ = p2_*P_origin_inv;
+//        r2 = p2_(cv::Rect(0,0,3,3));
+//        t2 = p2_(cv::Rect(3,0,1,3));
+
+
+        // rotation between left and right
+        cv::Mat R = r_right*r_left.t();
+        // translation between img2 and img1
+        cv::Mat T = t_left - (R.t()*t_right );
+
+        cv::Mat img1_original = img_left.clone();
+        cv::Mat img2_original = img_right.clone();
+
+        FILE_LOG(logINFO) << "Rectifying images...";
+        Rect roi1,roi2;
+        stereo::rectifyImages(img_left, img_right, M_left, D_left, M_right, D_right, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
+
+
+        FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
+        Mat disp(img_left.size(), CV_32F);
+
+        FILE_LOG(logDEBUG) << "imgsize " << stereo_util::infoMatrix(img_left);
+        FILE_LOG(logDEBUG) << "dispsize " << stereo_util::infoMatrix(disp);
+
+//        stereo::computeDisparityTsukuba(frame_num, img_left, img_right, disp,1,roi1,roi2);
+
+        disp = dataset->load_disparity(frame_num);
+
+        //    stereo::display(img1, img2, disp);
+        //
+        FILE_LOG(logINFO) << "Creating point cloud..";
+        Mat recons3D(disp.size(), CV_32FC3);
+        FILE_LOG(logINFO) << "recons3Dsize " << stereo_util::infoMatrix(recons3D);
+
+        // stereo::storePointCloud(disp, Q, recons3D);
+
+        //std::cout << "Creating Point Cloud..." <<std::endl;
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+        cv::Mat img_1_segm;
+        stereo::createPointCloudOpenCV(img_left, img_right, img_1_segm, Q, disp, recons3D, point_cloud_ptr);
+
+        return point_cloud_ptr;
+
+    }
 
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloud(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num, bool opencv_rec){
@@ -771,4 +943,55 @@ namespace stereo {
 
     }
 
+
+
+    void createAllCloudsTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds){
+
+
+        std::stringstream ss;
+        std::string path;
+
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;// = generatePointCloud(dataset, img1_num, img2_num,false);
+
+        unsigned int dataset_size = (unsigned int)dataset->getTrain().size();
+
+
+        int image_reference = 0, frame_num;
+        int last_frame = 5;
+
+        for (int i=0; i<last_frame; i++){
+
+            frame_num = i;
+
+            cloud = generatePointCloudTsukuba(dataset, frame_num, image_reference);
+
+            if(!(*cloud).empty()){
+
+//                if (frame_num != image_reference) {
+//                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, img1_num);
+//                    // Executing the transformation
+//                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+//                    // You can either apply transform_1 or transform_2; they are the same
+//                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+//
+//                    clouds.push_back(transformed_cloud);
+//
+//                } else {
+                    clouds.push_back(cloud);
+
+//                }
+
+                // save
+//                ss.str( std::string() );
+//                ss.clear();
+//                ss << img1_num<< "-" << img2_num ;
+//                path = "./cloud"+ ss.str() +".pcd";
+//                pcl::io::savePCDFileASCII (path, *cloud);
+            }
+
+        }
+
+        FILE_LOG(logINFO) << "cloud size" <<clouds.size();
+
+    }
 }

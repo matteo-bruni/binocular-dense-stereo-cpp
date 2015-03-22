@@ -136,6 +136,8 @@ namespace cv {
             virtual void load(const string &path);
 
             virtual cv::Mat loadImage(const int num_img);
+            virtual FramePair load_stereo_images(const int img_num);
+
 
         private:
             void loadDataset(const string &path);
@@ -188,6 +190,16 @@ namespace cv {
 
                 train.back().push_back(curr);
             }
+        }
+
+        FramePair MSM_middleburyImp::load_stereo_images(const int img_num){
+
+            cv::Mat img_left, img_right;
+            FramePair pair;
+            pair.frame_left = img_left;
+            pair.frame_right = img_right;
+            return pair;
+
         }
 
         /*

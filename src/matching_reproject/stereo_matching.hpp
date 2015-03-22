@@ -2,6 +2,7 @@
 #include <highgui.h>
 #include <pcl/common/common_headers.h>
 #include "../dataset/msm_middlebury.hpp"
+#include "../dataset/tsukuba_dataset.h"
 
 
 
@@ -25,4 +26,7 @@ namespace stereo {
 
     void createAllClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds);
 
+    void createAllCloudsTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds);
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloudTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, const int frame_num, const int frame_reference);
 }

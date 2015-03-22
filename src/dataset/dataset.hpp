@@ -493,6 +493,12 @@ namespace cv {
             }
         };
 
+        struct FramePair {
+            //std::string frame_name;
+            cv::Mat frame_left, frame_right;
+        };
+
+
         class CV_EXPORTS Dataset {
         public:
             Dataset() {
@@ -503,6 +509,7 @@ namespace cv {
 
             virtual void load(const std::string &path) = 0;
             virtual cv::Mat loadImage(const int img_num) = 0;
+            virtual FramePair load_stereo_images(const int img_num) = 0;
 
             std::vector<Ptr<Object> > &getTrain(int splitNum = 0);
 

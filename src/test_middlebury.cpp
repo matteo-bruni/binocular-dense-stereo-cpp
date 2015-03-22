@@ -70,6 +70,7 @@
 
 // Include logging facilities
 #include "logger/log.h"
+#include "dataset/tsukuba_dataset.h"
 
 /////////////////////////////
 
@@ -98,17 +99,42 @@ int main(int argc, char *argv[])
 
     FILE_LOG(logINFO) << "Binocular Dense Stereo";
 
-    string path("../dataset/dataset_templeRing_segm/");
+//    string path("../dataset/dataset_templeRing_segm/");
+//    Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
 
-    Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
+    string path("../dataset/NTSD-200/");
+
+    Ptr<tsukuba_dataset> dataset = tsukuba_dataset::create();
     dataset->load(path);
 
     // dataset contains camera parameters for each image.
     FILE_LOG(logINFO) << "images number: " << (unsigned int)dataset->getTrain().size();
 
-    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
 //
-    stereo::createAllClouds(dataset, clouds);
+//    cv::Mat img1, img2;
+//
+//    std::tuple<cv::Mat,cv::Mat> tuple_img = dataset->load_stereo_images(1);
+//
+//    // load images data
+//    Ptr<cv::datasets::tsukuba_datasetObj> data_img1 =
+//            static_cast< Ptr<cv::datasets::tsukuba_datasetObj> >  (dataset->getTrain()[1]);
+//
+//    Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->tl);
+//
+//    Mat t2 = Mat(3, 1, CV_64FC1, &data_img1->tr);
+//
+//    FILE_LOG(logINFO) << "DATA: " << data_img1->imageName;
+//
+//    FILE_LOG(logINFO) << "DATA: " << data_img1->k << "\n" <<
+//                data_img1->r << "\n" << t1 <<"\n" << t2;
+
+
+
+    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
+    stereo::createAllCloudsTsukuba(dataset, clouds);
+
+
+
 //    stereo_registration::registerClouds(clouds);
 
 
@@ -126,6 +152,9 @@ int main(int argc, char *argv[])
 //    // stereo::viewDoublePointCloud(cloud1, cloud2);
 
 
+
+
+    // qui
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud = clouds[0];
 
     for(int i = 1; i<clouds.size(); i++) {
@@ -134,6 +163,16 @@ int main(int argc, char *argv[])
 
     }
    stereo::viewPointCloud(finalCloud);
+
+
+
+
+
+
+
+
+
+
 
 //    stereo::viewDoublePointCloud(clouds[0], clouds[1]);
 //

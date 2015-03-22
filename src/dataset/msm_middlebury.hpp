@@ -44,7 +44,7 @@
 
 #include <string>
 #include <vector>
-
+#include <tuple>
 #include "dataset.hpp"
 
 #include <opencv2/core/core.hpp>
@@ -72,6 +72,7 @@ namespace cv {
             static Ptr<MSM_middlebury> create();
 
             virtual cv::Mat loadImage(const int img_num) = 0;
+            virtual FramePair load_stereo_images(const int img_num) = 0;
 
         };
 

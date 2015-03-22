@@ -1,6 +1,7 @@
 build/
 bin/
 .idea/
+dataset/NTSD-200/
 
 # Compiled Object files
 *.slo
