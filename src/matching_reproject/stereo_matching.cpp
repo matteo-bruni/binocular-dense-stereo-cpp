@@ -985,6 +985,7 @@ namespace stereo {
 //                } else {
                     clouds.push_back(cloud);
 
+
 //                }
 
                 // save
