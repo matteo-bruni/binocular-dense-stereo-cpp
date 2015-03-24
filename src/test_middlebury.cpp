@@ -151,18 +151,35 @@ int main(int argc, char *argv[])
 //    //    viewPointCloud(cloud2);
 //    // stereo::viewDoublePointCloud(cloud1, cloud2);
 
-
-
-
-    // qui
+//SOLO SOMMA
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud = clouds[0];
+    for(int i = 0; i<clouds.size(); i++) {
 
-    for(int i = 1; i<clouds.size(); i++) {
-
-            *finalCloud += *(clouds[i]);
+        *finalCloud += *(clouds[i]);
 
     }
-   stereo::viewPointCloud(finalCloud);
+    stereo::viewPointCloud(finalCloud);
+
+
+//SOMMA CON REGISTRAZIONE A BLOCCHI
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud = clouds[0];
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr tempCloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+//
+//    int batch_size = 10;
+//    int n_batch = clouds.size()/batch_size + ((clouds.size() % batch_size != 0) ? 1:0);
+//
+//    for(int i = 0; i<n_batch; i++) {
+//
+//        std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>::const_iterator begin = clouds.begin()+(i*batch_size);
+//        std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>::const_iterator last = clouds.begin() + min( int(clouds.size()), ((i+1)*batch_size)) ;
+//        std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> new_arr(begin, last);
+//
+//        tempCloud = stereo_registration::registerClouds(new_arr);
+//
+//        *finalCloud += *(tempCloud);
+//
+//    }
+//   stereo::viewPointCloud(finalCloud);
 
 
 

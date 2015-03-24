@@ -104,7 +104,7 @@ namespace cv {
             ss << img_num;
             std::string img_path = dataset_path + "disparity_maps/left/frame_"+ ss.str() +".png";
 
-            return imread(img_path);
+            return imread(img_path,0);
         }
 
             /*

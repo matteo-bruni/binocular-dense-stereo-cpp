@@ -16,6 +16,11 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_representation.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/io/ply_io.h>
+#include <pcl/console/print.h>
+#include <pcl/console/parse.h>
+#include <pcl/console/time.h>
 
 //#include <pcl/io/pcd_io.h>
 //#include <pcl/console/time.h>
@@ -115,10 +120,10 @@ namespace stereo_registration {
         Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev, targetToSource;
         pcl::PointCloud<pcl::PointNormal>::Ptr reg_result = points_with_normals_src;
 
-        reg.setMaximumIterations (5); //era 2
+        reg.setMaximumIterations (2); //era 2
 //
         //i andava fino a 30
-        for (int i = 0; i < 30; ++i) {
+        for (int i = 0; i < 4; ++i) {
             PCL_INFO ("Iteration Nr. %d.\n", i);
 
             // save cloud for visualization purpose
@@ -175,7 +180,7 @@ namespace stereo_registration {
     }
 
 //
-    void registerClouds(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> &clouds) {
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr registerClouds(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> &clouds) {
 //
         unsigned int cloud_number = (unsigned int) clouds.size();
         Eigen::Matrix4f GlobalTransform = Eigen::Matrix4f::Identity(), pairTransform;
@@ -204,7 +209,10 @@ namespace stereo_registration {
         std::stringstream ss;
         ss << "registrazione.pcd";
         pcl::io::savePCDFile(ss.str(), *result, true);
-        stereo::viewPointCloud(result);
+
+//        stereo::viewPointCloud(result);
+
+        return result;
 
     }
 

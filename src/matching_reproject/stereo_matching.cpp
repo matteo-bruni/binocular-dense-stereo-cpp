@@ -403,6 +403,7 @@ namespace stereo {
 
         imwrite("disp_"+std::to_string(img_frame)+".png", disp);
 
+
     }
 
     void display(const int img1_num, const int img2_num, Mat& img1, Mat& img2,Mat& disp){
@@ -461,7 +462,7 @@ namespace stereo {
         Size img_size = img1.size();
 
 
-        reprojectImageTo3D(disp, recons3D, Q, true);
+        cv::reprojectImageTo3D(disp, recons3D, Q, true);
         FILE_LOG(logDEBUG) << "disp - " <<stereo_util::infoMatrix(disp);
 
         FILE_LOG(logDEBUG) << "reconst - " <<stereo_util::infoMatrix(recons3D) << " img - " << stereo_util::infoMatrix(img1);
@@ -594,7 +595,6 @@ namespace stereo {
         img_left = tuple_img.frame_left;
         img_right = tuple_img.frame_right;
 
-
         // init
         Mat R1,R2,P1,P2,Q;
         // zero distiorsions
@@ -611,12 +611,12 @@ namespace stereo {
 
 //        // CHANGE SYSTEM REFERENCE MOVING TO FRAME_REFERENCE
 //        // create P = KT for image 1
-//        Mat p1_ = Mat(3, 4, CV_64FC1);
-//        cv::hconcat(r_left, t_left, p1_);
-//        p1_ = p1_*P_origin_inv;
-//        // extract new r1 and t1
-//        r_left = p1_(cv::Rect(0,0,3,3));
-//        t_left = p1_(cv::Rect(3,0,1,3));
+        Mat p1_ = Mat(3, 4, CV_64FC1);
+        cv::hconcat(r_left, t_left, p1_);
+        p1_ = p1_*P_origin_inv;
+        // extract new r1 and t1
+        r_left = p1_(cv::Rect(0,0,3,3));
+        t_left = p1_(cv::Rect(3,0,1,3));
 
 
 //        // Second image
@@ -625,11 +625,11 @@ namespace stereo {
 
 //        // CHANGE SYSTEM REFERENCE MOVING TO FRAME_REFERENCE
 //        // create P = KT for image 1
-//        Mat p2_ = Mat(3, 4, CV_64FC1);
-//        cv::hconcat(r_right, t_right, p2_);
-//        p2_ = p2_*P_origin_inv;
-//        r2 = p2_(cv::Rect(0,0,3,3));
-//        t2 = p2_(cv::Rect(3,0,1,3));
+        Mat p2_ = Mat(3, 4, CV_64FC1);
+        cv::hconcat(r_right, t_right, p2_);
+        p2_ = p2_*P_origin_inv;
+        r_right = p2_(cv::Rect(0,0,3,3));
+        t_right = p2_(cv::Rect(3,0,1,3));
 
 
         // rotation between left and right
@@ -648,18 +648,24 @@ namespace stereo {
         FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
         Mat disp(img_left.size(), CV_32F);
 
+
         FILE_LOG(logDEBUG) << "imgsize " << stereo_util::infoMatrix(img_left);
         FILE_LOG(logDEBUG) << "dispsize " << stereo_util::infoMatrix(disp);
 
 //        stereo::computeDisparityTsukuba(frame_num, img_left, img_right, disp,1,roi1,roi2);
 
-        disp = dataset->load_disparity(frame_num);
+        disp = dataset->load_disparity(frame_num+1);
 
-        //    stereo::display(img1, img2, disp);
+//        cv::Mat disp8;
+//        normalize(disp, disp8, 0, 255, CV_MINMAX, CV_8U);
+//        imshow("disp",disp8);
+        //    stereo::display(img_left, img_right, disp);
         //
         FILE_LOG(logINFO) << "Creating point cloud..";
         Mat recons3D(disp.size(), CV_32FC3);
         FILE_LOG(logINFO) << "recons3Dsize " << stereo_util::infoMatrix(recons3D);
+
+        FILE_LOG(logINFO) << "disp " << stereo_util::infoMatrix(disp);
 
         // stereo::storePointCloud(disp, Q, recons3D);
 
@@ -724,9 +730,9 @@ namespace stereo {
         // move p1*P_origin_inv
         p1_ = p1_*P_origin_inv;
         // extract new r1 and t1
-//        r1 = p1_(cv::Rect(0,0,3,3));
-//        t1 = p1_(cv::Rect(3,0,1,3));
-
+        r1 = p1_(cv::Rect(0,0,3,3));
+        t1 = p1_(cv::Rect(3,0,1,3));
+//
 
         // Second image
         Mat r2 = Mat(data_img2->r);
@@ -737,8 +743,8 @@ namespace stereo {
 //        Mat vect2 = Mat::zeros(1, 4, CV_64F);
 //        cv::vconcat(p2_, vect2, p2_);
         p2_ = p2_*P_origin_inv;
-//        r2 = p2_(cv::Rect(0,0,3,3));
-//        t2 = p2_(cv::Rect(3,0,1,3));
+        r2 = p2_(cv::Rect(0,0,3,3));
+        t2 = p2_(cv::Rect(3,0,1,3));
 
 
 
@@ -957,7 +963,7 @@ namespace stereo {
 
 
         int image_reference = 0, frame_num;
-        int last_frame = 5;
+        int last_frame = 20;
 
         for (int i=0; i<last_frame; i++){
 

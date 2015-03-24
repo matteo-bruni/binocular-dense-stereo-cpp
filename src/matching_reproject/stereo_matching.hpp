@@ -14,6 +14,8 @@ namespace stereo {
 
     void computeDisparity(const int img1_num, const int img2_num,  Mat& img_left, Mat& img_right, Mat& disp,int alg,Rect & roi1,Rect &roi2);
 
+    void computeDisparityTsukuba(const int img_frame, Mat& img_left, Mat& img_right,Mat& disp,int alg,Rect & roi1,Rect &roi2);
+
     void display(const int img1_num, const int img2_num, Mat& img1, Mat& img2,Mat& disp);
 
     void storePointCloud(Mat& disp, Mat& Q,/*const char* filename,*/ Mat& recons3D);
