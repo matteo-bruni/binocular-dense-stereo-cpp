@@ -349,25 +349,25 @@ namespace stereo {
         cvtColor(img_left, g1, CV_BGR2GRAY);
         cvtColor(img_right, g2, CV_BGR2GRAY);
 
+        StereoBM sbm;
 
         if (tipo == "BM")
         {
-            StereoBM sbm;
+
 
             int numberOfDisparities = numberOfDisparities > 0 ? numberOfDisparities : ((img_left.rows/8) + 15) & -16;
 
             sbm.state->roi1 = roi1;
             sbm.state->roi2 = roi2;
-            sbm.state->preFilterCap = 31;
+            sbm.state->preFilterCap = 63;
             sbm.state->SADWindowSize = 5;
-            sbm.state->minDisparity = 0;
-            sbm.state->numberOfDisparities = numberOfDisparities;
-            sbm.state->textureThreshold = 10;
-            sbm.state->uniquenessRatio = 15;
-            sbm.state->speckleWindowSize = 100;
-            sbm.state->speckleRange = 32;
+            sbm.state->minDisparity = 1;
+            sbm.state->numberOfDisparities = 32;
+            sbm.state->textureThreshold = 9;
+            sbm.state->uniquenessRatio = 12;
+            sbm.state->speckleWindowSize = 0;
+            sbm.state->speckleRange = 0;
             sbm.state->disp12MaxDiff = 1;
-
 //
 //            sbm.state->SADWindowSize = 5;
 //            sbm.state->numberOfDisparities = 192;
@@ -379,8 +379,6 @@ namespace stereo {
 //            sbm.state->speckleWindowSize = 0;
 //            sbm.state->speckleRange = 0;
 //            sbm.state->disp12MaxDiff = 0;
-
-            sbm(g1, g2, disp, CV_32F);
 
         }
         else if (tipo == "SGBM")
@@ -398,8 +396,11 @@ namespace stereo {
             sbm.P1 = 8*3*5*5;
             sbm.P2 = 8*3*5*5;
             sbm(g1, g2, disp);
+
+
         }
 
+        sbm(g1, g2, disp, CV_32F);
 
         imwrite("disp_"+std::to_string(img_frame)+".png", disp);
 
@@ -653,14 +654,17 @@ namespace stereo {
         FILE_LOG(logDEBUG) << "dispsize " << stereo_util::infoMatrix(disp);
 
 //        stereo::computeDisparityTsukuba(frame_num, img_left, img_right, disp,1,roi1,roi2);
+//
+//        imshow("disp",disp);
+//        waitKey();
 
         disp = dataset->load_disparity(frame_num+1);
 
 //        cv::Mat disp8;
 //        normalize(disp, disp8, 0, 255, CV_MINMAX, CV_8U);
 //        imshow("disp",disp8);
-        //    stereo::display(img_left, img_right, disp);
-        //
+//            stereo::display(img_left, img_right, disp);
+
         FILE_LOG(logINFO) << "Creating point cloud..";
         Mat recons3D(disp.size(), CV_32FC3);
         FILE_LOG(logINFO) << "recons3Dsize " << stereo_util::infoMatrix(recons3D);
@@ -816,8 +820,10 @@ namespace stereo {
 
         stereo::computeDisparity(img1_num, img2_num, img1_original, img2_original, disp,1,roi1,roi2);
 
-        //    stereo::display(img1, img2, disp);
+//        stereo::display(img1, img2, disp);
         //
+
+
         FILE_LOG(logINFO) << "Creating point cloud..";
         Mat recons3D(disp.size(), CV_32FC3);
         FILE_LOG(logINFO) << "recons3Dsize " << stereo_util::infoMatrix(recons3D);
@@ -889,18 +895,18 @@ namespace stereo {
             if(!(*cloud).empty()){
 
                 if (img1_num != image_reference) {
-                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, img1_num);
-                    // Executing the transformation
-                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
-                    // You can either apply transform_1 or transform_2; they are the same
-                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+//                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, img1_num);
+//                    // Executing the transformation
+//                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+//                    // You can either apply transform_1 or transform_2; they are the same
+//                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+//
+//                    clouds.push_back(transformed_cloud);
 
-                    clouds.push_back(transformed_cloud);
-
-                } else {
+//                } else {
                 clouds.push_back(cloud);
 
-                }
+//                }
 
                 // save
                 ss.str( std::string() );
@@ -951,7 +957,7 @@ namespace stereo {
 
 
 
-    void createAllCloudsTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds){
+    void createAllCloudsTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds, int last_frame, int step){
 
 
         std::stringstream ss;
@@ -963,9 +969,9 @@ namespace stereo {
 
 
         int image_reference = 0, frame_num;
-        int last_frame = 20;
 
-        for (int i=0; i<last_frame; i++){
+
+        for (int i=0; i<last_frame; i+=step){
 
             frame_num = i;
 
@@ -973,20 +979,20 @@ namespace stereo {
 
             if(!(*cloud).empty()){
 
-//                if (frame_num != image_reference) {
-//                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, img1_num);
-//                    // Executing the transformation
-//                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
-//                    // You can either apply transform_1 or transform_2; they are the same
-//                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
-//
-//                    clouds.push_back(transformed_cloud);
-//
-//                } else {
+                if (frame_num != image_reference) {
+                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, frame_num);
+                    // Executing the transformation
+                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+                    // You can either apply transform_1 or transform_2; they are the same
+                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+
+                    clouds.push_back(transformed_cloud);
+
+                } else {
                     clouds.push_back(cloud);
 
 
-//                }
+                }
 
                 // save
 //                ss.str( std::string() );
