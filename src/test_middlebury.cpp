@@ -187,13 +187,17 @@ int main(int argc, char *argv[])
         tempCloud = stereo_registration::registerClouds(new_arr);
 
         clouds_array.push_back(tempCloud);
-        *finalCloud += *(tempCloud);
+
+//        *finalCloud += *(tempCloud);
 
     }
+    stereo::viewPointCloud(clouds_array[1]);
+    stereo::viewPointCloud(clouds_array[12]);
+
 
 //    tempCloud=stereo_registration::registerClouds(clouds_array);
 
-    stereo::viewPointCloud(finalCloud);
+//    stereo::viewPointCloud(finalCloud);
 
 
 

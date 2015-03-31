@@ -727,28 +727,28 @@ namespace stereo {
         Mat r1 = Mat(data_img1->r);
         Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->t);
         // create P = KT for image 1
-        Mat p1_ = Mat(3, 4, CV_64FC1);
-        cv::hconcat(r1, t1, p1_);
-//        Mat vect = Mat::zeros(1, 4, CV_64F);
-//        cv::vconcat(p1_, vect, p1_);
-        // move p1*P_origin_inv
-        p1_ = p1_*P_origin_inv;
-        // extract new r1 and t1
-        r1 = p1_(cv::Rect(0,0,3,3));
-        t1 = p1_(cv::Rect(3,0,1,3));
+//        Mat p1_ = Mat(3, 4, CV_64FC1);
+//        cv::hconcat(r1, t1, p1_);
+////        Mat vect = Mat::zeros(1, 4, CV_64F);
+////        cv::vconcat(p1_, vect, p1_);
+//        // move p1*P_origin_inv
+//        p1_ = p1_*P_origin_inv;
+//        // extract new r1 and t1
+//        r1 = p1_(cv::Rect(0,0,3,3));
+//        t1 = p1_(cv::Rect(3,0,1,3));
 //
 
         // Second image
         Mat r2 = Mat(data_img2->r);
         Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->t);
         // create P = KT for image 1
-        Mat p2_ = Mat(3, 4, CV_64FC1);
-        cv::hconcat(r2, t2, p2_);
-//        Mat vect2 = Mat::zeros(1, 4, CV_64F);
-//        cv::vconcat(p2_, vect2, p2_);
-        p2_ = p2_*P_origin_inv;
-        r2 = p2_(cv::Rect(0,0,3,3));
-        t2 = p2_(cv::Rect(3,0,1,3));
+//        Mat p2_ = Mat(3, 4, CV_64FC1);
+//        cv::hconcat(r2, t2, p2_);
+////        Mat vect2 = Mat::zeros(1, 4, CV_64F);
+////        cv::vconcat(p2_, vect2, p2_);
+//        p2_ = p2_*P_origin_inv;
+//        r2 = p2_(cv::Rect(0,0,3,3));
+//        t2 = p2_(cv::Rect(3,0,1,3));
 
 
 
@@ -979,20 +979,19 @@ namespace stereo {
 
             if(!(*cloud).empty()){
 
-//                if (frame_num != image_reference) {
-//                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, frame_num);
-//                    // Executing the transformation
-//                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
-//                    // You can either apply transform_1 or transform_2; they are the same
-//                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
-//
-//                    clouds.push_back(transformed_cloud);
-//
-//                } else {
+                if (frame_num != image_reference) {
+                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenCloudsTsukuba(dataset, image_reference, frame_num);
+                    // Executing the transformation
+                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+                    // You can either apply transform_1 or transform_2; they are the same
+                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+
+                    clouds.push_back(transformed_cloud);
+
+                } else {
                     clouds.push_back(cloud);
 
-
-//                }
+                }
 
                 // save
 //                ss.str( std::string() );

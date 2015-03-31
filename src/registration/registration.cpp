@@ -123,7 +123,7 @@ namespace stereo_registration {
         reg.setMaximumIterations (2); //era 2
 //
         //i andava fino a 30
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 2; ++i) {
             PCL_INFO ("Iteration Nr. %d.\n", i);
 
             // save cloud for visualization purpose
