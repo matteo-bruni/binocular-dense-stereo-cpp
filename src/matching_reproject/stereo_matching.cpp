@@ -914,11 +914,11 @@ namespace stereo {
                 ss << img1_num<< "-" << img2_num ;
                 path = "./cloud"+ ss.str() +".pcd";
                 pcl::io::savePCDFileASCII (path, *cloud);
+                }
+
             }
 
         }
-
-
 //        for(std::vector<std::tuple<int,int>>::iterator it = dataset->getAssociation().begin();
 //            it != dataset->getAssociation().end(); ++it) {
 //            img1_num = std::get<0>(*it);
@@ -949,7 +949,7 @@ namespace stereo {
 //            }
 //
 //            /* std::cout << *it; ... */
-//        }
+
 
         FILE_LOG(logINFO) << "cloud size" <<clouds.size();
 
@@ -979,20 +979,20 @@ namespace stereo {
 
             if(!(*cloud).empty()){
 
-                if (frame_num != image_reference) {
-                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, frame_num);
-                    // Executing the transformation
-                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
-                    // You can either apply transform_1 or transform_2; they are the same
-                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
-
-                    clouds.push_back(transformed_cloud);
-
-                } else {
+//                if (frame_num != image_reference) {
+//                    Eigen::Matrix4f transf = stereo_util::getTransformBetweenClouds(dataset, image_reference, frame_num);
+//                    // Executing the transformation
+//                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+//                    // You can either apply transform_1 or transform_2; they are the same
+//                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+//
+//                    clouds.push_back(transformed_cloud);
+//
+//                } else {
                     clouds.push_back(cloud);
 
 
-                }
+//                }
 
                 // save
 //                ss.str( std::string() );

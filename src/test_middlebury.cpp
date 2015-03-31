@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
     std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
 
     int last_frame = 200;
-    int step = 5;
+    int step = 4;
     stereo::createAllCloudsTsukuba(dataset, clouds, last_frame, step);
 
 
@@ -170,10 +170,15 @@ int main(int argc, char *argv[])
     std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array;
 
 
-    int batch_size = 10;
+    int batch_size = 3;
     int n_batch = clouds.size()/batch_size + ((clouds.size() % batch_size != 0) ? 1:0);
 
+    FILE_LOG(logINFO) << "We have n_batch = : " << n_batch << " and n_clouds: "<< clouds.size();
+
+
     for(int i = 0; i<n_batch; i++) {
+
+        FILE_LOG(logINFO) << "BATCH = : " << i;
 
         std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>::const_iterator begin = clouds.begin()+(i*batch_size);
         std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>::const_iterator last = clouds.begin() + min( int(clouds.size()), ((i+1)*batch_size)) ;
