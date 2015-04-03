@@ -70,21 +70,25 @@ namespace stereo_registration {
         ///downsampling
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr src (new pcl::PointCloud<pcl::PointXYZRGB>);
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr tgt (new pcl::PointCloud<pcl::PointXYZRGB>);
-        pcl::VoxelGrid<pcl::PointXYZRGB> grid;
+        pcl::VoxelGrid<pcl::PointXYZRGB> grid, grid2;
 //
+        FILE_LOG(logINFO) << " original size :" << cloud_sr->size() << " ; " << cloud_tg->size();
+
         if (downsample) {
-            grid.setLeafSize (0.05, 0.05, 0.05);
+            grid.setLeafSize (1, 1, 1);
             grid.setInputCloud (cloud_sr);
             grid.filter (*src);
 //
-            grid.setInputCloud (cloud_tg);
-            grid.filter (*tgt);
+            grid2.setLeafSize (2, 2, 2);
+            grid2.setInputCloud (cloud_tg);
+            grid2.filter (*tgt);
         }
         else {
             src = cloud_sr;
             tgt = cloud_tg;
         }
 
+        FILE_LOG(logINFO) << " post size :" << src->size() << " ; " << tgt->size();
 
 //    // Compute surface normals and curvature
         pcl::PointCloud<pcl::PointNormal>::Ptr points_with_normals_src (new  pcl::PointCloud<pcl::PointNormal>);
@@ -206,9 +210,9 @@ namespace stereo_registration {
 
         }
 
-        std::stringstream ss;
-        ss << "registrazione.pcd";
-        pcl::io::savePCDFile(ss.str(), *result, true);
+//        std::stringstream ss;
+//        ss << "registrazione.pcd";
+//        pcl::io::savePCDFile(ss.str(), *result, true);
 
 //        stereo::viewPointCloud(result);
 

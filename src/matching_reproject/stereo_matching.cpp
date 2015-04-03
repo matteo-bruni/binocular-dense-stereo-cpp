@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <libconfig.h>
 #include <pcl/common/transforms.h>
+#include <pcl/io/ply_io.h>
 
 // local includes
 #include "stereo_matching.hpp"
@@ -572,20 +573,20 @@ namespace stereo {
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloudTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, const int frame_num, const int frame_reference){
 
-        FILE_LOG(logINFO) << "Loading data..";
+        FILE_LOG(logINFO) << "Loading data.. frame" << frame_num;
 
         // load images data
         Ptr<cv::datasets::tsukuba_datasetObj> data_stereo_img =
                 static_cast< Ptr<cv::datasets::tsukuba_datasetObj> >  (dataset->getTrain()[frame_num]);
 
-        Ptr<cv::datasets::tsukuba_datasetObj> data_stereo_reference =
-                static_cast< Ptr<cv::datasets::tsukuba_datasetObj> >  (dataset->getTrain()[frame_reference]);
+//        Ptr<cv::datasets::tsukuba_datasetObj> data_stereo_reference =
+//                static_cast< Ptr<cv::datasets::tsukuba_datasetObj> >  (dataset->getTrain()[frame_reference]);
 
         // ORIGIN DATA
-        Mat r_origin = Mat(data_stereo_reference->r);
-        // init translation vectors from dataset
-        Mat t_origin = Mat(3, 1, CV_64FC1, &data_stereo_reference->tl);
-        Mat P_origin_inv = stereo_util::createPINVFromRT(r_origin, t_origin);
+//        Mat r_origin = Mat(data_stereo_reference->r);
+//        // init translation vectors from dataset
+//        Mat t_origin = Mat(3, 1, CV_64FC1, &data_stereo_reference->tl);
+//        Mat P_origin_inv = stereo_util::createPINVFromRT(r_origin, t_origin);
 
 
         FILE_LOG(logINFO) << "Loading images..";
@@ -612,12 +613,12 @@ namespace stereo {
 
 //        // CHANGE SYSTEM REFERENCE MOVING TO FRAME_REFERENCE
 //        // create P = KT for image 1
-        Mat p1_ = Mat(3, 4, CV_64FC1);
-        cv::hconcat(r_left, t_left, p1_);
-        p1_ = p1_*P_origin_inv;
-        // extract new r1 and t1
-        r_left = p1_(cv::Rect(0,0,3,3));
-        t_left = p1_(cv::Rect(3,0,1,3));
+//        Mat p1_ = Mat(3, 4, CV_64FC1);
+//        cv::hconcat(r_left, t_left, p1_);
+//        p1_ = p1_*P_origin_inv;
+//        // extract new r1 and t1
+//        r_left = p1_(cv::Rect(0,0,3,3));
+//        t_left = p1_(cv::Rect(3,0,1,3));
 
 
 //        // Second image
@@ -626,20 +627,23 @@ namespace stereo {
 
 //        // CHANGE SYSTEM REFERENCE MOVING TO FRAME_REFERENCE
 //        // create P = KT for image 1
-        Mat p2_ = Mat(3, 4, CV_64FC1);
-        cv::hconcat(r_right, t_right, p2_);
-        p2_ = p2_*P_origin_inv;
-        r_right = p2_(cv::Rect(0,0,3,3));
-        t_right = p2_(cv::Rect(3,0,1,3));
+//        Mat p2_ = Mat(3, 4, CV_64FC1);
+//        cv::hconcat(r_right, t_right, p2_);
+//        p2_ = p2_*P_origin_inv;
+//        r_right = p2_(cv::Rect(0,0,3,3));
+//        t_right = p2_(cv::Rect(3,0,1,3));
 
 
         // rotation between left and right
         cv::Mat R = r_right*r_left.t();
         // translation between img2 and img1
-        cv::Mat T = t_left - (R.t()*t_right );
+//        cv::Mat T = t_left - (R.t()*t_right );
+        // use ground truth translation
+        cv::Mat T = Mat::zeros(3, 1, CV_64F);//t_left - (R.t()*t_right );
+        T.at<double>(0,0) = 10.;
 
-        cv::Mat img1_original = img_left.clone();
-        cv::Mat img2_original = img_right.clone();
+        FILE_LOG(logINFO) << "translation between cameras: " << T;
+
 
         FILE_LOG(logINFO) << "Rectifying images...";
         Rect roi1,roi2;
@@ -677,6 +681,19 @@ namespace stereo {
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
         cv::Mat img_1_segm;
         stereo::createPointCloudOpenCV(img_left, img_right, img_1_segm, Q, disp, recons3D, point_cloud_ptr);
+
+        FILE_LOG(logINFO) << "pretosca ";
+
+        pcl::PointCloud<pcl::PointXYZRGB> cloud_filtered;
+        pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
+        sor.setInputCloud (point_cloud_ptr);
+        sor.setMeanK (50);
+        sor.setStddevMulThresh (1.0);
+        sor.filter (cloud_filtered);
+        FILE_LOG(logINFO) << "precopy ";
+
+        pcl::copyPointCloud(cloud_filtered, *point_cloud_ptr);
+
 
         return point_cloud_ptr;
 
@@ -767,6 +784,7 @@ namespace stereo {
         cv::Mat R = r2*r1.t();
         // translation between img2 and img1
         cv::Mat T = t1 - (R.t()*t2 );
+        FILE_LOG(logINFO) << "TRASLAZIONE AAAAAA " << T;
 
         //    double tx = atan2 (R.at<double>(3,2), R.at<double>(3,3));
         //    double ty = - asin(R.at<double>(3,1));
@@ -979,7 +997,7 @@ namespace stereo {
 
             if(!(*cloud).empty()){
 
-                if (frame_num != image_reference) {
+//                if (frame_num != image_reference) {
                     Eigen::Matrix4f transf = stereo_util::getTransformBetweenCloudsTsukuba(dataset, image_reference, frame_num);
                     // Executing the transformation
                     pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
@@ -988,17 +1006,16 @@ namespace stereo {
 
                     clouds.push_back(transformed_cloud);
 
-                } else {
-                    clouds.push_back(cloud);
-
-                }
+//                } else {
+//                    clouds.push_back(cloud);
+//
+//                }
 
                 // save
-//                ss.str( std::string() );
-//                ss.clear();
-//                ss << img1_num<< "-" << img2_num ;
-//                path = "./cloud"+ ss.str() +".pcd";
-//                pcl::io::savePCDFileASCII (path, *cloud);
+                ss.str( std::string() );
+                ss.clear();
+                ss << "./cloud-" << i << ".ply";
+                pcl::io::savePLYFileASCII (ss.str(), *cloud);
             }
 
         }

@@ -4,6 +4,7 @@
 #include "../dataset/msm_middlebury.hpp"
 #include "../dataset/tsukuba_dataset.h"
 
+#include <pcl/filters/statistical_outlier_removal.h>
 
 
 namespace stereo {
