@@ -112,20 +112,20 @@ int main(int argc, char *argv[])
 
 
     std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
-    int last_frame = 200;
-    int step = 50;
+    int last_frame = 100;
+    int step = 2;
     stereo::createAllCloudsTsukuba(dataset, clouds, last_frame, step);
 
 
 
 //SOLO SOMMA
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud = clouds[0];
-    for(int i = 0; i<clouds.size(); i++) {
-
-        *finalCloud += *(clouds[i]);
-
-    }
-    stereo::viewPointCloud(finalCloud);
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud = clouds[0];
+//    for(int i = 0; i<clouds.size(); i++) {
+//
+//        *finalCloud += *(clouds[i]);
+//
+//    }
+//    stereo::viewPointCloud(finalCloud);
 
 
 //SOMMA CON REGISTRAZIONE A BLOCCHI
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 //    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array;
 //
 //
-//    int batch_size = 3;
+//    int batch_size = 4;
 //    int n_batch = clouds.size()/batch_size + ((clouds.size() % batch_size != 0) ? 1:0);
 //
 //    FILE_LOG(logINFO) << "We have n_batch = : " << n_batch << " and n_clouds: "<< clouds.size();
@@ -152,20 +152,25 @@ int main(int argc, char *argv[])
 //
 //        clouds_array.push_back(tempCloud);
 //
-////        *finalCloud += *(tempCloud);
+//        *finalCloud += *(tempCloud);
 //
 //    }
-//    stereo::viewPointCloud(clouds_array[1]);
-//    stereo::viewPointCloud(clouds_array[12]);
+////    stereo::viewPointCloud(clouds_array[1]);
+////    stereo::viewPointCloud(clouds_array[12]);
 //
 ////    tempCloud=stereo_registration::registerClouds(clouds_array);
-////    stereo::viewPointCloud(finalCloud);
-//
-//
-//
-//
-//
+//    stereo::viewPointCloud(finalCloud);
 
+//
+//
+//REGISTRAZIONE NAIVE DUE A DUE
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud = clouds[0];
+    for (int i=1; i<clouds.size(); i++){
+        finalCloud = stereo_registration::naiveRegistration(finalCloud,clouds[i]);
+    }
+
+    stereo::viewPointCloud(finalCloud);
 
 
 
@@ -196,25 +201,7 @@ int main(int argc, char *argv[])
 //    cv::waitKey(0);
 
 
-//    // ICP object.
-//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-//
-//    pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
-//    registration.setInputSource(cloud);
-//    registration.setInputTarget(cloud2);
-//
-//    registration.align(*finalCloud);
-//    if (registration.hasConverged())
-//    {
-//        std::cout << "ICP converged." << std::endl
-//                << "The score is " << registration.getFitnessScore() << std::endl;
-//        std::cout << "Transformation matrix:" << std::endl;
-//        std::cout << registration.getFinalTransformation() << std::endl;
-//    }
-//    else std::cout << "ICP did not converge." << std::endl;
-//
-//
-//    viewPointCloud(finalCloud);
+
 
     return 0;
 

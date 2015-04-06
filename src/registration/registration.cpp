@@ -64,6 +64,42 @@ class VoxelGrid;
 
 namespace stereo_registration {
 
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr  naiveRegistration( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2){
+
+//        stereo::viewPointCloud(cloud1);
+//        stereo::viewPointCloud(cloud2);
+
+//        pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud2(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+//        *finalCloud2 += *(cloud1);
+//        *finalCloud2 += *(cloud2);
+//        stereo::viewPointCloud(finalCloud2);
+
+        //    // ICP object.
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+        pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
+        registration.setInputSource(cloud1);
+        registration.setInputTarget(cloud2);
+
+        registration.align(*finalCloud);
+        if (registration.hasConverged())
+        {
+            std::cout << "ICP converged." << std::endl
+                    << "The score is " << registration.getFitnessScore() << std::endl;
+            std::cout << "Transformation matrix:" << std::endl;
+            std::cout << registration.getFinalTransformation() << std::endl;
+        }
+        else std::cout << "ICP did not converge." << std::endl;
+
+
+//        stereo::viewPointCloud(finalCloud);
+
+        return finalCloud;
+    }
+
+
     void icp(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_sr, pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_tg,
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_out, const bool downsample, Eigen::Matrix4f &final_transform){
 //
