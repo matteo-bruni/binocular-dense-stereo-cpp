@@ -71,7 +71,7 @@ namespace stereo_registration {
 //        stereo::viewPointCloud(cloud2);
 
 //        pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud2(new pcl::PointCloud<pcl::PointXYZRGB>);
-
+//
 //        *finalCloud2 += *(cloud1);
 //        *finalCloud2 += *(cloud2);
 //        stereo::viewPointCloud(finalCloud2);
