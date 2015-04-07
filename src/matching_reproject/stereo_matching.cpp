@@ -682,8 +682,8 @@ namespace stereo {
         cv::Mat img_1_segm;
         stereo::createPointCloudOpenCV(img_left, img_right, img_1_segm, Q, disp, recons3D, point_cloud_ptr);
 
-        FILE_LOG(logINFO) << "pretosca ";
 
+        FILE_LOG(logINFO) << "pretosca ";
         pcl::PointCloud<pcl::PointXYZRGB> cloud_filtered;
         pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
         sor.setInputCloud (point_cloud_ptr);

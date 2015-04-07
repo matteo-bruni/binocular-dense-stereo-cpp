@@ -65,25 +65,21 @@ class VoxelGrid;
 namespace stereo_registration {
 
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr  naiveRegistration( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2){
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr  naiveRegistration( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target){
 
-//        stereo::viewPointCloud(cloud1);
-//        stereo::viewPointCloud(cloud2);
-
-//        pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud2(new pcl::PointCloud<pcl::PointXYZRGB>);
-//
-//        *finalCloud2 += *(cloud1);
-//        *finalCloud2 += *(cloud2);
-//        stereo::viewPointCloud(finalCloud2);
 
         //    // ICP object.
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_to_target(new pcl::PointCloud<pcl::PointXYZRGB>);
 
         pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
-        registration.setInputSource(cloud1);
-        registration.setInputTarget(cloud2);
+        registration.setInputSource(cloud_source);
+        registration.setInputTarget(cloud_target);
 
-        registration.align(*finalCloud);
+        //
+        registration.setTransformationEpsilon (1e-8);
+        registration.setMaxCorrespondenceDistance (0.02);
+
+        registration.align(*cloud_source_to_target);
         if (registration.hasConverged())
         {
             std::cout << "ICP converged." << std::endl
@@ -94,9 +90,7 @@ namespace stereo_registration {
         else std::cout << "ICP did not converge." << std::endl;
 
 
-//        stereo::viewPointCloud(finalCloud);
-
-        return finalCloud;
+        return cloud_source_to_target;
     }
 
 
