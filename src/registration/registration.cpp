@@ -61,9 +61,53 @@ class VoxelGrid;
 // Include logging facilities
 #include "../logger/log.h"
 
+#include <algorithm>
 
 namespace stereo_registration {
 
+    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> register_clouds_in_batches(
+            std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_to_register, int batch_size) {
+
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
+        std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> batches_of_registered_clouds;
+
+        FILE_LOG(logINFO) << "single cloud size :"<< clouds_to_register[0]->size();
+
+
+        unsigned long int n_batch = clouds_to_register.size()/batch_size + ((clouds_to_register.size() % batch_size != 0) ? 1:0);
+
+        FILE_LOG(logINFO) << "We have n_batch = : " << n_batch << " of size: " << batch_size <<" from a total of : " << clouds_to_register.size() << "clouds";
+
+        for(int i = 0; i<n_batch; i++) {
+
+            int start = i*batch_size;
+            int stop = std::min( int(clouds_to_register.size()), ((i+1)*batch_size));
+
+            FILE_LOG(logINFO) << "BATCH = : " << i << " from "<<  start << " to: "<< stop;
+
+            for(int j = start; j < stop; j++) {
+
+                if (j == start) {
+                    FILE_LOG(logINFO) << j  <<" first cloud of the batch";
+                    batch_cloud_sum = clouds_to_register[j];
+                }
+                else {
+                    FILE_LOG(logINFO) << " registering "<< j << " in " << start << " space";
+                    *batch_cloud_sum += *(stereo_registration::naiveRegistration(clouds_to_register[j], clouds_to_register[start]));
+
+                }
+            }
+
+            batches_of_registered_clouds.push_back(batch_cloud_sum);
+            FILE_LOG(logINFO) << "BATCH point size =  "<< batch_cloud_sum->size();
+
+        }
+
+        FILE_LOG(logINFO) << "We have a total of :"<< batches_of_registered_clouds.size() << " batches";
+
+        return batches_of_registered_clouds;
+
+    }
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr  naiveRegistration( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target){
 
@@ -77,17 +121,19 @@ namespace stereo_registration {
 
         //
         registration.setTransformationEpsilon (1e-8);
-        registration.setMaxCorrespondenceDistance (0.02);
+        registration.setMaxCorrespondenceDistance (0.05);
+        registration.setMaximumIterations (30);
+        registration.setEuclideanFitnessEpsilon(1);
 
         registration.align(*cloud_source_to_target);
         if (registration.hasConverged())
         {
-            std::cout << "ICP converged." << std::endl
-                    << "The score is " << registration.getFitnessScore() << std::endl;
-            std::cout << "Transformation matrix:" << std::endl;
+            FILE_LOG(logINFO) << "ICP converged.";
+//                    << "The score is " << registration.getFitnessScore() << std::endl;
+//            std::cout << "Transformation matrix:" << std::endl;
             std::cout << registration.getFinalTransformation() << std::endl;
         }
-        else std::cout << "ICP did not converge." << std::endl;
+        else FILE_LOG(logINFO) << "ICP did not converge.";
 
 
         return cloud_source_to_target;

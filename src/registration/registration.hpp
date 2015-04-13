@@ -3,7 +3,10 @@
 
 namespace stereo_registration {
 
-//
+
+    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> register_clouds_in_batches(
+            std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_to_register, int batch_size);
+    //
 ////
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr registerClouds( std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& clouds);
 ////
