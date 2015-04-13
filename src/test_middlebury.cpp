@@ -121,6 +121,8 @@ int main(int argc, char *argv[])
 
 //SOMMA CON REGISTRAZIONE A BLOCCHI
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalCloud = clouds[0];
+
+
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
     std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array;
 
@@ -131,41 +133,47 @@ int main(int argc, char *argv[])
 
     FILE_LOG(logINFO) << "We have n_batch = : " << n_batch << " and n_clouds: "<< clouds.size();
 
-
     for(int i = 0; i<n_batch; i++) {
 
         FILE_LOG(logINFO) << "BATCH = : " << i << "from "<<  i*batch_size << " to: "<< min( int(clouds.size()), ((i+1)*batch_size));
 
-        std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>::const_iterator begin = clouds.begin()+(i*batch_size);
-        std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>::const_iterator last = clouds.begin() + min( int(clouds.size()), ((i+1)*batch_size)) ;
-        std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> new_arr(begin, last);
+        int start = i*batch_size;
+        int stop = min( int(clouds.size()), ((i+1)*batch_size));
 
-        for(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>::const_iterator it = begin; it != last; it++) {
+        for(int j = start; j<stop; j++) {
 
-            if (it == begin) {
-                FILE_LOG(logINFO) << " first cloud of the batch";
-                batch_cloud_sum = *it;
+            if (j == start) {
+                FILE_LOG(logINFO) << j  <<" first cloud of the batch";
+                batch_cloud_sum = clouds[j];
             }
             else {
-//                FILE_LOG(logINFO) << " registering "<< i*batch_size << " with " << ;
-                *batch_cloud_sum += *(stereo_registration::naiveRegistration(*it, *begin));
-            }
+                FILE_LOG(logINFO) << " registering "<< j << " with " << start;
+                *batch_cloud_sum += *(stereo_registration::naiveRegistration(clouds[j], clouds[start]));
 
+            }
         }
 
-
-//        batch_cloud_sum = stereo_registration::registerClouds(new_arr);
-
         clouds_array.push_back(batch_cloud_sum);
-
         FILE_LOG(logINFO) << "BATCH point size =  "<< batch_cloud_sum->size();
 
 
     }
 
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr total_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
     for (int i=0; i<clouds_array.size(); i++){
-        stereo::viewPointCloud(clouds_array[i]);
+        if (i == 0) {
+            FILE_LOG(logINFO) << i  <<" first cloud of the registration";
+            total_sum = clouds_array[0];
+        }
+        else {
+            FILE_LOG(logINFO) << " registering "<< i << " with " << 0;
+            *total_sum += *(stereo_registration::naiveRegistration(clouds_array[i], clouds_array[0]));
+
+        }
     }
+    stereo::viewPointCloud(total_sum);
+
+
 
 
 
