@@ -113,22 +113,29 @@ int main(int argc, char *argv[])
 
     std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
     int last_frame = 200;
-    int step = 20;
+    int step = 10;
     stereo::createAllCloudsTsukuba(dataset, clouds, last_frame, step);
 
 
     std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array = stereo_registration::register_clouds_in_batches(clouds, 2);
 
+    stereo::viewPointCloud(clouds_array[0], " step pre 0 - 0 e 1");
+    stereo::viewPointCloud(clouds_array[1], " step pre 1 - 2 e 3");
+    stereo::viewPointCloud(clouds_array[2], " step pre 2 - 4 e 5");
+    stereo::viewPointCloud(clouds_array[3], " step pre 3 - 6 e 7");
+    stereo::viewPointCloud(clouds_array[4], " step pre 4 - 8 e 9");
 
 
     int k = 0;
     while (clouds_array.size() != 1) {
         FILE_LOG(logINFO) << "Iterazione: " << k;
         clouds_array = stereo_registration::register_clouds_in_batches(clouds_array, 2);
+        stereo::viewPointCloud(clouds_array[0], " step "+std::to_string(k));
+
         k++;
     }
 
-    stereo::viewPointCloud(clouds_array[0]);
+//    stereo::viewPointCloud(clouds_array[0]);
 
 
 
