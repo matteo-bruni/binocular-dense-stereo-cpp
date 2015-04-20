@@ -121,14 +121,26 @@ namespace stereo_registration {
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_to_target(new pcl::PointCloud<pcl::PointXYZRGB>);
 
         pcl::IterativeClosestPointNonLinear<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
+
+        FILE_LOG(logINFO) << " original size :" << cloud_source->size() << " ; " << cloud_target->size();
+        pcl::VoxelGrid<pcl::PointXYZRGB> grid, grid2;
+        grid.setLeafSize (3, 3, 3);
+        grid.setInputCloud (cloud_source);
+        grid.filter (*cloud_source);
+        grid2.setLeafSize (3, 3, 3);
+        grid2.setInputCloud (cloud_target);
+        grid2.filter (*cloud_target);
+        FILE_LOG(logINFO) << " post size :" << cloud_source->size() << " ; " << cloud_target->size();
+
+
         registration.setInputSource(cloud_source);
         registration.setInputTarget(cloud_target);
 
         //
         registration.setTransformationEpsilon (1e-8);
-        registration.setMaxCorrespondenceDistance (0.05);
+        registration.setMaxCorrespondenceDistance (0.5);
         registration.setMaximumIterations (30);
-        registration.setEuclideanFitnessEpsilon(1);
+        registration.setEuclideanFitnessEpsilon(1e-5); //1);
 
         registration.align(*cloud_source_to_target);
         if (registration.hasConverged())
