@@ -120,7 +120,7 @@ namespace stereo_registration {
         //    // ICP object.
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_to_target(new pcl::PointCloud<pcl::PointXYZRGB>);
 
-        pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
+        pcl::IterativeClosestPointNonLinear<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
         registration.setInputSource(cloud_source);
         registration.setInputTarget(cloud_target);
 
@@ -133,8 +133,7 @@ namespace stereo_registration {
         registration.align(*cloud_source_to_target);
         if (registration.hasConverged())
         {
-            FILE_LOG(logINFO) << "ICP converged.";
-//                    << "The score is " << registration.getFitnessScore() << std::endl;
+            FILE_LOG(logINFO) << "ICP converged." << "The score is " << registration.getFitnessScore();
 //            std::cout << "Transformation matrix:" << std::endl;
             std::cout << registration.getFinalTransformation() << std::endl;
         }

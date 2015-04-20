@@ -403,6 +403,7 @@ namespace stereo {
 
         sbm(g1, g2, disp, CV_32F);
 
+
         imwrite("disp_"+std::to_string(img_frame)+".png", disp);
 
 

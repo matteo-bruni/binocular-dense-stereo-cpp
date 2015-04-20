@@ -114,43 +114,68 @@ namespace stereo_util {
 //        cv::Mat image = cv::imread(img1_path);
 
 
-        cv::Mat binary;// = cv::imread(argv[2], 0);
-        cv::cvtColor(image, binary, CV_BGR2GRAY);
-        cv::threshold(binary, binary, 100, 255, THRESH_BINARY);
+//        cv::Mat binary;// = cv::imread(argv[2], 0);
+//        cv::cvtColor(image, binary, CV_BGR2GRAY);
+//        cv::threshold(binary, binary, 100, 255, THRESH_BINARY);
+//
+//        cv::Mat const structure_elem = cv::getStructuringElement(
+//                cv::MORPH_RECT, cv::Size(11, 11));
+//        cv::morphologyEx(binary, binary,
+//                cv::MORPH_CLOSE, structure_elem);
+//
+////        imshow("filtrata1",binary);
+//
+//        vector<vector<Point>> contours; // Vector for storing contour
+//        vector<Vec4i> hierarchy;
+//        cv::Mat binary_contour;
+//        binary.copyTo(binary_contour);
+//        findContours( binary_contour, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
+//        // iterate through each contour.
+//        for( int i = 0; i< contours.size(); i++ )
+//        {
+//            //  Find the area of contour
+//            double a = contourArea( contours[i],false);
+//            if (a < 5000) {
+//                Scalar color(255, 255, 255);  // color of the contour in the
+//                drawContours(binary, contours, i, 255, CV_FILLED, 8, hierarchy);
+//            }
+//        }
+//
+//        cv::Mat result1;
+//        image.copyTo(result1, binary);
+//        imshow("filtrata",result1);
+        cv::cvtColor(image, image, CV_BGR2GRAY);
 
-        cv::Mat const structure_elem = cv::getStructuringElement(
-                cv::MORPH_RECT, cv::Size(11, 11));
-        cv::morphologyEx(binary, binary,
-                cv::MORPH_CLOSE, structure_elem);
+        Mat bw = 100 < 128 ? (image < 100) : (image > 100);
 
-//        imshow("filtrata1",binary);
-
-        vector<vector<Point>> contours; // Vector for storing contour
+        vector<vector<Point> > contours;
         vector<Vec4i> hierarchy;
-        cv::Mat binary_contour;
-        binary.copyTo(binary_contour);
-        findContours( binary_contour, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
-        // iterate through each contour.
-        for( int i = 0; i< contours.size(); i++ )
+        findContours( bw, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
+
+        Mat dst = Mat::zeros(image.size(), CV_8UC3);
+
+        if( !contours.empty() && !hierarchy.empty() )
         {
-            //  Find the area of contour
-            double a = contourArea( contours[i],false);
-            if (a < 5000) {
-                Scalar color(255, 255, 255);  // color of the contour in the
-                drawContours(binary, contours, i, 255, CV_FILLED, 8, hierarchy);
+            // iterate through all the top-level contours,
+            // draw each connected component with its own random color
+            int idx = 0;
+            for( ; idx >= 0; idx = hierarchy[idx][0] )
+            {
+                Scalar color( (rand()&255), (rand()&255), (rand()&255) );
+                drawContours( dst, contours, idx, color, CV_FILLED, 8, hierarchy );
             }
         }
 
-        cv::Mat result1;
-        image.copyTo(result1, binary);
-//        imshow("filtrata",binary);
-//        cv::waitKey(0);
+        imshow( "Connected Components", dst );
+
+        waitKey(0);
 
 //        imshow("filtrata-c",binary_contour);
+//
 
 
-
-        return std::make_tuple(result1, binary);
+//        return std::make_tuple(result1, binary);
+        return std::make_tuple(dst, dst);
 
 //
 
@@ -165,7 +190,7 @@ namespace stereo_util {
 //    }
 
         // define bounding rectangle
-        int border = 20;
+        int border = 30;
         int border2 = border + border;
         cv::Rect rectangle(border,border,image.cols-border2,image.rows-border2);
 
@@ -177,7 +202,7 @@ namespace stereo_util {
                 result,   // segmentation result
                 rectangle,// rectangle containing foreground
                 bgModel,fgModel, // models
-                10,        // number of iterations
+                500,        // number of iterations
                 cv::GC_INIT_WITH_RECT); // use rectangle
         // Get the pixels marked as likely foreground
         cv::compare(result,cv::GC_PR_FGD,result,cv::CMP_EQ);
@@ -186,16 +211,16 @@ namespace stereo_util {
         image.copyTo(foreground,result); // bg pixels not copied
 
         // draw rectangle on original image
-//        cv::rectangle(image, rectangle, cv::Scalar(255,255,255),1);
-//        cv::namedWindow("Image");
-//        cv::imshow("Image",image);
+        cv::rectangle(image, rectangle, cv::Scalar(255,255,255),1);
+        cv::namedWindow("Image");
+        cv::imshow("Image",image);
 
         // display result
-//        cv::namedWindow("Segmented Image");
-//        cv::imshow("Segmented Image",foreground);
+        cv::namedWindow("Segmented Image");
+        cv::imshow("Segmented Image",foreground);
 
 
-//        waitKey();
+        waitKey();
 //        return image;
         return foreground;
 //        return std::make_tuple(foreground, binary);

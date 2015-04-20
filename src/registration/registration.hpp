@@ -14,6 +14,8 @@ namespace stereo_registration {
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_out, const bool downsample, Eigen::Matrix4f &final_transform);
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr  naiveRegistration( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target);
+
+    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> iterativeNaiveRegistration ( std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds);
 //
 //    void
 //            findCorrespondences ( pcl::PointCloud<pcl::PointNormal>::Ptr &src,
