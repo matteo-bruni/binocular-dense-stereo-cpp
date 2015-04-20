@@ -6,6 +6,8 @@
 #include "opencv2/objdetect/objdetect.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include <pcl/io/ply_io.h>
+
 #include "../logger/log.h"
 #include "../dataset/tsukuba_dataset.h"
 #include "../dataset/dataset.hpp"
@@ -304,5 +306,18 @@ namespace stereo_util {
         cv::vconcat(h_concat, vect, P);
         FILE_LOG(logINFO) << "P matrix: " << P ;
         return P.inv();
+    }
+
+    void saveVectorCloudsToPLY(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array, std::string title) {
+
+        std::stringstream ss;
+
+        for (int i = 0; i<clouds_array.size(); i++) {
+            // save
+            ss.str( std::string() );
+            ss.clear();
+            ss << "./" << title << " - " << i << ".ply";
+            pcl::io::savePLYFileASCII (ss.str(), *clouds_array[i]);
+        }
     }
 }

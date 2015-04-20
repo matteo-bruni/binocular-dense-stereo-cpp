@@ -116,21 +116,40 @@ int main(int argc, char *argv[])
     int step = 10;
     stereo::createAllCloudsTsukuba(dataset, clouds, last_frame, step);
 
+    stereo_util::saveVectorCloudsToPLY(clouds, "original");
 
-    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array = stereo_registration::register_clouds_in_batches(clouds, 2);
+    FILE_LOG(logINFO) << "We have created: " << clouds.size() << " clouds from dataset. From images: ";
+    for (int i=0; i<last_frame; i+=step){
+        FILE_LOG(logINFO) << "image: " << i+1;
+    }
 
-    stereo::viewPointCloud(clouds_array[0], " step pre 0 - 0 e 1");
-    stereo::viewPointCloud(clouds_array[1], " step pre 1 - 2 e 3");
-    stereo::viewPointCloud(clouds_array[2], " step pre 2 - 4 e 5");
-    stereo::viewPointCloud(clouds_array[3], " step pre 3 - 6 e 7");
-    stereo::viewPointCloud(clouds_array[4], " step pre 4 - 8 e 9");
+//    stereo::viewPointCloud(clouds[8], " cloud 15 - prima ");
+//    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array = clouds;// = stereo_registration::register_clouds_in_batches(clouds, 2);
+//    stereo::viewPointCloud(clouds[8], " cloud 15 - dopo");
+
+
+//    stereo::viewDoublePointCloud(clouds[0],clouds[1], "cloud 0 e 1");
+//    stereo::viewPointCloud(clouds_array[0], " step pre 0 - 0 e 1"); // ok
+//
+//    stereo::viewDoublePointCloud(clouds[2],clouds[3], "cloud 2 e 3");
+//    stereo::viewPointCloud(clouds_array[1], " step pre 1 - 2 e 3"); // ok
+
+//    stereo::viewDoublePointCloud(clouds[4], clouds[5], "cloud 4 e 5"); // ok
+//    stereo::viewPointCloud(clouds_array[2], " step pre 2 - 4 e 5"); //ok
+//
+//    stereo::viewDoublePointCloud(clouds[6], clouds[7], "cloud 6 e 7");
+//    stereo::viewPointCloud(clouds_array[3], " step pre 3 - 6 e 7"); //ok
+
+//    stereo::viewDoublePointCloud(clouds[8], clouds[9], "cloud 8 e 9");
+//    stereo::viewPointCloud(clouds_array[4], " step pre 4 - 8 e 9"); //fail
 
 
     int k = 0;
-    while (clouds_array.size() != 1) {
+    while (clouds.size() != 1) {
         FILE_LOG(logINFO) << "Iterazione: " << k;
-        clouds_array = stereo_registration::register_clouds_in_batches(clouds_array, 2);
-        stereo::viewPointCloud(clouds_array[0], " step "+std::to_string(k));
+        clouds = stereo_registration::register_clouds_in_batches(clouds, 2);
+        stereo_util::saveVectorCloudsToPLY(clouds, "register-step-"+std::to_string(k));
+//        stereo::viewPointCloud(clouds_array[0], " step "+std::to_string(k));
 
         k++;
     }

@@ -1011,11 +1011,11 @@ namespace stereo {
 //
 //                }
 
-                // save
-                ss.str( std::string() );
-                ss.clear();
-                ss << "./cloud-" << i << ".ply";
-                pcl::io::savePLYFileASCII (ss.str(), *cloud);
+//                // save
+//                ss.str( std::string() );
+//                ss.clear();
+//                ss << "./cloud-" << i << ".ply";
+//                pcl::io::savePLYFileASCII (ss.str(), *cloud);
             }
 
         }

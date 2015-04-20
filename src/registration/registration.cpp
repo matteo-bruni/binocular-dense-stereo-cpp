@@ -68,15 +68,14 @@ namespace stereo_registration {
     std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> register_clouds_in_batches(
             std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_to_register, int batch_size) {
 
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
-        std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> batches_of_registered_clouds;
 
-        FILE_LOG(logINFO) << "single cloud size :"<< clouds_to_register[0]->size();
+        std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> output_batches_of_registered_clouds;
 
+        FILE_LOG(logDEBUG) << "single cloud size :"<< clouds_to_register[0]->size();
 
         unsigned long int n_batch = clouds_to_register.size()/batch_size + ((clouds_to_register.size() % batch_size != 0) ? 1:0);
 
-        FILE_LOG(logINFO) << "We have n_batch = : " << n_batch << " of size: " << batch_size <<" from a total of : " << clouds_to_register.size() << "clouds";
+        FILE_LOG(logINFO) << "We have n_batch = : " << n_batch << " of size: " << batch_size << " from a total of : " << clouds_to_register.size() << "clouds";
 
         for(int i = 0; i<n_batch; i++) {
 
@@ -85,11 +84,16 @@ namespace stereo_registration {
 
             FILE_LOG(logINFO) << "BATCH = : " << i << " from "<<  start << " to: "<< stop;
 
+            FILE_LOG(logINFO) << start  <<" first cloud of the batch";
+
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
+
             for(int j = start; j < stop; j++) {
 
                 if (j == start) {
-                    FILE_LOG(logINFO) << j  <<" first cloud of the batch";
-                    batch_cloud_sum = clouds_to_register[j];
+                    //clouds_to_register[j]; //
+                    pcl::copyPointCloud(*clouds_to_register[start], *batch_cloud_sum);
+
                 }
                 else {
                     FILE_LOG(logINFO) << " registering "<< j << " in " << start << " space";
@@ -98,14 +102,15 @@ namespace stereo_registration {
                 }
             }
 
-            batches_of_registered_clouds.push_back(batch_cloud_sum);
+            output_batches_of_registered_clouds.push_back(batch_cloud_sum);
             FILE_LOG(logINFO) << "BATCH point size =  "<< batch_cloud_sum->size();
+
 
         }
 
-        FILE_LOG(logINFO) << "We have a total of :"<< batches_of_registered_clouds.size() << " batches";
+        FILE_LOG(logINFO) << "We have a total of :"<< output_batches_of_registered_clouds.size() << " batches";
 
-        return batches_of_registered_clouds;
+        return output_batches_of_registered_clouds;
 
     }
 

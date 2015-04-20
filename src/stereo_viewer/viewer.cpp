@@ -28,6 +28,7 @@ namespace stereo {
             viewer->spinOnce(100);
             boost::this_thread::sleep (boost::posix_time::microseconds (100000));
         }
+        viewer->close();
     }
 //
 //    inline pcl::PointXYZRGB Eigen2PointXYZRGB(Eigen::Vector3f v, Eigen::Vector3f rgb) { pcl::PointXYZRGB p(rgb[0],rgb[1],rgb[2]); p.x = v[0]; p.y = v[1]; p.z = v[2]; return p; }
@@ -60,10 +61,10 @@ namespace stereo {
 //    }
 
 
-    void viewDoublePointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr, pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr2) {
+    void viewDoublePointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr, pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr2,  std::string title) {
         //Create visualizer
         boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
-        viewer = createDoubleVisualizer(point_cloud_ptr, point_cloud_ptr2 );
+        viewer = createDoubleVisualizer(point_cloud_ptr, point_cloud_ptr2, title);
 
         //Main loop
         while ( !viewer->wasStopped())
@@ -71,6 +72,7 @@ namespace stereo {
             viewer->spinOnce(100);
             boost::this_thread::sleep (boost::posix_time::microseconds (100000));
         }
+        viewer->close();
     }
 
 
@@ -89,12 +91,12 @@ namespace stereo {
     }
 
     boost::shared_ptr<pcl::visualization::PCLVisualizer> createDoubleVisualizer (
-            pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud, pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud2) {
+            pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud, pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud2,  std::string title) {
 
         // --------------------------------------------------------
         // -----Open 3D viewer and add point cloud and normals-----
         // --------------------------------------------------------
-        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer (title));
         viewer->initCameraParameters ();
 
         int v1(0);
