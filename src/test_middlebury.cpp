@@ -168,6 +168,8 @@ int main(int argc, char *argv[])
         k++;
     }
 
+    FILE_LOG(logINFO) << " post size :" << clouds[0]->size() << " ; total clouds = " << clouds.size();
+
     stereo::viewPointCloud(clouds[0]);
 
 

@@ -122,19 +122,22 @@ namespace stereo_registration {
 
         pcl::IterativeClosestPointNonLinear<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
 
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_filtered (new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target_filtered (new pcl::PointCloud<pcl::PointXYZRGB>);
+
         FILE_LOG(logINFO) << " original size :" << cloud_source->size() << " ; " << cloud_target->size();
         pcl::VoxelGrid<pcl::PointXYZRGB> grid, grid2;
         grid.setLeafSize (3, 3, 3);
         grid.setInputCloud (cloud_source);
-        grid.filter (*cloud_source);
+        grid.filter (*cloud_source_filtered);
         grid2.setLeafSize (3, 3, 3);
         grid2.setInputCloud (cloud_target);
-        grid2.filter (*cloud_target);
-        FILE_LOG(logINFO) << " post size :" << cloud_source->size() << " ; " << cloud_target->size();
+        grid2.filter (*cloud_target_filtered);
+        FILE_LOG(logINFO) << " post size :" << cloud_source_filtered->size() << " ; " << cloud_target_filtered->size();
 
 
-        registration.setInputSource(cloud_source);
-        registration.setInputTarget(cloud_target);
+        registration.setInputSource(cloud_source_filtered);
+        registration.setInputTarget(cloud_target_filtered);
 
         //
         registration.setTransformationEpsilon (1e-8);
@@ -145,6 +148,11 @@ namespace stereo_registration {
         registration.align(*cloud_source_to_target);
         if (registration.hasConverged())
         {
+
+            // Transform target back in source frame
+            pcl::transformPointCloud (*cloud_source, *cloud_source, registration.getFinalTransformation());
+
+
             FILE_LOG(logINFO) << "ICP converged." << "The score is " << registration.getFitnessScore();
 //            std::cout << "Transformation matrix:" << std::endl;
             std::cout << registration.getFinalTransformation() << std::endl;
