@@ -123,54 +123,36 @@ int main(int argc, char *argv[])
         FILE_LOG(logINFO) << "image: " << i+1;
     }
 
-
     // TEST REGISTRATION  16 17
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
 //    pcl::copyPointCloud(*clouds[16], *batch_cloud_sum);
-//    *batch_cloud_sum += *(stereo_registration::naiveRegistration(clouds[17], clouds[16]));
+//    *batch_cloud_sum += *(stereo_registration::naiveRegistrationTransformation(clouds[17], clouds[16]));
 //    stereo::viewPointCloud(batch_cloud_sum, " 16,17 ");
 
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum2(new pcl::PointCloud<pcl::PointXYZRGB>);
 //    pcl::copyPointCloud(*clouds[16], *batch_cloud_sum2);
-//    *batch_cloud_sum += *(stereo_registration::naiveRegistration(clouds[17], clouds[16]));
+//    *batch_cloud_sum += *(stereo_registration::naiveRegistrationTransformation(clouds[17], clouds[16]));
 //    stereo::viewPointCloud(batch_cloud_sum2, " 16,17 bis ");
 
 
 
     // TOTAL REGISTRATION
-    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array = clouds;// = stereo_registration::register_clouds_in_batches(clouds, 2);
-//    stereo::viewPointCloud(clouds[8], " cloud 15 - dopo");
+//    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array = clouds;// = stereo_registration::register_clouds_in_batches(clouds, 2);
 
-
-//    stereo::viewDoublePointCloud(clouds[0],clouds[1], "cloud 0 e 1");
-//    stereo::viewPointCloud(clouds_array[0], " step pre 0 - 0 e 1"); // ok
+//    int k = 0;
+//    while (clouds.size() != 1) {
+//        FILE_LOG(logINFO) << "Iterazione: " << k;
+//        clouds = stereo_registration::register_clouds_in_batches(clouds, 2);
+//        stereo_util::saveVectorCloudsToPLY(clouds, "register-step-"+std::to_string(k));
+////        stereo::viewPointCloud(clouds_array[0], " step "+std::to_string(k));
 //
-//    stereo::viewDoublePointCloud(clouds[2],clouds[3], "cloud 2 e 3");
-//    stereo::viewPointCloud(clouds_array[1], " step pre 1 - 2 e 3"); // ok
-
-//    stereo::viewDoublePointCloud(clouds[4], clouds[5], "cloud 4 e 5"); // ok
-//    stereo::viewPointCloud(clouds_array[2], " step pre 2 - 4 e 5"); //ok
+//        k++;
+//    }
 //
-//    stereo::viewDoublePointCloud(clouds[6], clouds[7], "cloud 6 e 7");
-//    stereo::viewPointCloud(clouds_array[3], " step pre 3 - 6 e 7"); //ok
+//    FILE_LOG(logINFO) << " post size :" << clouds[0]->size() << " ; total clouds = " << clouds.size();
 
-//    stereo::viewDoublePointCloud(clouds[8], clouds[9], "cloud 8 e 9");
-//    stereo::viewPointCloud(clouds_array[4], " step pre 4 - 8 e 9"); //fail
-
-
-    int k = 0;
-    while (clouds.size() != 1) {
-        FILE_LOG(logINFO) << "Iterazione: " << k;
-        clouds = stereo_registration::register_clouds_in_batches(clouds, 2);
-        stereo_util::saveVectorCloudsToPLY(clouds, "register-step-"+std::to_string(k));
-//        stereo::viewPointCloud(clouds_array[0], " step "+std::to_string(k));
-
-        k++;
-    }
-
-    FILE_LOG(logINFO) << " post size :" << clouds[0]->size() << " ; total clouds = " << clouds.size();
-
-    stereo::viewPointCloud(clouds[0]);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_cloud = stereo_registration::register_incremental_clouds(clouds);
+    stereo::viewPointCloud(final_cloud);
 
 
 
@@ -203,7 +185,7 @@ int main(int argc, char *argv[])
 //            }
 //            else {
 //                FILE_LOG(logINFO) << " registering "<< j << " with " << start;
-//                *batch_cloud_sum += *(stereo_registration::naiveRegistration(clouds[j], clouds[start]));
+//                *batch_cloud_sum += *(stereo_registration::naiveRegistrationTransformation(clouds[j], clouds[start]));
 //
 //            }
 //        }
@@ -218,7 +200,7 @@ int main(int argc, char *argv[])
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr total_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 //
-//    temp_cloud = stereo_registration::naiveRegistration(clouds_array[0], clouds_array[1]);
+//    temp_cloud = stereo_registration::naiveRegistrationTransformation(clouds_array[0], clouds_array[1]);
 //    for (int i=1; i<2; i++){
 //
 //        if (i == 0) {
@@ -227,7 +209,7 @@ int main(int argc, char *argv[])
 //        }
 //        else {
 //            FILE_LOG(logINFO) << " registering "<< i << " with " << 0;
-//            *total_sum += *(stereo_registration::naiveRegistration(clouds_array[i], clouds_array[i-1]));
+//            *total_sum += *(stereo_registration::naiveRegistrationTransformation(clouds_array[i], clouds_array[i-1]));
 //
 //        }
 //    }
@@ -251,7 +233,7 @@ int main(int argc, char *argv[])
 //
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_sum_registration = clouds[0];
 //    for (int i=1; i<clouds.size(); i++){
-//        cloud_sum_registration = stereo_registration::naiveRegistration(cloud_sum_registration, clouds[i]);
+//        cloud_sum_registration = stereo_registration::naiveRegistrationTransformation(cloud_sum_registration, clouds[i]);
 //        *cloud_sum_registration += *clouds[i];
 //
 //    }
