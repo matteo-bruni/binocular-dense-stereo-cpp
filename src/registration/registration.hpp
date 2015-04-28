@@ -5,7 +5,7 @@ namespace stereo_registration {
 
     struct CloudAlignment {
         //std::string frame_name;
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr alignedCloud;
         Eigen::Matrix4f transformMatrix = Eigen::Matrix4f::Identity();
     };
 
@@ -26,6 +26,10 @@ namespace stereo_registration {
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr  naiveRegistrationCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source,
                                                      pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target);
+
+
+    CloudAlignment registerSourceToTarget(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source,
+                                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target);
 
     std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> iterativeNaiveRegistration ( std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds);
 //

@@ -126,33 +126,61 @@ int main(int argc, char *argv[])
     // TEST REGISTRATION  16 17
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
 //    pcl::copyPointCloud(*clouds[16], *batch_cloud_sum);
-//    *batch_cloud_sum += *(stereo_registration::naiveRegistrationTransformation(clouds[17], clouds[16]));
+//    stereo_registration::CloudAlignment cloud_align = stereo_registration::registerSourceToTarget(clouds[17], clouds[16]);
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_in_target_space(new pcl::PointCloud<pcl::PointXYZRGB>);
+//    pcl::transformPointCloud (*clouds[17], *cloud_source_in_target_space, cloud_align.transformMatrix);
+//    *batch_cloud_sum += *cloud_source_in_target_space;
 //    stereo::viewPointCloud(batch_cloud_sum, " 16,17 ");
-
+//
+//
+//    // TEST REGISTRATION  2 3
 //    pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum2(new pcl::PointCloud<pcl::PointXYZRGB>);
-//    pcl::copyPointCloud(*clouds[16], *batch_cloud_sum2);
-//    *batch_cloud_sum += *(stereo_registration::naiveRegistrationTransformation(clouds[17], clouds[16]));
-//    stereo::viewPointCloud(batch_cloud_sum2, " 16,17 bis ");
+//    pcl::copyPointCloud(*clouds[2], *batch_cloud_sum2);
+//    stereo_registration::CloudAlignment cloud_align2 = stereo_registration::registerSourceToTarget(clouds[3], clouds[2]);
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_in_target_space2(new pcl::PointCloud<pcl::PointXYZRGB>);
+//    pcl::transformPointCloud (*clouds[3], *cloud_source_in_target_space2, cloud_align2.transformMatrix);
+//    *batch_cloud_sum2 += *cloud_source_in_target_space2;
+//    stereo::viewPointCloud(batch_cloud_sum2, " 2,3 ");
 
 
+    int source = 0;
+    int target= 0;
+    for (int i = 0; i<10 ; i ++){
+        source =i*2;
+        target =i*2+1;
 
-    // TOTAL REGISTRATION
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum2(new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::copyPointCloud(*clouds[source], *batch_cloud_sum2);
+        stereo_registration::CloudAlignment cloud_align2 = stereo_registration::registerSourceToTarget(clouds[target], clouds[source]);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_in_target_space2(new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::transformPointCloud (*clouds[target], *cloud_source_in_target_space2, cloud_align2.transformMatrix);
+        *batch_cloud_sum2 += *cloud_source_in_target_space2;
+        stereo::viewPointCloud(batch_cloud_sum2, std::to_string(source)+"-"+std::to_string(target));
+
+    }
+
+//    // TOTAL REGISTRATION using batch
 //    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array = clouds;// = stereo_registration::register_clouds_in_batches(clouds, 2);
-
 //    int k = 0;
 //    while (clouds.size() != 1) {
 //        FILE_LOG(logINFO) << "Iterazione: " << k;
 //        clouds = stereo_registration::register_clouds_in_batches(clouds, 2);
-//        stereo_util::saveVectorCloudsToPLY(clouds, "register-step-"+std::to_string(k));
+////        stereo_util::saveVectorCloudsToPLY(clouds, "register-step-"+std::to_string(k));
 ////        stereo::viewPointCloud(clouds_array[0], " step "+std::to_string(k));
 //
 //        k++;
 //    }
-//
 //    FILE_LOG(logINFO) << " post size :" << clouds[0]->size() << " ; total clouds = " << clouds.size();
+////        stereo::viewPointCloud(clouds_array[0], " step "+std::to_string(k));
+//    // END TOTAL REGISTRATION using batch
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_cloud = stereo_registration::register_incremental_clouds(clouds);
-    stereo::viewPointCloud(final_cloud);
+
+
+
+//    // TOTAL REGISTRATION using incremental
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_cloud = stereo_registration::register_incremental_clouds(clouds);
+//    stereo::viewPointCloud(final_cloud);
+//    END REGISTRATION using incremental
 
 
 

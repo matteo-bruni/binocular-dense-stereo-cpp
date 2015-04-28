@@ -72,7 +72,6 @@ namespace stereo_registration {
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr local_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 
-
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_src;
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_tgt;
         Eigen::Matrix4f transformMatrix = Eigen::Matrix4f::Identity();
@@ -86,16 +85,12 @@ namespace stereo_registration {
             transformMatrix = stereo_registration::naiveRegistrationTransformation(cloud_src, cloud_tgt);
             pcl::transformPointCloud (*final_cloud, *final_cloud, transformMatrix);
 
-
             local_cloud->clear();
             pcl::transformPointCloud (*cloud_src, *local_cloud, transformMatrix);
             *local_cloud += *cloud_tgt;
             stereo::viewPointCloud(local_cloud, "step "+std::to_string(i)+" - "+std::to_string(i+1));
 
-
             *final_cloud += *cloud_tgt;
-
-
         }
 
         FILE_LOG(logINFO) << "Final cloud point size =  " << final_cloud->size();
@@ -105,54 +100,119 @@ namespace stereo_registration {
 
 
 
-//    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> register_clouds_in_batches(
-//            std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_to_register, int batch_size) {
-//
-//
-//        std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> output_batches_of_registered_clouds;
-//
-//        FILE_LOG(logDEBUG) << "single cloud size :"<< clouds_to_register[0]->size();
-//
-//        unsigned long int n_batch = clouds_to_register.size()/batch_size + ((clouds_to_register.size() % batch_size != 0) ? 1:0);
-//
-//        FILE_LOG(logINFO) << "We have n_batch = : " << n_batch << " of size: " << batch_size << " from a total of : " << clouds_to_register.size() << "clouds";
-//
-//        for(int i = 0; i<n_batch; i++) {
-//
-//            int start = i*batch_size;
-//            int stop = std::min( int(clouds_to_register.size()), ((i+1)*batch_size));
-//
-//            FILE_LOG(logINFO) << "BATCH = : " << i << " from "<<  start << " to: "<< stop;
-//
-//            FILE_LOG(logINFO) << start  <<" first cloud of the batch";
-//
-//            pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
-//
-//            for(int j = start; j < stop; j++) {
-//
-//                if (j == start) {
-//                    //clouds_to_register[j]; //
-//                    pcl::copyPointCloud(*clouds_to_register[start], *batch_cloud_sum);
-//
-//                }
-//                else {
-//                    FILE_LOG(logINFO) << " registering "<< j << " in " << start << " space";
-//                    *batch_cloud_sum += *(stereo_registration::naiveRegistrationTransformation(clouds_to_register[j], clouds_to_register[start]));
-//
-//                }
-//            }
-//
-//            output_batches_of_registered_clouds.push_back(batch_cloud_sum);
-//            FILE_LOG(logINFO) << "BATCH point size =  "<< batch_cloud_sum->size();
-//
-//
-//        }
-//
-//        FILE_LOG(logINFO) << "We have a total of :"<< output_batches_of_registered_clouds.size() << " batches";
-//
-//        return output_batches_of_registered_clouds;
-//
-//    }
+    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> register_clouds_in_batches(
+            std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_to_register, int batch_size) {
+
+
+        std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> output_batches_of_registered_clouds;
+
+        FILE_LOG(logDEBUG) << "single cloud size :"<< clouds_to_register[0]->size();
+
+        unsigned long int n_batch = clouds_to_register.size()/batch_size + ((clouds_to_register.size() % batch_size != 0) ? 1:0);
+
+        FILE_LOG(logINFO) << "We have n_batch = : " << n_batch << " of size: " << batch_size << " from a total of : " << clouds_to_register.size() << "clouds";
+
+        for(int i = 0; i<n_batch; i++) {
+
+            int start = i*batch_size;
+            int stop = std::min( int(clouds_to_register.size()), ((i+1)*batch_size));
+
+            FILE_LOG(logINFO) << "BATCH = : " << i << " from "<<  start << " to: "<< stop;
+            FILE_LOG(logINFO) << start  <<" first cloud of the batch";
+
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+            for(int j = start; j < stop; j++) {
+
+                if (j == start) {
+                    //clouds_to_register[j]; //
+                    pcl::copyPointCloud(*clouds_to_register[start], *batch_cloud_sum);
+
+                }
+                else {
+                    FILE_LOG(logINFO) << " registering "<< j << " in " << start << " space";
+                    *batch_cloud_sum += *(stereo_registration::naiveRegistrationCloud(clouds_to_register[j], clouds_to_register[start]));
+                }
+            }
+            stereo::viewPointCloud(batch_cloud_sum, " SUM from  "+std::to_string(start)+" to "+std::to_string(stop));
+
+            output_batches_of_registered_clouds.push_back(batch_cloud_sum);
+            FILE_LOG(logINFO) << "BATCH sum point size =  "<< batch_cloud_sum->size();
+
+
+        }
+        FILE_LOG(logINFO) << "We have a total of :"<< output_batches_of_registered_clouds.size() << " batches";
+        return output_batches_of_registered_clouds;
+
+    }
+
+
+    CloudAlignment registerSourceToTarget(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source,
+                                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target) {
+        // ICP object.
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_to_target_downsampled(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_filtered (new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target_filtered (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+        float leafSize = 6.5;
+        int DOWNSAMPLE_LEVELS = 5;
+        pcl::VoxelGrid<pcl::PointXYZRGB> grid, grid2;
+        Eigen::Matrix4f transformMatrix = Eigen::Matrix4f::Identity();
+        double score = -1.;
+
+        for (int i = 0; i < DOWNSAMPLE_LEVELS; i++){
+            // Downsample
+            FILE_LOG(logINFO) << "STEP" << i << " leafSize: " << leafSize<< " original size :" << cloud_source->size() << " ; " << cloud_target->size();
+            grid.setLeafSize (leafSize, leafSize, leafSize);
+            grid.setInputCloud (cloud_source);
+            grid.filter (*cloud_source_filtered);
+            grid2.setLeafSize (leafSize, leafSize, leafSize);
+            grid2.setInputCloud (cloud_target);
+            grid2.filter (*cloud_target_filtered);
+            FILE_LOG(logINFO) << " post size :" << cloud_source_filtered->size() << " ; " << cloud_target_filtered->size();
+
+            pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
+
+            registration.setInputSource(cloud_source_filtered);
+            registration.setInputTarget(cloud_target_filtered);
+
+//            registration.setTransformationEpsilon (1e-8);
+//            registration.setMaxCorrespondenceDistance (2.5);
+            registration.setRANSACIterations(2000);
+            registration.setMaximumIterations(1000);
+//            registration.setEuclideanFitnessEpsilon(1e-5); //1);
+
+            registration.align(*cloud_source_to_target_downsampled, transformMatrix);
+
+            if (registration.hasConverged())
+            {
+                FILE_LOG(logINFO) << "registration step " << i << " ICP converged." << "The score is " << registration.getFitnessScore();
+                if (score == -1)
+                    score = registration.getFitnessScore();
+
+                if (score >= registration.getFitnessScore()){
+                    transformMatrix = registration.getFinalTransformation();
+                    score = registration.getFitnessScore();
+                } else {
+                    FILE_LOG(logINFO) << "Skipping registration step, score increasing";
+                }
+
+//            std::cout << "Transformation matrix:" << std::endl;
+                std::cout << registration.getFinalTransformation() << std::endl;
+            }
+            else FILE_LOG(logINFO) << "registration step " << i << "ICP did not converge.";
+
+            leafSize -= 1;
+        }
+
+        CloudAlignment output;
+        output.alignedCloud = cloud_source_to_target_downsampled;
+        output.transformMatrix = transformMatrix;
+        return output;
+    }
+
+
 
     Eigen::Matrix4f naiveRegistrationTransformation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source,
                                                     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target){
@@ -160,7 +220,6 @@ namespace stereo_registration {
 
         //    // ICP object.
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_to_target_downsampled(new pcl::PointCloud<pcl::PointXYZRGB>);
-
         pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
 
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_filtered (new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -241,11 +300,11 @@ namespace stereo_registration {
 
         //
         registration.setTransformationEpsilon (1e-8);
-        registration.setMaxCorrespondenceDistance (0.09);
-//        registration.setMaximumIterations (30);
-        registration.setRANSACIterations(2000);
-        registration.setMaximumIterations(1000);
-//        registration.setEuclideanFitnessEpsilon(1e-5); //1);
+        registration.setMaxCorrespondenceDistance (0.5);
+        registration.setMaximumIterations (30);
+//        registration.setRANSACIterations(2000);
+//        registration.setMaximumIterations(1000);
+        registration.setEuclideanFitnessEpsilon(1e-5); //1);
 
         Eigen::Matrix4f transformMatrix = Eigen::Matrix4f::Identity();
         registration.align(*cloud_source_to_target_downsampled);
@@ -273,138 +332,7 @@ namespace stereo_registration {
     }
 
 
-    void icp(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_sr, pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_tg,
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud_out, const bool downsample, Eigen::Matrix4f &final_transform){
-//
-        ///downsampling
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr src (new pcl::PointCloud<pcl::PointXYZRGB>);
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr tgt (new pcl::PointCloud<pcl::PointXYZRGB>);
-        pcl::VoxelGrid<pcl::PointXYZRGB> grid, grid2;
-//
-        FILE_LOG(logINFO) << " original size :" << cloud_sr->size() << " ; " << cloud_tg->size();
 
-        if (downsample) {
-            grid.setLeafSize (1, 1, 1);
-            grid.setInputCloud (cloud_sr);
-            grid.filter (*src);
-//
-            grid2.setLeafSize (2, 2, 2);
-            grid2.setInputCloud (cloud_tg);
-            grid2.filter (*tgt);
-        }
-        else {
-            src = cloud_sr;
-            tgt = cloud_tg;
-        }
-
-        FILE_LOG(logINFO) << " post size :" << src->size() << " ; " << tgt->size();
-
-//    // Compute surface normals and curvature
-        pcl::PointCloud<pcl::PointNormal>::Ptr points_with_normals_src (new  pcl::PointCloud<pcl::PointNormal>);
-        pcl::PointCloud<pcl::PointNormal>::Ptr points_with_normals_tgt (new  pcl::PointCloud<pcl::PointNormal>);
-
-        pcl::NormalEstimation<pcl::PointXYZRGB,  pcl::PointNormal> norm_est;
-        pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGB> ());
-        norm_est.setSearchMethod (tree);
-        norm_est.setKSearch (30);
-
-        norm_est.setInputCloud (src);
-        norm_est.compute (*points_with_normals_src);
-        pcl::copyPointCloud (*src, *points_with_normals_src);
-
-        norm_est.setInputCloud (tgt);
-        norm_est.compute (*points_with_normals_tgt);
-        pcl::copyPointCloud (*tgt, *points_with_normals_tgt);
-//
-//    //run iterativatly icp
-//
-        pcl::IterativeClosestPointNonLinear<pcl::PointNormal, pcl::PointNormal> reg;
-
-//    //PARAMETRI DA SETTARE
-        reg.setTransformationEpsilon (1e-8);
-        // Set the maximum distance between two correspondences (src<->tgt) to 10cm
-        // Note: adjust this based on the size of your datasets
-        reg.setMaxCorrespondenceDistance (0.02);
-
-        reg.setInputSource(points_with_normals_src);
-        reg.setInputTarget(points_with_normals_tgt);
-
-
-        Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev, targetToSource;
-        pcl::PointCloud<pcl::PointNormal>::Ptr reg_result = points_with_normals_src;
-
-        reg.setMaximumIterations (2); //era 2
-//
-        //i andava fino a 30
-        for (int i = 0; i < 2; ++i) {
-            PCL_INFO ("Iteration Nr. %d.\n", i);
-
-            // save cloud for visualization purpose
-            points_with_normals_src = reg_result;
-
-            // Estimate
-            reg.setInputSource (points_with_normals_src);
-            reg.align (*reg_result);
-
-            //accumulate transformation between each Iteration
-            Ti = reg.getFinalTransformation () * Ti;
-
-            //if the difference between this transformation and the previous one
-            //is smaller than the threshold, refine the process by reducing
-            //the maximal correspondence distance
-            if (fabs ((reg.getLastIncrementalTransformation () - prev).sum ()) < reg.getTransformationEpsilon ())
-                reg.setMaxCorrespondenceDistance (reg.getMaxCorrespondenceDistance () - 0.001);
-
-            prev = reg.getLastIncrementalTransformation ();
-
-        }
-//
-        // Get the transformation from target to source
-        targetToSource = Ti.inverse();
-
-        //
-        // Transform target back in source frame
-        pcl::transformPointCloud (*cloud_tg, *cloud_out, targetToSource);
-
-        //add the source to the transformed target
-        *cloud_out += *cloud_sr;
-
-        final_transform = targetToSource;
-
-
-
-    }
-
-//
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr registerClouds(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> &clouds) {
-//
-        unsigned int cloud_number = (unsigned int) clouds.size();
-        Eigen::Matrix4f GlobalTransform = Eigen::Matrix4f::Identity(), pairTransform;
-//
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr result(new pcl::PointCloud<pcl::PointXYZRGB>);
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr source(new pcl::PointCloud<pcl::PointXYZRGB>);
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr target(new pcl::PointCloud<pcl::PointXYZRGB>);
-
-        for (int i = 1; i < cloud_number; i++) {
-
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp(new pcl::PointCloud<pcl::PointXYZRGB>);
-
-            source = clouds[i - 1];
-            target = clouds[i];
-
-            icp(source, target, temp, true, pairTransform);
-            //transform current pair into the global transform
-            pcl::transformPointCloud(*temp, *result, GlobalTransform);
-            //update the global transform
-            GlobalTransform = GlobalTransform * pairTransform;
-
-            //save aligned pair, transformed into the first cloud's frame
-
-        }
-
-        return result;
-
-    }
 
 
 }

@@ -488,8 +488,9 @@ namespace stereo {
                 uint32_t rgb = (static_cast<uint32_t>(intensity[2]) << 16 | static_cast<uint32_t>(intensity[1]) << 8 | static_cast<uint32_t>(intensity[0]));
 
                 pcl_point_rgb.rgb = *reinterpret_cast<float *>(&rgb);
+                //                if (img_1_segm.at<unsigned int>(rows, cols) != 0)
 
-//                if (img_1_segm.at<unsigned int>(rows, cols) != 0)
+                if (pcl_point_rgb.z < 0)
                     point_cloud_ptr->push_back(pcl_point_rgb);
             }
 
