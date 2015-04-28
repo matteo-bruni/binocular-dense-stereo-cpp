@@ -112,9 +112,12 @@ int main(int argc, char *argv[])
 
 
     std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
+//    int last_frame = 200;
+//    int step = 10;
+    int first_frame = 100;
     int last_frame = 200;
-    int step = 10;
-    stereo::createAllCloudsTsukuba(dataset, clouds, last_frame, step);
+    int step = 5;
+    stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step);
 
     stereo_util::saveVectorCloudsToPLY(clouds, "original");
 

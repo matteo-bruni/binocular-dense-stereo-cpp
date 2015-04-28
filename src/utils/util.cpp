@@ -273,34 +273,28 @@ namespace stereo_util {
         return transformMatrix;
     }
 
-    Eigen::Matrix4f getTransformBetweenCloudsTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, const int frame_reference, const int current_frame) {
+    Eigen::Matrix4d getTransformToWorldCoordinatesTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset,
+                                                          const int current_frame) {
 
-//        FILE_LOG(logINFO) << "R: " << stereo_util::infoMatrix(R) << R;
-//        FILE_LOG(logINFO) << "T: " << stereo_util::infoMatrix(T) << T;
 
-        Ptr<cv::datasets::tsukuba_datasetObj> data_img1 =
-                static_cast< Ptr<cv::datasets::tsukuba_datasetObj> >  (dataset->getTrain()[frame_reference]);
         Ptr<cv::datasets::tsukuba_datasetObj> data_img2 =
                 static_cast< Ptr<cv::datasets::tsukuba_datasetObj> >  (dataset->getTrain()[current_frame]);
 
 
         FILE_LOG(logINFO) << "Current Frame R and T: " << current_frame ;
 
-        Mat r1 = Mat(data_img1->r);
         Mat r2 = Mat(data_img2->r);
-
         // init translation vectors from dataset
-        Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->tl);
         Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->tl);
 
-        // rotation between img2 and img1
-        Mat R = r2.t(); //r2*r1.t();
-        // translation between img2 and img1
+        // rotation to world coordinates
+        Mat R = r2.inv(); //r2*r1.t();
+        FILE_LOG(logINFO) << "Current Frame R : " << R*R.inv() ;
+
+        // translation to world coordinates
         Mat T = -t2; //t1 - (R.t()*t2 );
 
-        Eigen::Matrix4f transformMatrix = Eigen::Matrix4f::Identity();
-
-//        FILE_LOG(logINFO) << "R float: " <<  R.at<float>(0,0) << " double:" << R.at<double>(0,0);
+        Eigen::Matrix4d transformMatrix = Eigen::Matrix4d::Identity();
 
         transformMatrix (0,0) = R.at<double>(0,0);
         transformMatrix (0,1) = R.at<double>(0,1);

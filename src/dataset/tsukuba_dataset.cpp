@@ -101,8 +101,10 @@ namespace cv {
         cv::Mat tsukuba_datasetImp::load_disparity(const int img_num) {
 
             std::ostringstream ss;
-            ss << img_num;
-            std::string img_path = dataset_path + "disparity_maps/left/frame_"+ ss.str() +".png";
+            ss << std::setw(5) << std::setfill('0') << img_num;
+//            ss << img_num;
+//            std::string img_path = dataset_path + "disparity_maps/left/frame_"+ ss.str() +".png";
+            std::string img_path = dataset_path + "disparity_maps/left/tsukuba_disparity_L_"+ ss.str() +".png";
 
             return imread(img_path,0);
         }
@@ -115,11 +117,14 @@ namespace cv {
 
 
             std::ostringstream ss;
-            //ss << std::setw(2) << std::setfill('0') << img_num;
-            ss << img_num;
+            ss << std::setw(5) << std::setfill('0') << img_num;
+//            ss << img_num;
 
-            std::string img_left_path = dataset_path + "daylight/left/frame_"+ ss.str() +".png";
-            std::string img_right_path = dataset_path + "daylight/right/frame_"+ ss.str() +".png";
+
+//            std::string img_left_path = dataset_path + "daylight/left/frame_"+ ss.str() +".png";
+            std::string img_left_path = dataset_path + "daylight/left/tsukuba_daylight_L_"+ ss.str() +".png";
+//            std::string img_right_path = dataset_path + "daylight/right/frame_"+ ss.str() +".png";
+            std::string img_right_path = dataset_path + "daylight/right/tsukuba_daylight_R_"+ ss.str() +".png";
 
             FILE_LOG(logINFO) << " loading " << img_left_path << " and " << img_right_path;
 
