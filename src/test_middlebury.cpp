@@ -40,25 +40,7 @@
 //M*/
 
 
-//#include <opencv2/core/core.hpp>
-//#include <cstdio>
-//#include <string>
-//#include <vector>
-//
-//// include mik
-//#include <cstdint>
-//#include <cv.h>
-//#include <highgui.h>
-//#include <iostream>
-//#include <string>
-//#include <pcl/common/common_headers.h>
-//#include <pcl/io/pcd_io.h>
-//#include <pcl/registration/icp.h>
-////#include <boost/thread/thread.hpp>
-//#include <stdint.h>
-
-
-//#include <pcl/common/projection_matrix.h>
+#include "includes.h"
 
 // custom includes
 #include "dataset/msm_middlebury.hpp"
@@ -71,14 +53,9 @@
 #include "logger/log.h"
 #include "dataset/tsukuba_dataset.h"
 
-#include "includes.h"
 
-//
-//#include <pcl/common/common.h>
-//#include <pcl/features/normal_3d_omp.h>
-//#include <pcl/surface/mls.h>
-//#include <pcl/surface/poisson.h>
-//#include <pcl/io/vtk_io.h>
+
+
 
 
 using namespace std;
@@ -91,47 +68,120 @@ int main(int argc, char *argv[])
 
     FILE_LOG(logINFO) << "Binocular Dense Stereo";
 
-//    string path("../dataset/dataset_templeRing_segm/");
-//    Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
+
+    // string path("../dataset/dataset_templeRing_segm/");
+    // Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
 
     string path("../dataset/NTSD-200/");
-
     Ptr<tsukuba_dataset> dataset = tsukuba_dataset::create();
     dataset->load(path);
-
     // dataset contains camera parameters for each image.
     FILE_LOG(logINFO) << "images number: " << (unsigned int)dataset->getTrain().size();
 
 
-    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
-//    int last_frame = 200;
-//    int step = 10;
+    bool load_clouds = true;
+    bool incremental = false;
+    int load_n_clouds = 20;
     int first_frame = 0;
     int last_frame = 200;
     int step = 10;
 
 
-//    stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step);
-//    stereo_util::saveVectorCloudsToPLY(clouds, "original");
-//
-    clouds = stereo_util::loadVectorCloudsFromPLY("./original-", 20);
+    if (pcl::console::find_switch (argc, argv, "-load")) {
 
-    FILE_LOG(logINFO) << "We have created: " << clouds.size() << " clouds from dataset. From images: ";
-    for (int i=first_frame; i<last_frame; i+=step){
-        FILE_LOG(logINFO) << "image: " << i+1;
+        pcl::console::parse (argc, argv, "-load", load_clouds);
+        if (pcl::console::find_switch (argc, argv, "-n_clouds")){
+
+            pcl::console::parse (argc, argv, "-n_clouds", load_n_clouds);
+
+        }
+
+    } else {
+
+        if (pcl::console::find_switch (argc, argv, "-start")) {
+
+            if (pcl::console::find_switch (argc, argv, "-end")) {
+
+                pcl::console::parse (argc, argv, "-start", first_frame);
+                pcl::console::parse (argc, argv, "-end", last_frame);
+
+                if (pcl::console::find_switch (argc, argv, "-step"))
+                    pcl::console::parse (argc, argv, "-step", step);
+
+            }
+        }
     }
 
-    // TEST TWO CLOUD REGISTRATION
-    int cloud_num_1 = 14;
-    int cloud_num_2 = 15;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::copyPointCloud(*clouds[cloud_num_1], *batch_cloud_sum);
-    stereo_registration::registrationParams pars;
-    stereo_registration::CloudAlignment cloud_align = stereo_registration::registerSourceToTarget(clouds[cloud_num_2], clouds[cloud_num_1], pars);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_in_target_space(new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::transformPointCloud (*clouds[cloud_num_2], *cloud_source_in_target_space, cloud_align.transformMatrix);
-    *batch_cloud_sum += *cloud_source_in_target_space;
-    stereo::viewPointCloud(batch_cloud_sum, std::to_string(cloud_num_1)+" - "+std::to_string(cloud_num_2));
+    int cloud_num_1 = 0;
+    int cloud_num_2 = 1;
+    if (pcl::console::find_switch (argc, argv, "-incremental")) {
+        pcl::console::parse (argc, argv, "-incremental", incremental);
+
+        if (not incremental) {
+            if (pcl::console::find_switch (argc, argv, "-cloud1")) {
+                pcl::console::parse (argc, argv, "-cloud1", cloud_num_1);
+            }
+            if (pcl::console::find_switch (argc, argv, "-cloud2")) {
+                pcl::console::parse (argc, argv, "-cloud2", cloud_num_2);
+            }
+        }
+    }
+
+
+    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
+    if (load_clouds) {
+
+        clouds = stereo_util::loadVectorCloudsFromPLY("./original-", load_n_clouds);
+        FILE_LOG(logINFO) << "Loading : " << load_n_clouds << " saved clouds";
+    } else {
+
+        FILE_LOG(logINFO) << "Generating clouds from frame : " << first_frame << " to frame " << last_frame <<
+                            " with step " << step;
+        stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step);
+        stereo_util::saveVectorCloudsToPLY(clouds, "original");
+
+        FILE_LOG(logINFO) << "We have used: " << clouds.size() << " clouds from dataset. From images: ";
+        for (int i=first_frame; i<last_frame; i+=step){
+            FILE_LOG(logINFO) << "image: " << i+1;
+        }
+
+    }
+
+
+    if (incremental) {
+        // TOTAL REGISTRATION using incremental
+        FILE_LOG(logINFO) << "Doing incremental registration ";
+
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_cloud = stereo_registration::register_incremental_clouds(clouds);
+
+        pcl::VoxelGrid<pcl::PointXYZRGB> grid;
+        float leafSize = 2.0;
+        grid.setLeafSize (leafSize, leafSize, leafSize);
+        grid.setInputCloud (final_cloud);
+        FILE_LOG(logINFO) << "finalcloud leafSize: " << leafSize<< " original size :" << final_cloud->size();
+        grid.filter (*final_cloud);
+        FILE_LOG(logINFO) << "finalcloud leafSize: " << leafSize<< " downsampled size :" << final_cloud->size();
+        stereo::viewPointCloud(final_cloud);
+
+        // END REGISTRATION using incremental
+    } else {
+        // TEST TWO CLOUD REGISTRATION
+        FILE_LOG(logINFO) << "Doing clouds " << cloud_num_1 << " and " << cloud_num_2 << " registration ";
+
+
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::copyPointCloud(*clouds[cloud_num_1], *batch_cloud_sum);
+        stereo_registration::registrationParams pars;
+        stereo_registration::CloudAlignment cloud_align = stereo_registration::registerSourceToTarget(clouds[cloud_num_2], clouds[cloud_num_1], pars);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_in_target_space(new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::transformPointCloud (*clouds[cloud_num_2], *cloud_source_in_target_space, cloud_align.transformMatrix);
+        *batch_cloud_sum += *cloud_source_in_target_space;
+        stereo::viewPointCloud(batch_cloud_sum, std::to_string(cloud_num_1)+" - "+std::to_string(cloud_num_2));
+
+    }
+
+
+
 
 
     // TEST A COPPIE
@@ -168,10 +218,7 @@ int main(int argc, char *argv[])
 //    // END TOTAL REGISTRATION using batch
 
 
-//    // TOTAL REGISTRATION using incremental
-//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_cloud = stereo_registration::register_incremental_clouds(clouds);
-//    stereo::viewPointCloud(final_cloud);
-//    // END REGISTRATION using incremental
+
 
 
     return 0;

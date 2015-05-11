@@ -64,6 +64,4 @@
 // local include
 #include "types/custom_types.hpp"
 
-
-
 #endif //BINOCULAR_DENSE_STEREO_INCLUDES_H
