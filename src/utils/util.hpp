@@ -1,9 +1,14 @@
-#include <string>
-#include <cv.h>
-#include <pcl/common/common_headers.h>
+#ifndef BINOCULAR_DENSE_STEREO_STEREO_UTILS_HPP
+#define BINOCULAR_DENSE_STEREO_STEREO_UTILS_HPP
+
+#include "../includes.h"
 
 #include "../dataset/msm_middlebury.hpp"
 #include "../dataset/tsukuba_dataset.h"
+#include "../dataset/dataset.hpp"
+
+#include "../logger/log.h"
+
 
 namespace stereo_util {
 
@@ -29,5 +34,11 @@ namespace stereo_util {
                                                           const int current_frame);
 
     void saveVectorCloudsToPLY(std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array, std::string title);
+    std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> loadVectorCloudsFromPLY(std::string path, int number_of_clouds);
+
+    void saveVectorCloudsToPCD(std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array, std::string title);
+    void saveVectorCloudsToPCD(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array, std::string title);
 
 }
+
+#endif

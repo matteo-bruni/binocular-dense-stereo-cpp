@@ -36,18 +36,32 @@ set(SOURCE_FILES
     src/dataset/tsukuba_dataset.cpp
     src/dataset/tsukuba_dataset.h
     src/dataset/util.cpp
-    src/test_middlebury.cpp
     src/matching_reproject/stereo_matching.cpp
     src/matching_reproject/stereo_matching.hpp
     src/stereo_viewer/viewer.cpp
     src/stereo_viewer/viewer.hpp
     src/registration/registration.cpp
     src/registration/registration.hpp
-
+    src/types/custom_types.hpp
+    src/includes.h
 )
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+##Alignment library
+#set(alignment_sources
+#    src/feature_based_alignment/alignment.h
+#    src/feature_based_alignment/alignment.cxx
+#    src/feature_based_alignment/correspondence_procrustes.h
+#    src/feature_based_alignment/correspondence_procrustes.hpp
+#    src/feature_based_alignment/sac_non_rigid.h
+#    src/feature_based_alignment/sac_non_rigid.hpp
+#    src/feature_based_alignment/util.h
+#    src/feature_based_alignment/util.cxx
+#)
+#set(SOURCE_FILES ${SOURCE_FILES} ${alignment_sources})
 
+
+
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 #################################### libconfig  ############################################
 
@@ -68,25 +82,33 @@ set(LIBS ${LIBS} ${OpenCV_LIBS})
 
 #################################### Locate PCL ############################################
 
-find_package(PCL 1.2 REQUIRED)
+find_package(PCL 1.4 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
-#set(LIBS ${LIBS} ${PCL_LIBRARIES})
-set(LIBS ${LIBS} ${PCL_COMMON_LIBRARIES})
-set(LIBS ${LIBS} ${PCL_IO_LIBRARIES})
-set(LIBS ${LIBS} ${PCL_VISUALIZATION_LIBRARIES})
-set(LIBS ${LIBS} ${PCL_FILTERS_LIBRARIES})
-set(LIBS ${LIBS} ${PCL_FEATURES_LIBRARIES})
 
 
-
+#necessary libs
+set(pcl_libs
+    ${PCL_COMMON_LIBRARIES}
+    ${PCL_IO_LIBRARIES}
+    ${PCL_KD_TREE_LIBRARY}
+    ${PCL_REGISTRATION_LIBRARY}
+    ${PCL_SEARCH_LIBRARY}
+    ${PCL_FEATURES_LIBRARY}
+    ${PCL_FILTERS_LIBRARIES}
+    ${PCL_VISUALIZATION_LIBRARY}
+)
+set(LIBS ${LIBS} ${pcl_libs})
 
 message(${LIBS})
 
 
-
 #################################### target build ############################################
 
-add_executable(binocular_dense_stereo ${SOURCE_FILES} src/dataset/tsukuba_dataset.cpp src/dataset/tsukuba_dataset.h src/types/custom_types.hpp src/includes.h)
+add_executable(binocular_dense_stereo src/test_middlebury.cpp ${SOURCE_FILES})
 target_link_libraries(binocular_dense_stereo ${LIBS})
+
+#add_executable(test_registration src/test_registration.cpp ${SOURCE_FILES})
+#target_link_libraries(test_registration ${LIBS})
+

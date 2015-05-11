@@ -1,10 +1,9 @@
-#include <cv.h>
-#include <highgui.h>
-#include <pcl/common/common_headers.h>
+#ifndef BINOCULAR_DENSE_STEREO_STEREO_MATCHING_HPP
+#define BINOCULAR_DENSE_STEREO_STEREO_MATCHING_HPP
+
+#include "../includes.h"
 #include "../dataset/msm_middlebury.hpp"
 #include "../dataset/tsukuba_dataset.h"
-
-#include <pcl/filters/statistical_outlier_removal.h>
 
 
 namespace stereo {
@@ -33,3 +32,5 @@ namespace stereo {
 
 
 }
+
+#endif

@@ -79,7 +79,7 @@ namespace stereo {
     boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizer (pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud, std::string title) {
 
         boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer(title));
-        viewer->setBackgroundColor (0.3, 0.3, 0.3);
+//        viewer->setBackgroundColor (0.3, 0.3, 0.3);
 
         pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(cloud);
         viewer->addPointCloud<pcl::PointXYZRGB> (cloud, rgb, "reconstruction");

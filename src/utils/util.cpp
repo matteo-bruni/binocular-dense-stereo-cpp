@@ -1,17 +1,4 @@
-
 #include "util.hpp"
-#include <opencv2/core/types_c.h>
-
-
-#include "opencv2/objdetect/objdetect.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include <pcl/io/ply_io.h>
-
-#include "../logger/log.h"
-#include "../dataset/tsukuba_dataset.h"
-#include "../dataset/dataset.hpp"
-
 
 namespace stereo_util {
 
@@ -21,8 +8,8 @@ namespace stereo_util {
     string type2str(int type) {
         string r;
 
-        uchar depth = type & CV_MAT_DEPTH_MASK;
-        uchar chans = 1 + (type >> CV_CN_SHIFT);
+        uchar depth = (uchar) (type & CV_MAT_DEPTH_MASK);
+        uchar chans = (uchar) (1 + (type >> CV_CN_SHIFT));
 
         switch (depth) {
             case CV_8U:
@@ -280,7 +267,6 @@ namespace stereo_util {
         Ptr<cv::datasets::tsukuba_datasetObj> data_img2 =
                 static_cast< Ptr<cv::datasets::tsukuba_datasetObj> >  (dataset->getTrain()[current_frame]);
 
-
         FILE_LOG(logINFO) << "Current Frame R and T: " << current_frame ;
 
         Mat r2 = Mat(data_img2->r);
@@ -290,7 +276,6 @@ namespace stereo_util {
         // rotation to world coordinates
         Mat R = r2.inv(); //r2*r1.t();
         FILE_LOG(logINFO) << "Current Frame R : " << R*R.inv() ;
-
         // translation to world coordinates
         Mat T = -t2; //t1 - (R.t()*t2 );
 
@@ -335,8 +320,50 @@ namespace stereo_util {
             // save
             ss.str( std::string() );
             ss.clear();
-            ss << "./" << title << " - " << i << ".ply";
+            ss << "./" << title << "-" << i << ".ply";
             pcl::io::savePLYFileASCII (ss.str(), *clouds_array[i]);
         }
+    }
+
+    std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> loadVectorCloudsFromPLY(std::string path, int number_of_clouds) {
+
+        std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
+
+        for (int i = 0; i<number_of_clouds; i++) {
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+            // path-number.ply
+            pcl::io::loadPLYFile(path+std::to_string(i)+".ply", *cloud);
+            clouds.push_back(cloud);
+        }
+
+        return clouds;
+    }
+
+    void saveVectorCloudsToPCD(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array, std::string title) {
+
+        std::stringstream ss;
+
+        for (int i = 0; i<clouds_array.size(); i++) {
+            // save
+            ss.str( std::string() );
+            ss.clear();
+            ss << "./" << title << "-" << i << ".pcd";
+            pcl::io::savePCDFileASCII (ss.str(), *clouds_array[i]);
+        }
+    }
+
+    std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> loadVectorCloudsFromPCD(std::string path, int number_of_clouds) {
+
+        std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
+        for (int i = 0; i<number_of_clouds; i++) {
+
+
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+            // path-number.ply
+            pcl::io::loadPCDFile(path+std::to_string(i)+".pcd", *cloud);
+            clouds.push_back(cloud);
+        }
+
+        return clouds;
     }
 }

@@ -1,55 +1,9 @@
+#include "../includes.h"
 
-// OLD
-#include <pcl/registration/icp.h>
-#include <pcl/registration/icp_nl.h>
-#include <pcl/registration/transforms.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <pcl/features/normal_3d.h>
-
-#include <pcl/filters/voxel_grid.h>
-//
-
-#include <fstream>
-#include <pcl/common/angles.h>
-#include <pcl/console/parse.h>
-#include <pcl/point_types.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_representation.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/io/ply_io.h>
-#include <pcl/console/print.h>
-#include <pcl/console/parse.h>
-#include <pcl/console/time.h>
-
-//#include <pcl/io/pcd_io.h>
-//#include <pcl/console/time.h>
-//#include <pcl/keypoints/uniform_sampling.h>
-//#include <pcl/features/normal_3d.h>
-//#include <pcl/features/fpfh.h>
-//#include <pcl/registration/correspondence_estimation.h>
-//#include <pcl/registration/correspondence_estimation_normal_shooting.h>
-//#include <pcl/registration/correspondence_estimation_backprojection.h>
-//#include <pcl/registration/correspondence_rejection_median_distance.h>
-//#include <pcl/registration/correspondence_rejection_surface_normal.h>
-//#include <pcl/registration/transformation_estimatiosrcn_point_to_plane_lls.h>
-//#include <pcl/registration/default_convergence_criteria.h>
-
-#include <pcl/visualization/pcl_visualizer.h>
-
-
-class VoxelGrid;
+//class VoxelGrid;
 
 // local include
 #include "registration.hpp"
-#include "../stereo_viewer/viewer.hpp"
-//
-
-// Include logging facilities
-#include "../logger/log.h"
-#include "../includes.h"
-
-#include <algorithm>
 
 namespace stereo_registration {
 
@@ -58,7 +12,7 @@ namespace stereo_registration {
 
 
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr local_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_src;
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_tgt;
@@ -70,15 +24,21 @@ namespace stereo_registration {
             cloud_src = clouds_to_register[i];
             cloud_tgt = clouds_to_register[i+1];
             FILE_LOG(logINFO) << "registering clouds: " << i << " to "<< i+1;
-            CloudAlignment output = stereo_registration::registerSourceToTarget(cloud_src, cloud_tgt);
+            registrationParams pars;
+            CloudAlignment output = stereo_registration::registerSourceToTarget(cloud_src, cloud_tgt, pars);
 
             transformMatrix = output.transformMatrix;
-            pcl::transformPointCloud (*final_cloud, *final_cloud, transformMatrix);
+            temp_cloud->clear();
+            pcl::transformPointCloud (*final_cloud, *temp_cloud, transformMatrix);
+            final_cloud->clear();
+            pcl::copyPointCloud(*temp_cloud, *final_cloud);
 
-            local_cloud->clear();
-            pcl::transformPointCloud (*cloud_src, *local_cloud, transformMatrix);
-            *local_cloud += *cloud_tgt;
-            stereo::viewPointCloud(local_cloud, "step "+std::to_string(i)+" - "+std::to_string(i+1));
+            // visualization
+//            local_cloud->clear();
+//            pcl::transformPointCloud (*cloud_src, *local_cloud, transformMatrix);
+//            *local_cloud += *cloud_tgt;
+//            stereo::viewPointCloud(local_cloud, "step "+std::to_string(i)+" - "+std::to_string(i+1));
+            // end visualization
 
             *final_cloud += *cloud_tgt;
         }
@@ -120,7 +80,8 @@ namespace stereo_registration {
                 }
                 else {
                     FILE_LOG(logINFO) << " registering "<< j << " in " << start << " space";
-                    CloudAlignment output = stereo_registration::registerSourceToTarget(clouds_to_register[j], clouds_to_register[start]);
+                    registrationParams par;
+                    CloudAlignment output = stereo_registration::registerSourceToTarget(clouds_to_register[j], clouds_to_register[start], par);
                     *batch_cloud_sum += *(output.alignedCloud);
                 }
             }
@@ -137,15 +98,17 @@ namespace stereo_registration {
 
 
     CloudAlignment registerSourceToTarget(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source,
-                                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target) {
+                                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target,
+                                          registrationParams params) {
         // ICP object.
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_to_target_downsampled(new pcl::PointCloud<pcl::PointXYZRGB>);
-
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_downsampled(new pcl::PointCloud<pcl::PointXYZRGB>);
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target_downsampled(new pcl::PointCloud<pcl::PointXYZRGB>);
 
-        float leafSize = 6.5;
-        int DOWNSAMPLE_LEVELS = 5;
+        float leafSize = params.leaf_size;
+        int DOWNSAMPLE_LEVELS = params.downsample_levels;
+        float downsample_decrease = params.downsample_decrease;
+
         pcl::VoxelGrid<pcl::PointXYZRGB> grid;
         Eigen::Matrix4f transformMatrix (Eigen::Matrix4f::Identity ());
         double score = -1.;
@@ -166,57 +129,85 @@ namespace stereo_registration {
             // END DOWNSAMPLE
 
 
-
-            // Compute surface normals and curvature
-            PointCloudWithNormals::Ptr points_with_normals_src (new PointCloudWithNormals);
-            PointCloudWithNormals::Ptr points_with_normals_tgt (new PointCloudWithNormals);
-            pcl::NormalEstimation<PointT, PointNormalT> norm_est;
-            pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
-            norm_est.setSearchMethod (tree);
-            norm_est.setKSearch (30);
-            norm_est.setInputCloud (cloud_source_downsampled);
-            norm_est.compute (*points_with_normals_src);
-            pcl::copyPointCloud (*cloud_source_downsampled, *points_with_normals_src);
-            norm_est.setInputCloud (cloud_target_downsampled);
-            norm_est.compute (*points_with_normals_tgt);
-            pcl::copyPointCloud (*cloud_target_downsampled, *points_with_normals_tgt);
-
-            // Instantiate our custom point representation (defined above) ...
-            MyPointRepresentation point_representation;
-            // ... and weight the 'curvature' dimension so that it is balanced against x, y, and z
-            float alpha[4] = {1.0, 1.0, 1.0, 1.0};
-            point_representation.setRescaleValues (alpha);
-            // Align
-            pcl::IterativeClosestPoint<PointNormalT, PointNormalT> registration;
-//            registration.setTransformationEpsilon (1e-6);
-            // Set the maximum distance between two correspondences (src<->tgt) to 10cm
-            // Note: adjust this based on the size of your datasets
-//            registration.setMaxCorrespondenceDistance (0.5);
-            // Set the point representation
-            registration.setPointRepresentation (boost::make_shared<const MyPointRepresentation> (point_representation));
-            registration.setInputSource (points_with_normals_src);
-            registration.setInputTarget (points_with_normals_tgt);
-            PointCloudWithNormals::Ptr reg_result (new PointCloudWithNormals);
-            registration.align(*reg_result, transformMatrix);
-
-
-
+            // SIMPLE ICP
 //            pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
 //            registration.setInputSource(cloud_source_downsampled);
 //            registration.setInputTarget(cloud_target_downsampled);
 //            registration.setTransformationEpsilon (1e-8);
-//            registration.setMaxCorrespondenceDistance (2.5);
+//            registration.setMaxCorrespondenceDistance (0.5);
 //            registration.setRANSACIterations(2000);
-//            registration.setMaximumIterations(1000);
-//            registration.setEuclideanFitnessEpsilon(1e-5); //1);
+////            registration.setMaximumIterations(1000);
+////            registration.setEuclideanFitnessEpsilon(1e-5); //1);
+//            registration.setRANSACOutlierRejectionThreshold(0.1);
 //            registration.align(*cloud_source_to_target_downsampled, transformMatrix);
+//            FILE_LOG(logINFO) << "Default reg values: ";
+//            FILE_LOG(logINFO) << "Default getMaxCorrespondenceDistance: " << registration.getMaxCorrespondenceDistance();
+//            FILE_LOG(logINFO) << "Default getRANSACIterations: " << registration.getRANSACIterations();
+//            FILE_LOG(logINFO) << "Default getEuclideanFitnessEpsilon: " << registration.getEuclideanFitnessEpsilon();
+//            if (registration.hasConverged())
+//            {
+//                FILE_LOG(logINFO) << "registration step " << i << " ICP converged." << "The score is " << registration.getFitnessScore();
+//                if (score == -1)
+//                    score = registration.getFitnessScore();                if (score >= registration.getFitnessScore()){
+//                    transformMatrix = registration.getFinalTransformation();
+//                    score = registration.getFitnessScore();
+//                } else {
+//                    FILE_LOG(logINFO) << "Skipping registration step, score increasing";
+//                }
+//
+////            std::cout << "Transformation matrix:" << std::endl;
+//                std::cout << registration.getFinalTransformation() << std::endl;
+//            }
+//            else FILE_LOG(logINFO) << "registration step " << i << "ICP did not converge.";
 
+
+            //compute normals
+            pcl::PointCloud<pcl::Normal>::Ptr normals_source = getNormals( cloud_source_downsampled, params.normals_radius );
+            pcl::PointCloud<pcl::Normal>::Ptr normals_target = getNormals( cloud_target_downsampled, params.normals_radius );
+
+            //compute local features
+            pcl::PointCloud<pcl::FPFHSignature33>::Ptr features_source = getFeatures( cloud_source_downsampled,
+                                                                                normals_source, params.features_radius);
+            pcl::PointCloud<pcl::FPFHSignature33>::Ptr features_target = getFeatures( cloud_target_downsampled,
+                                                                                normals_target, params.features_radius);
+
+            //Get an initial estimate for the transformation using SAC
+            //returns the transformation for cloud2 so that it is aligned with cloud1
+            pcl::SampleConsensusInitialAlignment<pcl::PointXYZRGB, pcl::PointXYZRGB, pcl::FPFHSignature33> sac_ia = align( cloud_target_downsampled, cloud_source_downsampled,
+                                                                                                                           features_target, features_source, params.sacPar,transformMatrix);
+            Eigen::Matrix4f	init_transform = sac_ia.getFinalTransformation();
+            if (sac_ia.hasConverged())
+            {
+                FILE_LOG(logINFO) << "registration step " << i << " SAC converged." << "The score is " << sac_ia.getFitnessScore();
+                if (score == -1)
+                    score = sac_ia.getFitnessScore();
+                if (score >= sac_ia.getFitnessScore()){
+                    transformMatrix = sac_ia.getFinalTransformation();
+                    score = sac_ia.getFitnessScore();
+                } else {
+                    FILE_LOG(logINFO) << "Skipping registration step, score increasing";
+                }
+                std::cout << sac_ia.getFinalTransformation() << std::endl;
+            }
+            else FILE_LOG(logINFO) << "registration step " << i << "SAC did not converge.";
+
+
+
+            pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
+            registration.setInputSource(cloud_source_downsampled);
+            registration.setInputTarget(cloud_target_downsampled);
+            registration.setTransformationEpsilon (1e-8);
+            registration.setMaxCorrespondenceDistance (0.5);
+//            registration.setRANSACIterations(2000);
+            //            registration.setMaximumIterations(1000);
+            //            registration.setEuclideanFitnessEpsilon(1e-5); //1);
+//            registration.setRANSACOutlierRejectionThreshold(0.1);
+            registration.align(*cloud_source_to_target_downsampled, transformMatrix);
             if (registration.hasConverged())
             {
                 FILE_LOG(logINFO) << "registration step " << i << " ICP converged." << "The score is " << registration.getFitnessScore();
                 if (score == -1)
                     score = registration.getFitnessScore();
-
                 if (score >= registration.getFitnessScore()){
                     transformMatrix = registration.getFinalTransformation();
                     score = registration.getFitnessScore();
@@ -224,23 +215,76 @@ namespace stereo_registration {
                     FILE_LOG(logINFO) << "Skipping registration step, score increasing";
                 }
 
-//            std::cout << "Transformation matrix:" << std::endl;
+                //            std::cout << "Transformation matrix:" << std::endl;
                 std::cout << registration.getFinalTransformation() << std::endl;
             }
             else FILE_LOG(logINFO) << "registration step " << i << "ICP did not converge.";
 
-            leafSize -= 1;
+
+            leafSize -= downsample_decrease;
         }
+
+
+
+
+
+
 
         CloudAlignment output;
         // Transform target back in source frame
-        cloud_source_to_target_downsampled->clear();
-        pcl::transformPointCloud (*cloud_source, *cloud_source_to_target_downsampled, transformMatrix);
-        output.alignedCloud = cloud_source_to_target_downsampled;
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_to_target_output(new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::transformPointCloud (*cloud_source, *cloud_source_to_target_output, transformMatrix);
+        output.alignedCloud = cloud_source_to_target_output;
         output.transformMatrix = transformMatrix;
         return output;
     }
 
 
+    //computes the transformation for cloud2 so that it is transformed so that it is aligned with cloud1
+    pcl::SampleConsensusInitialAlignment<pcl::PointXYZRGB, pcl::PointXYZRGB, pcl::FPFHSignature33>
+    align( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target,
+           pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source,
+           pcl::PointCloud<pcl::FPFHSignature33>::Ptr target_features,
+           pcl::PointCloud<pcl::FPFHSignature33>::Ptr source_features,
+           sacParams params,
+           Eigen::Matrix4f init_transformation) {
+
+        pcl::SampleConsensusInitialAlignment<pcl::PointXYZRGB, pcl::PointXYZRGB, pcl::FPFHSignature33> sac_ia;
+        Eigen::Matrix4f final_transformation;
+        sac_ia.setInputSource(cloud_source);
+        sac_ia.setSourceFeatures(source_features);
+        sac_ia.setInputTarget(cloud_target);
+        sac_ia.setTargetFeatures(target_features);
+        sac_ia.setMaximumIterations( params.max_sacia_iterations );
+        sac_ia.setMinSampleDistance (params.sac_min_correspondence_dist);
+        sac_ia.setMaxCorrespondenceDistance (params.sac_max_correspondence_dist);
+        pcl::PointCloud<pcl::PointXYZRGB> finalcloud;
+        sac_ia.align( finalcloud, init_transformation );
+        sac_ia.getCorrespondenceRandomness();
+        return sac_ia;
+    }
+
+    pcl::PointCloud<pcl::FPFHSignature33>::Ptr getFeatures( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr normals, double features_radius ) {
+
+        pcl::PointCloud<pcl::FPFHSignature33>::Ptr features = pcl::PointCloud<pcl::FPFHSignature33>::Ptr (new  pcl::PointCloud<pcl::FPFHSignature33>);
+        pcl::search::KdTree<pcl::PointXYZRGB>::Ptr search_method_ptr = pcl::search::KdTree<pcl::PointXYZRGB>::Ptr (new pcl::search::KdTree<pcl::PointXYZRGB>);
+        pcl::FPFHEstimation<pcl::PointXYZRGB, pcl::Normal, pcl::FPFHSignature33> fpfh_est;
+        fpfh_est.setInputCloud( cloud );
+        fpfh_est.setInputNormals( normals );
+        fpfh_est.setSearchMethod( search_method_ptr );
+        fpfh_est.setRadiusSearch( features_radius );
+        fpfh_est.compute( *features );
+        return features;
+    }
+
+    pcl::PointCloud<pcl::Normal>::Ptr getNormals( pcl::PointCloud<pcl::PointXYZRGB>::Ptr incloud, double normal_radius ) {
+
+        pcl::PointCloud<pcl::Normal>::Ptr normalsPtr = pcl::PointCloud<pcl::Normal>::Ptr (new pcl::PointCloud<pcl::Normal>);
+        pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> norm_est;
+        norm_est.setInputCloud( incloud );
+        norm_est.setRadiusSearch( normal_radius );
+        norm_est.compute( *normalsPtr );
+        return normalsPtr;
+    }
 }
 

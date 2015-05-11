@@ -122,7 +122,7 @@ namespace cv {
 
 
 //            std::string img_left_path = dataset_path + "daylight/left/frame_"+ ss.str() +".png";
-            std::string img_left_path = dataset_path + "daylight/left/tsukuba_daylight_L_"+ ss.str() +".png";
+            std::string img_left_path = dataset_path + "daylight/left/tsukuba_daylight_L_"+ ss.str() + ".png";
 //            std::string img_right_path = dataset_path + "daylight/right/frame_"+ ss.str() +".png";
             std::string img_right_path = dataset_path + "daylight/right/tsukuba_daylight_R_"+ ss.str() +".png";
 

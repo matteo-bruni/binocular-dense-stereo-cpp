@@ -1,7 +1,8 @@
+#ifndef BINOCULAR_DENSE_STEREO_VIEWER_HPP
+#define BINOCULAR_DENSE_STEREO_VIEWER_HPP
+
 #include <boost/make_shared.hpp>
 #include <pcl/visualization/pcl_visualizer.h>
-
-
 
 namespace stereo {
 
@@ -24,3 +25,5 @@ namespace stereo {
             Eigen::Vector3f& vforward, Eigen::Vector3f& rgb, double s = 0.01
     );
 }
+
+#endif
