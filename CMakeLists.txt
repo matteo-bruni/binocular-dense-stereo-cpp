@@ -25,6 +25,8 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(SOURCE_FILES
+    src/config/config.cpp
+    src/config/config.hpp
     src/logger/log.h
     src/utils/util.hpp
     src/utils/util.cpp

@@ -1,8 +1,8 @@
 // for usage check http://www.drdobbs.com/cpp/logging-in-c/201804215?pgno=1
 
 
-#ifndef __LOG_H__
-#define __LOG_H__
+#ifndef BINOCULAR_DENSE_STEREO_LOG_H__
+#define BINOCULAR_DENSE_STEREO_LOG_H__
 
 #include <sstream>
 #include <string>
@@ -135,12 +135,12 @@ class FILELOG_DECLSPEC FILELog : public Log<Output2FILE> {};
 #define FILELOG_MAX_LEVEL logINFO
 #endif
 
-#define FILE (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#define FILE_CUSTOM (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define FILE_LOG(level) \
     if (level > FILELOG_MAX_LEVEL) ;\
     else if (level > FILELog::ReportingLevel() || !Output2FILE::Stream()) ; \
-    else FILELog().Get(level, FILE, __FUNCTION__, __LINE__)
+    else FILELog().Get(level, FILE_CUSTOM, __FUNCTION__, __LINE__)
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
 

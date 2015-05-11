@@ -330,6 +330,9 @@ namespace stereo_util {
         std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
 
         for (int i = 0; i<number_of_clouds; i++) {
+
+            FILE_LOG(logINFO) << "Loading cloud: " << path+std::to_string(i)+".ply" ;
+
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
             // path-number.ply
             pcl::io::loadPLYFile(path+std::to_string(i)+".ply", *cloud);
@@ -357,6 +360,7 @@ namespace stereo_util {
         std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
         for (int i = 0; i<number_of_clouds; i++) {
 
+            FILE_LOG(logINFO) << "Loading cloud: " << path+std::to_string(i)+".pcd" ;
 
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
             // path-number.ply

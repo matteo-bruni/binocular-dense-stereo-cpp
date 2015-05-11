@@ -53,10 +53,7 @@
 #include "logger/log.h"
 #include "dataset/tsukuba_dataset.h"
 
-
-
-
-
+#include "config/config.hpp"
 
 using namespace std;
 using namespace cv;
@@ -79,41 +76,35 @@ int main(int argc, char *argv[])
     FILE_LOG(logINFO) << "images number: " << (unsigned int)dataset->getTrain().size();
 
 
-    bool load_clouds = true;
-    bool incremental = false;
-    int load_n_clouds = 20;
-    int first_frame = 0;
-    int last_frame = 200;
-    int step = 10;
+    FILE_LOG(logINFO) << "Loading params from config.cfg.. ";
+    binocular_dense_stereo::configPars pars = binocular_dense_stereo::ConfigLoader::get_instance().loadGeneralConfiguration();
 
+    bool load_clouds = pars.load_clouds;
+    int load_n_clouds = pars.load_n_clouds;
+    int first_frame = pars.first_frame;
+    int last_frame = pars.last_frame;
+    int step = pars.step;
+    bool incremental = pars.incremental;
+    int cloud_num_1 = pars.reg_cloud_1;
+    int cloud_num_2 = pars.reg_cloud_2;
 
+    // override from cmdline
     if (pcl::console::find_switch (argc, argv, "-load")) {
-
         pcl::console::parse (argc, argv, "-load", load_clouds);
-        if (pcl::console::find_switch (argc, argv, "-n_clouds")){
-
+        if (pcl::console::find_switch (argc, argv, "-n_clouds"))
             pcl::console::parse (argc, argv, "-n_clouds", load_n_clouds);
 
-        }
-
     } else {
-
         if (pcl::console::find_switch (argc, argv, "-start")) {
-
             if (pcl::console::find_switch (argc, argv, "-end")) {
-
                 pcl::console::parse (argc, argv, "-start", first_frame);
                 pcl::console::parse (argc, argv, "-end", last_frame);
-
                 if (pcl::console::find_switch (argc, argv, "-step"))
                     pcl::console::parse (argc, argv, "-step", step);
 
             }
         }
     }
-
-    int cloud_num_1 = 0;
-    int cloud_num_2 = 1;
     if (pcl::console::find_switch (argc, argv, "-incremental")) {
         pcl::console::parse (argc, argv, "-incremental", incremental);
 
@@ -126,19 +117,34 @@ int main(int argc, char *argv[])
             }
         }
     }
+    // end cmdline
+
+    FILE_LOG(logINFO) << "\tload_clouds: " << (load_clouds ? "True" : "False");
+    if (load_clouds){
+        FILE_LOG(logINFO) << "\t\tload_n_clouds: " << load_n_clouds;
+    } else {
+        FILE_LOG(logINFO) << "\t\tfirst_frame: " << first_frame;
+        FILE_LOG(logINFO) << "\t\tlast_frame: " << last_frame;
+        FILE_LOG(logINFO) << "\t\tstep: " << step;
+    }
+    FILE_LOG(logINFO) << "\tincremental: " << (incremental ? "True" : "False");
+    if (not incremental) {
+        FILE_LOG(logINFO) << "\t\tcloud_num_1:" << cloud_num_1;
+        FILE_LOG(logINFO) << "\t\tcloud_num_2: " << cloud_num_2;
+    }
 
 
     std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
     if (load_clouds) {
 
-        clouds = stereo_util::loadVectorCloudsFromPLY("./original-", load_n_clouds);
+        clouds = stereo_util::loadVectorCloudsFromPCD("./original-", load_n_clouds);
         FILE_LOG(logINFO) << "Loading : " << load_n_clouds << " saved clouds";
     } else {
 
         FILE_LOG(logINFO) << "Generating clouds from frame : " << first_frame << " to frame " << last_frame <<
                             " with step " << step;
         stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step);
-        stereo_util::saveVectorCloudsToPLY(clouds, "original");
+        stereo_util::saveVectorCloudsToPCD(clouds, "original");
 
         FILE_LOG(logINFO) << "We have used: " << clouds.size() << " clouds from dataset. From images: ";
         for (int i=first_frame; i<last_frame; i+=step){

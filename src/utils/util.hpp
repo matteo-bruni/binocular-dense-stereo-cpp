@@ -36,7 +36,7 @@ namespace stereo_util {
     void saveVectorCloudsToPLY(std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array, std::string title);
     std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> loadVectorCloudsFromPLY(std::string path, int number_of_clouds);
 
-    void saveVectorCloudsToPCD(std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array, std::string title);
+    std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> loadVectorCloudsFromPCD(std::string path, int number_of_clouds);
     void saveVectorCloudsToPCD(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array, std::string title);
 
 }

@@ -1,15 +1,10 @@
-#include <iostream>
-#include <libconfig.h++>
 
-#include "config.h"
+#include "config.hpp"
 
+namespace binocular_dense_stereo {
 
-class ConfigLoader {
-
-
-    private:
-        // ecco il costruttore privato in modo che l'utente non possa istanziare direttamante
-        ConfigLoader() {
+    // ecco il costruttore privato in modo che l'utente non possa istanziare direttamante
+    ConfigLoader::ConfigLoader() {
 
 //            libconfig::Config cfg;
             // Read the file. If there is an error, report it and exit.
@@ -28,26 +23,42 @@ class ConfigLoader {
                         << " - " << pex.getError() << std::endl;
                 exit(EXIT_FAILURE);
             }
+            std::cout << "Settings loaded ";
+
+
+    };
 
 
 
-        };
+    configPars ConfigLoader::loadGeneralConfiguration() {
+        configPars pars;
+        try
+        {
+            const libconfig::Setting & root = cfg.getRoot();
+            const libconfig::Setting & ConfigSettings  = root["Config"];
 
-    public:
-        static ConfigLoader& get_instance() {
-            // l'unica istanza della classe viene creata alla prima chiamata di get_instance()
-            // e verrà distrutta solo all'uscita dal programma
-            static ConfigLoader instance;
+            pars.load_clouds = (bool) ConfigSettings["load_clouds"];
+            pars.incremental = (bool) ConfigSettings["incremental"];
+            pars.load_n_clouds = (int) ConfigSettings["load_clouds_n"];
+            pars.first_frame = (int) ConfigSettings["generate_start_frame"];
+            pars.last_frame = (int) ConfigSettings["generate_stop_frame"];
+            pars.step = (int) ConfigSettings["generate_step"];
+            pars.reg_cloud_1 = (int) ConfigSettings["couple_cloud_1"];;
+            pars.reg_cloud_2 = (int) ConfigSettings["couple_cloud_2"];
 
-
-            return instance;
         }
-        bool method() { return true; };
+        catch(const libconfig::SettingNotFoundException &nfex)
+        {
+            std::cout << nfex.what() << std::endl;
+
+        }
+
+        return pars;
+    }
 
 
 
-
-};
+}
 
 //
 //int main() {
