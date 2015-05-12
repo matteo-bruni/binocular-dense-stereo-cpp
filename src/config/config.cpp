@@ -40,19 +40,66 @@ namespace binocular_dense_stereo {
             pars.first_frame = (int) ConfigSettings["generate_start_frame"];
             pars.last_frame = (int) ConfigSettings["generate_stop_frame"];
             pars.step = (int) ConfigSettings["generate_step"];
-            pars.reg_cloud_1 = (int) ConfigSettings["couple_cloud_1"];;
-            pars.reg_cloud_2 = (int) ConfigSettings["couple_cloud_2"];
+            pars.reg_cloud_1 = (int) ConfigSettings["reg_cloud_1"];;
+            pars.reg_cloud_2 = (int) ConfigSettings["reg_cloud_2"];
 
         }
         catch(const libconfig::SettingNotFoundException &nfex)
         {
-            std::cout << nfex.what() << std::endl;
+            std::cout << nfex.what() << " Config" << std::endl;
 
         }
         return pars;
     }
 
 
+    registrationParams ConfigLoader::loadRegistrationParams() {
+
+        sacParams sacPars;
+        try
+        {
+            const libconfig::Setting & root = cfg.getRoot();
+            const libconfig::Setting & ConfigSettings  = root["sacParams"];
+
+            sacPars.filter_limit = (double) ConfigSettings["filter_limit"];
+            sacPars.max_sacia_iterations = (int) ConfigSettings["max_sacia_iterations"];
+            sacPars.sac_max_correspondence_dist = (double) ConfigSettings["sac_max_correspondence_dist"];
+            sacPars.sac_min_correspondence_dist = (double) ConfigSettings["sac_min_correspondence_dist"];
+
+        }
+        catch(const libconfig::SettingNotFoundException &nfex)
+        {
+            std::cout << nfex.what() << "sacParams" << std::endl;
+
+        }
+
+        registrationParams pars;
+        pars.sacPar = sacPars;
+
+        try
+        {
+            const libconfig::Setting & root = cfg.getRoot();
+            const libconfig::Setting & ConfigSettings  = root["registrationParams"];
+
+
+            pars.leaf_size = (float) ConfigSettings["leaf_size"];
+            pars.downsample_levels = (int) ConfigSettings["downsample_levels"];
+            pars.downsample_decrease = (float) ConfigSettings["downsample_decrease"];
+            pars.normals_radius = (double) ConfigSettings["normals_radius"];
+            pars.features_radius = (double) ConfigSettings["features_radius"];
+
+
+        }
+        catch(const libconfig::SettingNotFoundException &nfex)
+        {
+            std::cout << nfex.what() << "registrationParams" << std::endl;
+
+        }
+
+        binocular_dense_stereo::printRegistrationParams(pars);
+
+        return pars;
+    }
 
 }
 

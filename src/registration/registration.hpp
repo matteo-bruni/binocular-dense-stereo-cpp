@@ -20,6 +20,7 @@ namespace binocular_dense_stereo {
         double sac_max_correspondence_dist = 2000;
         double sac_min_correspondence_dist = 3;
     };
+
     struct registrationParams {
         float leaf_size = 6.5;
         int downsample_levels = 2;
@@ -29,6 +30,9 @@ namespace binocular_dense_stereo {
 
         sacParams sacPar;
     };
+
+    void printSacParams(sacParams pars);
+    void printRegistrationParams(registrationParams pars);
 
     std::vector< PointCloud::Ptr> register_clouds_in_batches(
             std::vector< PointCloud::Ptr> clouds_to_register, int batch_size);

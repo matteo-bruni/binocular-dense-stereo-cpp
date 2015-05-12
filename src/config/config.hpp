@@ -4,6 +4,8 @@
 #include <libconfig.h++>
 #include <iostream>
 
+#include "../registration/registration.hpp"
+
 namespace binocular_dense_stereo {
 
     struct configPars {
@@ -39,6 +41,7 @@ namespace binocular_dense_stereo {
             }
 
             configPars loadGeneralConfiguration();
+            registrationParams loadRegistrationParams();
 
             // C++ 11
             // =======

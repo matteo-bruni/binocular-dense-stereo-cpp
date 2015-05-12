@@ -4,6 +4,7 @@
 
 // local include
 #include "registration.hpp"
+#include "../config/config.hpp"
 
 namespace binocular_dense_stereo {
 
@@ -24,7 +25,7 @@ namespace binocular_dense_stereo {
             cloud_src = clouds_to_register[i];
             cloud_tgt = clouds_to_register[i+1];
             FILE_LOG(logINFO) << "registering clouds: " << i << " to "<< i+1;
-            registrationParams pars;
+            registrationParams pars = binocular_dense_stereo::ConfigLoader::get_instance().loadRegistrationParams();
             CloudAlignment output = binocular_dense_stereo::registerSourceToTarget(cloud_src, cloud_tgt, pars);
 
             transformMatrix = output.transformMatrix;
@@ -224,12 +225,6 @@ namespace binocular_dense_stereo {
             leafSize -= downsample_decrease;
         }
 
-
-
-
-
-
-
         CloudAlignment output;
         // Transform target back in source frame
         PointCloud::Ptr cloud_source_to_target_output(new PointCloud);
@@ -285,6 +280,31 @@ namespace binocular_dense_stereo {
         norm_est.setRadiusSearch( normal_radius );
         norm_est.compute( *normalsPtr );
         return normalsPtr;
+    }
+
+
+    void printSacParams(sacParams pars) {
+
+        FILE_LOG(logINFO) << "Sac Params: ";
+        FILE_LOG(logINFO) << "  filter_limit: " << pars.filter_limit;
+        FILE_LOG(logINFO) << "  max_sacia_iterations: " << pars.max_sacia_iterations;
+        FILE_LOG(logINFO) << "  sac_max_correspondence_dist: " << pars.sac_max_correspondence_dist;
+        FILE_LOG(logINFO) << "  sac_min_correspondence_dist: " << pars.sac_min_correspondence_dist;
+
+    }
+
+    void printRegistrationParams(registrationParams pars) {
+
+        FILE_LOG(logINFO) << "Registration Params: ";
+        FILE_LOG(logINFO) << "  leaf_size: " << pars.leaf_size;
+        FILE_LOG(logINFO) << "  downsample_levels: " << pars.downsample_levels;
+        FILE_LOG(logINFO) << "  downsample_decrease: " << pars.downsample_decrease;
+        FILE_LOG(logINFO) << "  normals_radius: " << pars.normals_radius;
+        FILE_LOG(logINFO) << "  features_radius: " << pars.features_radius;
+
+        printSacParams(pars.sacPar);
+
+
     }
 }
 
