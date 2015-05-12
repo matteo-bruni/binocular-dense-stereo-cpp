@@ -60,7 +60,6 @@
 #include <algorithm>
 #include <time.h>
 
-
 // local include
 #include "types/custom_types.hpp"
 

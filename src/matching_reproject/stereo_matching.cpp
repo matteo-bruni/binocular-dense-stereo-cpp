@@ -44,8 +44,7 @@
 
 using namespace cv;
 
-namespace stereo {
-
+namespace binocular_dense_stereo {
 
     /*
         input   :
@@ -60,7 +59,7 @@ namespace stereo {
         M1 *= scale;
         M2 *= scale;
 
-        FILE_LOG(logDEBUG) << stereo_util::infoMatrix(T);
+        FILE_LOG(logDEBUG) << binocular_dense_stereo::infoMatrix(T);
 
         // dopo Q: 0 o CV_CALIB_ZERO_DISPARITY
         int flags = 0;
@@ -132,13 +131,13 @@ namespace stereo {
         imwrite("disp_"+std::to_string(img_frame)+".png", disp);
     }
 
-    void createPointCloudOpenCV (Mat& img1, Mat& img2,  Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
+    void createPointCloudOpenCV (Mat& img1, Mat& img2,  Mat& Q, Mat& disp, Mat& recons3D, PointCloud::Ptr &point_cloud_ptr) {
 
         cv::reprojectImageTo3D(disp, recons3D, Q, true);
-        FILE_LOG(logDEBUG) << "disp - " <<stereo_util::infoMatrix(disp);
+        FILE_LOG(logDEBUG) << "disp - " << binocular_dense_stereo::infoMatrix(disp);
 
-        FILE_LOG(logDEBUG) << "reconst - " <<stereo_util::infoMatrix(recons3D) << " img - " << stereo_util::infoMatrix(img1);
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_xyzrgb(new pcl::PointCloud<pcl::PointXYZRGB>);
+        FILE_LOG(logDEBUG) << "reconst - " << binocular_dense_stereo::infoMatrix(recons3D) << " img - " << binocular_dense_stereo::infoMatrix(img1);
+        PointCloud::Ptr cloud_xyzrgb(new PointCloud);
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz(new pcl::PointCloud<pcl::PointXYZ>);
         for (int rows = 0; rows < recons3D.rows; ++rows) {
 
@@ -147,11 +146,11 @@ namespace stereo {
                 cv::Point3f point = recons3D.at<cv::Point3f>(rows, cols);
 
                 pcl::PointXYZ pcl_point(point.x, point.y, point.z); // normal PointCloud
-                pcl::PointXYZRGB pcl_point_rgb;
+                PointT pcl_point_rgb;
                 pcl_point_rgb.x = point.x;    // rgb PointCloud
                 pcl_point_rgb.y = point.y;
                 pcl_point_rgb.z = point.z;
-                // image_left is the stereo rectified image used in stere reconstruction
+                // image_left is the binocular_dense_stereo rectified image used in stere reconstruction
                 cv::Vec3b intensity = img1.at<cv::Vec3b>(rows, cols); //BGR
 
                 uint32_t rgb = (static_cast<uint32_t>(intensity[2]) << 16 | static_cast<uint32_t>(intensity[1]) << 8 | static_cast<uint32_t>(intensity[0]));
@@ -175,7 +174,7 @@ namespace stereo {
 
 
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloudTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, const int frame_num){
+    PointCloud::Ptr generatePointCloudTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, const int frame_num){
 
         FILE_LOG(logINFO) << "Loading data.. frame" << frame_num;
 
@@ -222,34 +221,34 @@ namespace stereo {
 
         FILE_LOG(logINFO) << "Rectifying images...";
         Rect roi1,roi2;
-        stereo::rectifyImages(img_left, img_right, M_left, D_left, M_right, D_right, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
+        binocular_dense_stereo::rectifyImages(img_left, img_right, M_left, D_left, M_right, D_right, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
 
 
         FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
         Mat disp(img_left.size(), CV_32F);
 
-        FILE_LOG(logDEBUG) << "imgsize " << stereo_util::infoMatrix(img_left);
-        FILE_LOG(logDEBUG) << "dispsize " << stereo_util::infoMatrix(disp);
+        FILE_LOG(logDEBUG) << "imgsize " << binocular_dense_stereo::infoMatrix(img_left);
+        FILE_LOG(logDEBUG) << "dispsize " << binocular_dense_stereo::infoMatrix(disp);
 
-//        stereo::computeDisparityTsukuba(frame_num, img_left, img_right, disp,1,roi1,roi2);
+//        binocular_dense_stereo::computeDisparityTsukuba(frame_num, img_left, img_right, disp,1,roi1,roi2);
         // load ground truth disparity
         disp = dataset->load_disparity(frame_num+1);
 
         FILE_LOG(logINFO) << "Creating point cloud..";
         Mat recons3D(disp.size(), CV_32FC3);
-        FILE_LOG(logINFO) << "recons3Dsize " << stereo_util::infoMatrix(recons3D);
-        FILE_LOG(logINFO) << "disp " << stereo_util::infoMatrix(disp);
+        FILE_LOG(logINFO) << "recons3Dsize " << binocular_dense_stereo::infoMatrix(recons3D);
+        FILE_LOG(logINFO) << "disp " << binocular_dense_stereo::infoMatrix(disp);
 
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
-        stereo::createPointCloudOpenCV(img_left, img_right, Q, disp, recons3D, point_cloud_ptr);
+        PointCloud::Ptr point_cloud_ptr (new PointCloud);
+        binocular_dense_stereo::createPointCloudOpenCV(img_left, img_right, Q, disp, recons3D, point_cloud_ptr);
         return point_cloud_ptr;
     }
 
 
 
-    void createAllCloudsTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds, int first_frame,  int last_frame, int step){
+    void createAllCloudsTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, std::vector<PointCloud::Ptr> & clouds, int first_frame,  int last_frame, int step){
 
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
+        PointCloud::Ptr cloud;
         int frame_num;
         for (int i=first_frame; i<last_frame; i+=step){
 
@@ -259,9 +258,9 @@ namespace stereo {
 
             if(!(*cloud).empty()){
 
-                Eigen::Matrix4d transf = stereo_util::getTransformToWorldCoordinatesTsukuba(dataset, frame_num);
+                Eigen::Matrix4d transf = binocular_dense_stereo::getTransformToWorldCoordinatesTsukuba(dataset, frame_num);
                 // Executing the transformation
-                pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+                PointCloud::Ptr transformed_cloud (new PointCloud ());
                 // You can either apply transform_1 or transform_2; they are the same
                 pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
                 clouds.push_back(transformed_cloud);

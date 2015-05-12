@@ -10,7 +10,7 @@
 #include "../logger/log.h"
 
 
-namespace stereo_util {
+namespace binocular_dense_stereo {
 
     using namespace std;
     using namespace cv;
@@ -33,11 +33,11 @@ namespace stereo_util {
     Eigen::Matrix4d getTransformToWorldCoordinatesTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset,
                                                           const int current_frame);
 
-    void saveVectorCloudsToPLY(std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array, std::string title);
-    std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> loadVectorCloudsFromPLY(std::string path, int number_of_clouds);
+    void saveVectorCloudsToPLY(std::vector< PointCloud::Ptr> clouds_array, std::string title);
+    std::vector<PointCloud::Ptr> loadVectorCloudsFromPLY(std::string path, int number_of_clouds);
 
-    std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> loadVectorCloudsFromPCD(std::string path, int number_of_clouds);
-    void saveVectorCloudsToPCD(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array, std::string title);
+    std::vector<PointCloud::Ptr> loadVectorCloudsFromPCD(std::string path, int number_of_clouds);
+    void saveVectorCloudsToPCD(std::vector<PointCloud::Ptr> clouds_array, std::string title);
 
 }
 

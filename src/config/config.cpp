@@ -23,11 +23,8 @@ namespace binocular_dense_stereo {
                         << " - " << pex.getError() << std::endl;
                 exit(EXIT_FAILURE);
             }
-            std::cout << "Settings loaded ";
-
-
+            std::cout << "Settings loaded "<<std::endl;
     };
-
 
 
     configPars ConfigLoader::loadGeneralConfiguration() {
@@ -52,7 +49,6 @@ namespace binocular_dense_stereo {
             std::cout << nfex.what() << std::endl;
 
         }
-
         return pars;
     }
 

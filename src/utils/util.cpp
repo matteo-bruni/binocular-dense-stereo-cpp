@@ -1,6 +1,6 @@
 #include "util.hpp"
 
-namespace stereo_util {
+namespace binocular_dense_stereo {
 
     using namespace std;
     using namespace cv;
@@ -46,7 +46,7 @@ namespace stereo_util {
 
     string infoMatrix(Mat& M) {
         std::ostringstream out;
-        out << "Matrix: " << stereo_util::type2str( M.type() )<< " "<< M.rows << "x" << M.cols;
+        out << "Matrix: " << binocular_dense_stereo::type2str( M.type() )<< " "<< M.rows << "x" << M.cols;
         return out.str();
 
 
@@ -217,8 +217,8 @@ namespace stereo_util {
 
     Eigen::Matrix4f getTransformBetweenClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num) {
 
-//        FILE_LOG(logINFO) << "R: " << stereo_util::infoMatrix(R) << R;
-//        FILE_LOG(logINFO) << "T: " << stereo_util::infoMatrix(T) << T;
+//        FILE_LOG(logINFO) << "R: " << binocular_dense_stereo::infoMatrix(R) << R;
+//        FILE_LOG(logINFO) << "T: " << binocular_dense_stereo::infoMatrix(T) << T;
 
         Ptr<cv::datasets::MSM_middleburyObj> data_img1 =
                 static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img1_num]);
@@ -312,7 +312,7 @@ namespace stereo_util {
         return P.inv();
     }
 
-    void saveVectorCloudsToPLY(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array, std::string title) {
+    void saveVectorCloudsToPLY(std::vector<PointCloud::Ptr> clouds_array, std::string title) {
 
         std::stringstream ss;
 
@@ -325,15 +325,15 @@ namespace stereo_util {
         }
     }
 
-    std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> loadVectorCloudsFromPLY(std::string path, int number_of_clouds) {
+    std::vector<PointCloud::Ptr> loadVectorCloudsFromPLY(std::string path, int number_of_clouds) {
 
-        std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
+        std::vector<PointCloud::Ptr> clouds;
 
         for (int i = 0; i<number_of_clouds; i++) {
 
             FILE_LOG(logINFO) << "Loading cloud: " << path+std::to_string(i)+".ply" ;
 
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+            PointCloud::Ptr cloud (new PointCloud);
             // path-number.ply
             pcl::io::loadPLYFile(path+std::to_string(i)+".ply", *cloud);
             clouds.push_back(cloud);
@@ -342,7 +342,7 @@ namespace stereo_util {
         return clouds;
     }
 
-    void saveVectorCloudsToPCD(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_array, std::string title) {
+    void saveVectorCloudsToPCD(std::vector<PointCloud::Ptr> clouds_array, std::string title) {
 
         std::stringstream ss;
 
@@ -355,14 +355,14 @@ namespace stereo_util {
         }
     }
 
-    std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> loadVectorCloudsFromPCD(std::string path, int number_of_clouds) {
+    std::vector<PointCloud::Ptr> loadVectorCloudsFromPCD(std::string path, int number_of_clouds) {
 
-        std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
+        std::vector<PointCloud::Ptr> clouds;
         for (int i = 0; i<number_of_clouds; i++) {
 
             FILE_LOG(logINFO) << "Loading cloud: " << path+std::to_string(i)+".pcd" ;
 
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+            PointCloud::Ptr cloud (new PointCloud);
             // path-number.ply
             pcl::io::loadPCDFile(path+std::to_string(i)+".pcd", *cloud);
             clouds.push_back(cloud);

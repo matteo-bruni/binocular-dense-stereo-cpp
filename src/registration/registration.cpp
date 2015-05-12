@@ -5,17 +5,17 @@
 // local include
 #include "registration.hpp"
 
-namespace stereo_registration {
+namespace binocular_dense_stereo {
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr register_incremental_clouds(
-            std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_to_register) {
+    PointCloud::Ptr register_incremental_clouds(
+            std::vector<PointCloud::Ptr> clouds_to_register) {
 
 
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+        PointCloud::Ptr final_cloud(new PointCloud);
+        PointCloud::Ptr temp_cloud(new PointCloud);
 
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_src;
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_tgt;
+        PointCloud::Ptr cloud_src;
+        PointCloud::Ptr cloud_tgt;
         Eigen::Matrix4f transformMatrix = Eigen::Matrix4f::Identity();
 
 
@@ -25,7 +25,7 @@ namespace stereo_registration {
             cloud_tgt = clouds_to_register[i+1];
             FILE_LOG(logINFO) << "registering clouds: " << i << " to "<< i+1;
             registrationParams pars;
-            CloudAlignment output = stereo_registration::registerSourceToTarget(cloud_src, cloud_tgt, pars);
+            CloudAlignment output = binocular_dense_stereo::registerSourceToTarget(cloud_src, cloud_tgt, pars);
 
             transformMatrix = output.transformMatrix;
             temp_cloud->clear();
@@ -37,7 +37,7 @@ namespace stereo_registration {
 //            local_cloud->clear();
 //            pcl::transformPointCloud (*cloud_src, *local_cloud, transformMatrix);
 //            *local_cloud += *cloud_tgt;
-//            stereo::viewPointCloud(local_cloud, "step "+std::to_string(i)+" - "+std::to_string(i+1));
+//            binocular_dense_stereo::viewPointCloud(local_cloud, "step "+std::to_string(i)+" - "+std::to_string(i+1));
             // end visualization
 
             *final_cloud += *cloud_tgt;
@@ -49,11 +49,11 @@ namespace stereo_registration {
 
 
 
-    std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> register_clouds_in_batches(
-            std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds_to_register, int batch_size) {
+    std::vector< PointCloud::Ptr> register_clouds_in_batches(
+            std::vector< PointCloud::Ptr> clouds_to_register, int batch_size) {
 
 
-        std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr> output_batches_of_registered_clouds;
+        std::vector< PointCloud::Ptr> output_batches_of_registered_clouds;
 
         FILE_LOG(logDEBUG) << "single cloud size :"<< clouds_to_register[0]->size();
 
@@ -69,7 +69,7 @@ namespace stereo_registration {
             FILE_LOG(logINFO) << "BATCH = : " << i << " from "<<  start << " to: "<< stop;
             FILE_LOG(logINFO) << start  <<" first cloud of the batch";
 
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr batch_cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
+            PointCloud::Ptr batch_cloud_sum(new PointCloud);
 
             for(int j = start; j < stop; j++) {
 
@@ -81,11 +81,11 @@ namespace stereo_registration {
                 else {
                     FILE_LOG(logINFO) << " registering "<< j << " in " << start << " space";
                     registrationParams par;
-                    CloudAlignment output = stereo_registration::registerSourceToTarget(clouds_to_register[j], clouds_to_register[start], par);
+                    CloudAlignment output = binocular_dense_stereo::registerSourceToTarget(clouds_to_register[j], clouds_to_register[start], par);
                     *batch_cloud_sum += *(output.alignedCloud);
                 }
             }
-            stereo::viewPointCloud(batch_cloud_sum, " SUM from  "+std::to_string(start)+" to "+std::to_string(stop));
+            binocular_dense_stereo::viewPointCloud(batch_cloud_sum, " SUM from  "+std::to_string(start)+" to "+std::to_string(stop));
 
             output_batches_of_registered_clouds.push_back(batch_cloud_sum);
             FILE_LOG(logINFO) << "BATCH sum point size =  "<< batch_cloud_sum->size();
@@ -97,19 +97,19 @@ namespace stereo_registration {
     }
 
 
-    CloudAlignment registerSourceToTarget(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source,
-                                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target,
+    CloudAlignment registerSourceToTarget(PointCloud::Ptr cloud_source,
+                                          PointCloud::Ptr cloud_target,
                                           registrationParams params) {
         // ICP object.
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_to_target_downsampled(new pcl::PointCloud<pcl::PointXYZRGB>);
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_downsampled(new pcl::PointCloud<pcl::PointXYZRGB>);
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target_downsampled(new pcl::PointCloud<pcl::PointXYZRGB>);
+        PointCloud::Ptr cloud_source_to_target_downsampled(new PointCloud);
+        PointCloud::Ptr cloud_source_downsampled(new PointCloud);
+        PointCloud::Ptr cloud_target_downsampled(new PointCloud);
 
         float leafSize = params.leaf_size;
         int DOWNSAMPLE_LEVELS = params.downsample_levels;
         float downsample_decrease = params.downsample_decrease;
 
-        pcl::VoxelGrid<pcl::PointXYZRGB> grid;
+        pcl::VoxelGrid<PointT> grid;
         Eigen::Matrix4f transformMatrix (Eigen::Matrix4f::Identity ());
         double score = -1.;
 
@@ -130,7 +130,7 @@ namespace stereo_registration {
 
 
             // SIMPLE ICP
-//            pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
+//            pcl::IterativeClosestPoint<PointT, PointT> registration;
 //            registration.setInputSource(cloud_source_downsampled);
 //            registration.setInputTarget(cloud_target_downsampled);
 //            registration.setTransformationEpsilon (1e-8);
@@ -173,7 +173,7 @@ namespace stereo_registration {
 
             //Get an initial estimate for the transformation using SAC
             //returns the transformation for cloud2 so that it is aligned with cloud1
-            pcl::SampleConsensusInitialAlignment<pcl::PointXYZRGB, pcl::PointXYZRGB, pcl::FPFHSignature33> sac_ia = align( cloud_target_downsampled, cloud_source_downsampled,
+            pcl::SampleConsensusInitialAlignment<PointT, PointT, pcl::FPFHSignature33> sac_ia = align( cloud_target_downsampled, cloud_source_downsampled,
                                                                                                                            features_target, features_source, params.sacPar,transformMatrix);
             Eigen::Matrix4f	init_transform = sac_ia.getFinalTransformation();
             if (sac_ia.hasConverged())
@@ -193,7 +193,7 @@ namespace stereo_registration {
 
 
 
-            pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> registration;
+            pcl::IterativeClosestPoint<PointT, PointT> registration;
             registration.setInputSource(cloud_source_downsampled);
             registration.setInputTarget(cloud_target_downsampled);
             registration.setTransformationEpsilon (1e-8);
@@ -232,7 +232,7 @@ namespace stereo_registration {
 
         CloudAlignment output;
         // Transform target back in source frame
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source_to_target_output(new pcl::PointCloud<pcl::PointXYZRGB>);
+        PointCloud::Ptr cloud_source_to_target_output(new PointCloud);
         pcl::transformPointCloud (*cloud_source, *cloud_source_to_target_output, transformMatrix);
         output.alignedCloud = cloud_source_to_target_output;
         output.transformMatrix = transformMatrix;
@@ -241,15 +241,15 @@ namespace stereo_registration {
 
 
     //computes the transformation for cloud2 so that it is transformed so that it is aligned with cloud1
-    pcl::SampleConsensusInitialAlignment<pcl::PointXYZRGB, pcl::PointXYZRGB, pcl::FPFHSignature33>
-    align( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_target,
-           pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_source,
+    pcl::SampleConsensusInitialAlignment<PointT, PointT, pcl::FPFHSignature33>
+    align( PointCloud::Ptr cloud_target,
+           PointCloud::Ptr cloud_source,
            pcl::PointCloud<pcl::FPFHSignature33>::Ptr target_features,
            pcl::PointCloud<pcl::FPFHSignature33>::Ptr source_features,
            sacParams params,
            Eigen::Matrix4f init_transformation) {
 
-        pcl::SampleConsensusInitialAlignment<pcl::PointXYZRGB, pcl::PointXYZRGB, pcl::FPFHSignature33> sac_ia;
+        pcl::SampleConsensusInitialAlignment<PointT, PointT, pcl::FPFHSignature33> sac_ia;
         Eigen::Matrix4f final_transformation;
         sac_ia.setInputSource(cloud_source);
         sac_ia.setSourceFeatures(source_features);
@@ -258,17 +258,17 @@ namespace stereo_registration {
         sac_ia.setMaximumIterations( params.max_sacia_iterations );
         sac_ia.setMinSampleDistance (params.sac_min_correspondence_dist);
         sac_ia.setMaxCorrespondenceDistance (params.sac_max_correspondence_dist);
-        pcl::PointCloud<pcl::PointXYZRGB> finalcloud;
+        PointCloud finalcloud;
         sac_ia.align( finalcloud, init_transformation );
         sac_ia.getCorrespondenceRandomness();
         return sac_ia;
     }
 
-    pcl::PointCloud<pcl::FPFHSignature33>::Ptr getFeatures( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr normals, double features_radius ) {
+    pcl::PointCloud<pcl::FPFHSignature33>::Ptr getFeatures( PointCloud::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr normals, double features_radius ) {
 
         pcl::PointCloud<pcl::FPFHSignature33>::Ptr features = pcl::PointCloud<pcl::FPFHSignature33>::Ptr (new  pcl::PointCloud<pcl::FPFHSignature33>);
-        pcl::search::KdTree<pcl::PointXYZRGB>::Ptr search_method_ptr = pcl::search::KdTree<pcl::PointXYZRGB>::Ptr (new pcl::search::KdTree<pcl::PointXYZRGB>);
-        pcl::FPFHEstimation<pcl::PointXYZRGB, pcl::Normal, pcl::FPFHSignature33> fpfh_est;
+        pcl::search::KdTree<PointT>::Ptr search_method_ptr = pcl::search::KdTree<PointT>::Ptr (new pcl::search::KdTree<PointT>);
+        pcl::FPFHEstimation<PointT, pcl::Normal, pcl::FPFHSignature33> fpfh_est;
         fpfh_est.setInputCloud( cloud );
         fpfh_est.setInputNormals( normals );
         fpfh_est.setSearchMethod( search_method_ptr );
@@ -277,10 +277,10 @@ namespace stereo_registration {
         return features;
     }
 
-    pcl::PointCloud<pcl::Normal>::Ptr getNormals( pcl::PointCloud<pcl::PointXYZRGB>::Ptr incloud, double normal_radius ) {
+    pcl::PointCloud<pcl::Normal>::Ptr getNormals( PointCloud::Ptr incloud, double normal_radius ) {
 
         pcl::PointCloud<pcl::Normal>::Ptr normalsPtr = pcl::PointCloud<pcl::Normal>::Ptr (new pcl::PointCloud<pcl::Normal>);
-        pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> norm_est;
+        pcl::NormalEstimation<PointT, pcl::Normal> norm_est;
         norm_est.setInputCloud( incloud );
         norm_est.setRadiusSearch( normal_radius );
         norm_est.compute( *normalsPtr );
