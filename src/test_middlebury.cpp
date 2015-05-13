@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_cloud = binocular_dense_stereo::register_incremental_clouds(clouds);
 
         pcl::VoxelGrid<pcl::PointXYZRGB> grid;
-        float leafSize = 2.0;
+        float leafSize = 0.05;
         grid.setLeafSize (leafSize, leafSize, leafSize);
         grid.setInputCloud (final_cloud);
         FILE_LOG(logINFO) << "finalcloud leafSize: " << leafSize<< " original size :" << final_cloud->size();
