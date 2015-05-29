@@ -9,8 +9,11 @@
 #include "../includes.h"
 
 //convenient typedefs
-typedef pcl::PointXYZRGB PointT;
+//typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZRGB PointTRGB;
 typedef pcl::PointCloud<PointT> PointCloud;
+typedef pcl::PointCloud<PointTRGB> PointCloudRGB;
 typedef pcl::PointNormal PointNormalT;
 typedef pcl::PointCloud<PointNormalT> PointCloudWithNormals;
 

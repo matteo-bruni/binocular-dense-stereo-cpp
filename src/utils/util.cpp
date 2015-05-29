@@ -269,15 +269,18 @@ namespace binocular_dense_stereo {
 
         FILE_LOG(logINFO) << "Current Frame R and T: " << current_frame ;
 
-        Mat r2 = Mat(data_img2->r);
+        Mat r = Mat(data_img2->r);
         // init translation vectors from dataset
-        Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->tl);
+        Mat tl = Mat(3, 1, CV_64FC1, &data_img2->tl);
+        Mat tr = Mat(3, 1, CV_64FC1, &data_img2->tr);
+        FILE_LOG(logINFO) << "Current Frame TL: " << tl << "  TR: " << tr ;
+
 
         // rotation to world coordinates
-        Mat R = r2.inv(); //r2*r1.t();
+        Mat R = r.t(); //r2*r1.t();
         FILE_LOG(logINFO) << "Current Frame R : " << R*R.inv() ;
         // translation to world coordinates
-        Mat T = -t2; //t1 - (R.t()*t2 );
+        Mat T = - r.t()*tl; //t1 - (R.t()*t2 );
 
         Eigen::Matrix4d transformMatrix = Eigen::Matrix4d::Identity();
 
@@ -296,9 +299,46 @@ namespace binocular_dense_stereo {
         transformMatrix (1,3) = T.at<double>(1);
         transformMatrix (2,3) = T.at<double>(2);
 
+        FILE_LOG(logINFO) << "transformmatrix : " << transformMatrix ;
+
+
         return transformMatrix;
     }
 
+    Eigen::Matrix4d getTransformToWorldCoordinatesKITTI(Ptr<cv::datasets::SLAM_kitti> &dataset,
+                                                          const int current_frame) {
+
+
+        Ptr<cv::datasets::SLAM_kittiObj> data_img =
+                static_cast< Ptr<cv::datasets::SLAM_kittiObj> >  (dataset->getTrain()[0]);
+
+        FILE_LOG(logINFO) << "Current Frame R and T: " << current_frame ;
+
+        cv::Mat cv_transform = data_img->calibArray[current_frame].transformMatrix;
+//        Eigen::Matrix4d transformMatrix = Eigen::Matrix4d::Identity();;
+
+
+        Eigen::Matrix4d transformMatrix= Eigen::Matrix4d::Identity();;
+        transformMatrix (0,0) = cv_transform.at<double>(0,0);
+        transformMatrix (0,1) = cv_transform.at<double>(0,1);
+        transformMatrix (0,2) = cv_transform.at<double>(0,2);
+        transformMatrix (0,3) = cv_transform.at<double>(0,3);
+
+        transformMatrix (1,0) = cv_transform.at<double>(1,0);
+        transformMatrix (1,1) = cv_transform.at<double>(1,1);
+        transformMatrix (1,2) = cv_transform.at<double>(1,2);
+        transformMatrix (1,3) = cv_transform.at<double>(1,3);
+
+        transformMatrix (2,0) = cv_transform.at<double>(2,0);
+        transformMatrix (2,1) = cv_transform.at<double>(2,1);
+        transformMatrix (2,2) = cv_transform.at<double>(2,2);
+        transformMatrix (2,3) = cv_transform.at<double>(2,3);
+
+        FILE_LOG(logINFO) << "transformmatrix : " << transformMatrix ;
+
+
+        return transformMatrix;
+    }
 
     cv::Mat createPINVFromRT(cv::Mat R, cv::Mat T) {
 
@@ -312,7 +352,7 @@ namespace binocular_dense_stereo {
         return P.inv();
     }
 
-    void saveVectorCloudsToPLY(std::vector<PointCloud::Ptr> clouds_array, std::string title) {
+    void saveVectorCloudsToPLYRGB(std::vector<PointCloudRGB::Ptr> clouds_array, std::string title) {
 
         std::stringstream ss;
 
@@ -325,15 +365,15 @@ namespace binocular_dense_stereo {
         }
     }
 
-    std::vector<PointCloud::Ptr> loadVectorCloudsFromPLY(std::string path, int number_of_clouds) {
+    std::vector<PointCloudRGB::Ptr> loadVectorCloudsFromPLYRGB(std::string path, int number_of_clouds) {
 
-        std::vector<PointCloud::Ptr> clouds;
+        std::vector<PointCloudRGB::Ptr> clouds;
 
         for (int i = 0; i<number_of_clouds; i++) {
 
             FILE_LOG(logINFO) << "Loading cloud: " << path+std::to_string(i)+".ply" ;
 
-            PointCloud::Ptr cloud (new PointCloud);
+            PointCloudRGB::Ptr cloud (new PointCloudRGB);
             // path-number.ply
             pcl::io::loadPLYFile(path+std::to_string(i)+".ply", *cloud);
             clouds.push_back(cloud);
@@ -342,7 +382,9 @@ namespace binocular_dense_stereo {
         return clouds;
     }
 
-    void saveVectorCloudsToPCD(std::vector<PointCloud::Ptr> clouds_array, std::string title) {
+    void saveVectorCloudsToPCDRGB(std::vector<PointCloudRGB::Ptr> clouds_array, std::string title) {
+
+        FILE_LOG(logINFO) << "Saving vector of clouds to pcds" ;
 
         std::stringstream ss;
 
@@ -355,14 +397,14 @@ namespace binocular_dense_stereo {
         }
     }
 
-    std::vector<PointCloud::Ptr> loadVectorCloudsFromPCD(std::string path, int number_of_clouds) {
+    std::vector<PointCloudRGB::Ptr> loadVectorCloudsFromPCDRGB(std::string path, int number_of_clouds) {
 
-        std::vector<PointCloud::Ptr> clouds;
+        std::vector<PointCloudRGB::Ptr> clouds;
         for (int i = 0; i<number_of_clouds; i++) {
 
             FILE_LOG(logINFO) << "Loading cloud: " << path+std::to_string(i)+".pcd" ;
 
-            PointCloud::Ptr cloud (new PointCloud);
+            PointCloudRGB::Ptr cloud (new PointCloudRGB);
             // path-number.ply
             pcl::io::loadPCDFile(path+std::to_string(i)+".pcd", *cloud);
             clouds.push_back(cloud);

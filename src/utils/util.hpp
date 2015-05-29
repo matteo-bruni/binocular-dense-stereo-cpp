@@ -8,6 +8,7 @@
 #include "../dataset/dataset.hpp"
 
 #include "../logger/log.h"
+#include "../dataset/kitti_dataset.h"
 
 
 namespace binocular_dense_stereo {
@@ -33,11 +34,14 @@ namespace binocular_dense_stereo {
     Eigen::Matrix4d getTransformToWorldCoordinatesTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset,
                                                           const int current_frame);
 
-    void saveVectorCloudsToPLY(std::vector< PointCloud::Ptr> clouds_array, std::string title);
-    std::vector<PointCloud::Ptr> loadVectorCloudsFromPLY(std::string path, int number_of_clouds);
+    Eigen::Matrix4d getTransformToWorldCoordinatesKITTI(Ptr<cv::datasets::SLAM_kitti> &dataset,
+                                                          const int current_frame);
 
-    std::vector<PointCloud::Ptr> loadVectorCloudsFromPCD(std::string path, int number_of_clouds);
-    void saveVectorCloudsToPCD(std::vector<PointCloud::Ptr> clouds_array, std::string title);
+    void saveVectorCloudsToPLYRGB(std::vector<PointCloudRGB::Ptr> clouds_array, std::string title);
+    std::vector<PointCloudRGB::Ptr> loadVectorCloudsFromPLYRGB(std::string path, int number_of_clouds);
+
+    std::vector<PointCloudRGB::Ptr> loadVectorCloudsFromPCDRGB(std::string path, int number_of_clouds);
+    void saveVectorCloudsToPCDRGB(std::vector<PointCloudRGB::Ptr> clouds_array, std::string title);
 
 }
 

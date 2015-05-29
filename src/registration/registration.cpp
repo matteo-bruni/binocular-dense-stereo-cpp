@@ -8,15 +8,15 @@
 
 namespace binocular_dense_stereo {
 
-    PointCloud::Ptr register_incremental_clouds(
-            std::vector<PointCloud::Ptr> clouds_to_register) {
+    PointCloudRGB::Ptr register_incremental_clouds(
+            std::vector<PointCloudRGB::Ptr> clouds_to_register) {
 
 
-        PointCloud::Ptr final_cloud(new PointCloud);
-        PointCloud::Ptr temp_cloud(new PointCloud);
+        PointCloudRGB::Ptr final_cloud(new PointCloudRGB);
+        PointCloudRGB::Ptr temp_cloud(new PointCloudRGB);
 
-        PointCloud::Ptr cloud_src;
-        PointCloud::Ptr cloud_tgt;
+        PointCloudRGB::Ptr cloud_src;
+        PointCloudRGB::Ptr cloud_tgt;
         Eigen::Matrix4f transformMatrix = Eigen::Matrix4f::Identity();
 
 
@@ -50,11 +50,11 @@ namespace binocular_dense_stereo {
 
 
 
-    std::vector< PointCloud::Ptr> register_clouds_in_batches(
-            std::vector< PointCloud::Ptr> clouds_to_register, int batch_size) {
+    std::vector< PointCloudRGB::Ptr> register_clouds_in_batches(
+            std::vector< PointCloudRGB::Ptr> clouds_to_register, int batch_size) {
 
 
-        std::vector< PointCloud::Ptr> output_batches_of_registered_clouds;
+        std::vector< PointCloudRGB::Ptr> output_batches_of_registered_clouds;
 
         FILE_LOG(logDEBUG) << "single cloud size :"<< clouds_to_register[0]->size();
 
@@ -70,7 +70,7 @@ namespace binocular_dense_stereo {
             FILE_LOG(logINFO) << "BATCH = : " << i << " from "<<  start << " to: "<< stop;
             FILE_LOG(logINFO) << start  <<" first cloud of the batch";
 
-            PointCloud::Ptr batch_cloud_sum(new PointCloud);
+            PointCloudRGB::Ptr batch_cloud_sum(new PointCloudRGB);
 
             for(int j = start; j < stop; j++) {
 
@@ -86,7 +86,7 @@ namespace binocular_dense_stereo {
                     *batch_cloud_sum += *(output.alignedCloud);
                 }
             }
-            binocular_dense_stereo::viewPointCloud(batch_cloud_sum, " SUM from  "+std::to_string(start)+" to "+std::to_string(stop));
+            binocular_dense_stereo::viewPointCloudRGB(batch_cloud_sum, " SUM from  "+std::to_string(start)+" to "+std::to_string(stop));
 
             output_batches_of_registered_clouds.push_back(batch_cloud_sum);
             FILE_LOG(logINFO) << "BATCH sum point size =  "<< batch_cloud_sum->size();
@@ -98,19 +98,19 @@ namespace binocular_dense_stereo {
     }
 
 
-    CloudAlignment registerSourceToTarget(PointCloud::Ptr cloud_source,
-                                          PointCloud::Ptr cloud_target,
+    CloudAlignment registerSourceToTarget(PointCloudRGB::Ptr cloud_source,
+                                          PointCloudRGB::Ptr cloud_target,
                                           registrationParams params) {
         // ICP object.
-        PointCloud::Ptr cloud_source_to_target_downsampled(new PointCloud);
-        PointCloud::Ptr cloud_source_downsampled(new PointCloud);
-        PointCloud::Ptr cloud_target_downsampled(new PointCloud);
+        PointCloudRGB::Ptr cloud_source_to_target_downsampled(new PointCloudRGB);
+        PointCloudRGB::Ptr cloud_source_downsampled(new PointCloudRGB);
+        PointCloudRGB::Ptr cloud_target_downsampled(new PointCloudRGB);
 
         float leafSize = params.leaf_size;
         int DOWNSAMPLE_LEVELS = params.downsample_levels;
         float downsample_decrease = params.downsample_decrease;
 
-        pcl::VoxelGrid<PointT> grid;
+        pcl::VoxelGrid<PointTRGB> grid;
         Eigen::Matrix4f transformMatrix (Eigen::Matrix4f::Identity ());
         double score = -1.;
 
@@ -128,7 +128,6 @@ namespace binocular_dense_stereo {
             grid.filter (*cloud_target_downsampled);
             FILE_LOG(logINFO) << " post size :" << cloud_source_downsampled->size() << " ; " << cloud_target_downsampled->size();
             // END DOWNSAMPLE
-
 
             // SIMPLE ICP
 //            pcl::IterativeClosestPoint<PointT, PointT> registration;
@@ -174,7 +173,7 @@ namespace binocular_dense_stereo {
 
             //Get an initial estimate for the transformation using SAC
             //returns the transformation for cloud2 so that it is aligned with cloud1
-            pcl::SampleConsensusInitialAlignment<PointT, PointT, pcl::FPFHSignature33> sac_ia = align( cloud_target_downsampled, cloud_source_downsampled,
+            pcl::SampleConsensusInitialAlignment<PointTRGB, PointTRGB, pcl::FPFHSignature33> sac_ia = align( cloud_target_downsampled, cloud_source_downsampled,
                                                                                                                            features_target, features_source, params.sacPar,transformMatrix);
             Eigen::Matrix4f	init_transform = sac_ia.getFinalTransformation();
             if (sac_ia.hasConverged())
@@ -194,7 +193,7 @@ namespace binocular_dense_stereo {
 
 
 
-            pcl::IterativeClosestPoint<PointT, PointT> registration;
+            pcl::IterativeClosestPoint<PointTRGB, PointTRGB> registration;
             registration.setInputSource(cloud_source_downsampled);
             registration.setInputTarget(cloud_target_downsampled);
             registration.setTransformationEpsilon (1e-8);
@@ -227,7 +226,7 @@ namespace binocular_dense_stereo {
 
         CloudAlignment output;
         // Transform target back in source frame
-        PointCloud::Ptr cloud_source_to_target_output(new PointCloud);
+        PointCloudRGB::Ptr cloud_source_to_target_output(new PointCloudRGB);
         pcl::transformPointCloud (*cloud_source, *cloud_source_to_target_output, transformMatrix);
         output.alignedCloud = cloud_source_to_target_output;
         output.transformMatrix = transformMatrix;
@@ -236,15 +235,15 @@ namespace binocular_dense_stereo {
 
 
     //computes the transformation for cloud2 so that it is transformed so that it is aligned with cloud1
-    pcl::SampleConsensusInitialAlignment<PointT, PointT, pcl::FPFHSignature33>
-    align( PointCloud::Ptr cloud_target,
-           PointCloud::Ptr cloud_source,
+    pcl::SampleConsensusInitialAlignment<PointTRGB, PointTRGB, pcl::FPFHSignature33>
+    align( PointCloudRGB::Ptr cloud_target,
+           PointCloudRGB::Ptr cloud_source,
            pcl::PointCloud<pcl::FPFHSignature33>::Ptr target_features,
            pcl::PointCloud<pcl::FPFHSignature33>::Ptr source_features,
            sacParams params,
            Eigen::Matrix4f init_transformation) {
 
-        pcl::SampleConsensusInitialAlignment<PointT, PointT, pcl::FPFHSignature33> sac_ia;
+        pcl::SampleConsensusInitialAlignment<PointTRGB, PointTRGB, pcl::FPFHSignature33> sac_ia;
         Eigen::Matrix4f final_transformation;
         sac_ia.setInputSource(cloud_source);
         sac_ia.setSourceFeatures(source_features);
@@ -253,17 +252,17 @@ namespace binocular_dense_stereo {
         sac_ia.setMaximumIterations( params.max_sacia_iterations );
         sac_ia.setMinSampleDistance (params.sac_min_correspondence_dist);
         sac_ia.setMaxCorrespondenceDistance (params.sac_max_correspondence_dist);
-        PointCloud finalcloud;
+        PointCloudRGB finalcloud;
         sac_ia.align( finalcloud, init_transformation );
         sac_ia.getCorrespondenceRandomness();
         return sac_ia;
     }
 
-    pcl::PointCloud<pcl::FPFHSignature33>::Ptr getFeatures( PointCloud::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr normals, double features_radius ) {
+    pcl::PointCloud<pcl::FPFHSignature33>::Ptr getFeatures( PointCloudRGB::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr normals, double features_radius ) {
 
         pcl::PointCloud<pcl::FPFHSignature33>::Ptr features = pcl::PointCloud<pcl::FPFHSignature33>::Ptr (new  pcl::PointCloud<pcl::FPFHSignature33>);
-        pcl::search::KdTree<PointT>::Ptr search_method_ptr = pcl::search::KdTree<PointT>::Ptr (new pcl::search::KdTree<PointT>);
-        pcl::FPFHEstimation<PointT, pcl::Normal, pcl::FPFHSignature33> fpfh_est;
+        pcl::search::KdTree<PointTRGB>::Ptr search_method_ptr = pcl::search::KdTree<PointTRGB>::Ptr (new pcl::search::KdTree<PointTRGB>);
+        pcl::FPFHEstimation<PointTRGB, pcl::Normal, pcl::FPFHSignature33> fpfh_est;
         fpfh_est.setInputCloud( cloud );
         fpfh_est.setInputNormals( normals );
         fpfh_est.setSearchMethod( search_method_ptr );
@@ -272,10 +271,10 @@ namespace binocular_dense_stereo {
         return features;
     }
 
-    pcl::PointCloud<pcl::Normal>::Ptr getNormals( PointCloud::Ptr incloud, double normal_radius ) {
+    pcl::PointCloud<pcl::Normal>::Ptr getNormals( PointCloudRGB::Ptr incloud, double normal_radius ) {
 
         pcl::PointCloud<pcl::Normal>::Ptr normalsPtr = pcl::PointCloud<pcl::Normal>::Ptr (new pcl::PointCloud<pcl::Normal>);
-        pcl::NormalEstimation<PointT, pcl::Normal> norm_est;
+        pcl::NormalEstimation<PointTRGB, pcl::Normal> norm_est;
         norm_est.setInputCloud( incloud );
         norm_est.setRadiusSearch( normal_radius );
         norm_est.compute( *normalsPtr );

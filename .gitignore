@@ -2,6 +2,7 @@ build/
 bin/
 .idea/
 dataset/NTSD-200/
+dataset/KITTI
 
 # Compiled Object files
 *.slo

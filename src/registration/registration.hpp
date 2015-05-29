@@ -12,7 +12,7 @@ namespace binocular_dense_stereo {
     struct CloudAlignment {
         Eigen::Matrix4f transformMatrix = Eigen::Matrix4f::Identity();
         //std::string frame_name;
-        PointCloud::Ptr alignedCloud;
+        PointCloudRGB::Ptr alignedCloud;
     };
     struct sacParams {
         double filter_limit = 1000.0;
@@ -34,16 +34,16 @@ namespace binocular_dense_stereo {
     void printSacParams(sacParams pars);
     void printRegistrationParams(registrationParams pars);
 
-    std::vector< PointCloud::Ptr> register_clouds_in_batches(
-            std::vector< PointCloud::Ptr> clouds_to_register, int batch_size);
+    std::vector< PointCloudRGB::Ptr> register_clouds_in_batches(
+            std::vector< PointCloudRGB::Ptr> clouds_to_register, int batch_size);
 
-    PointCloud::Ptr register_incremental_clouds(
-            std::vector< PointCloud::Ptr> clouds_to_register);
+    PointCloudRGB::Ptr register_incremental_clouds(
+            std::vector< PointCloudRGB::Ptr> clouds_to_register);
 
 
 
-    CloudAlignment registerSourceToTarget(PointCloud::Ptr cloud_source,
-                                          PointCloud::Ptr cloud_target,
+    CloudAlignment registerSourceToTarget(PointCloudRGB::Ptr cloud_source,
+                                          PointCloudRGB::Ptr cloud_target,
                                           registrationParams params);
 
 
@@ -58,11 +58,11 @@ namespace binocular_dense_stereo {
     const double SAC_MAX_CORRESPONDENCE_DIST = 2000;
     const double SAC_MIN_CORRESPONDENCE_DIST = 3;
 
-    pcl::PointCloud<pcl::Normal>::Ptr getNormals( PointCloud::Ptr incloud, double normal_radius );
-    pcl::PointCloud<pcl::FPFHSignature33>::Ptr getFeatures( PointCloud::Ptr incloud, pcl::PointCloud<pcl::Normal>::Ptr normals, double features_radius);
-    pcl::SampleConsensusInitialAlignment<PointT, PointT, pcl::FPFHSignature33>
-            align( PointCloud::Ptr cloud_target,
-                   PointCloud::Ptr cloud_source,
+    pcl::PointCloud<pcl::Normal>::Ptr getNormals( PointCloudRGB::Ptr incloud, double normal_radius );
+    pcl::PointCloud<pcl::FPFHSignature33>::Ptr getFeatures( PointCloudRGB::Ptr incloud, pcl::PointCloud<pcl::Normal>::Ptr normals, double features_radius);
+    pcl::SampleConsensusInitialAlignment<PointTRGB, PointTRGB, pcl::FPFHSignature33>
+            align( PointCloudRGB::Ptr cloud_target,
+                   PointCloudRGB::Ptr cloud_source,
                    pcl::PointCloud<pcl::FPFHSignature33>::Ptr target_features,
                    pcl::PointCloud<pcl::FPFHSignature33>::Ptr source_features,
                    sacParams params,

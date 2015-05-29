@@ -12,28 +12,42 @@
 using namespace cv;
 using namespace std;
 
-int window_size = 9;
+int window_size = 5;//9;
 int temp1;
-int number_of_disparities = 80;
+int number_of_disparities = 256;//80;
 int temp2;
 int pre_filter_size = 5;
 int temp3;
-int pre_filter_cap = 23;
+int pre_filter_cap = 15;//23;
 int temp4;
-int min_disparity = 30;
+int min_disparity = 0;//30;
 int temp5;
 int texture_threshold = 500;
 int temp6;
 int uniqueness_ratio = 0;
 int temp7;
-int max_diff = -1;
+int max_diff = 1;//-1;
 float temp8;
-int speckle_window_size = 0;
+int speckle_window_size = 100;//0;
 int temp9;
-int speckle_range = 0;
+int speckle_range = 32;//0;
 int temp10;
 
 int number_of_image_channels = 3;
+
+
+int numberOfDisparities = 128;
+sgbm.preFilterCap = 31;
+sgbm.SADWindowSize = 9;
+sgbm.P1 = 8*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
+sgbm.P2 = 32*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
+sgbm.minDisparity = 0;
+sgbm.numberOfDisparities = numberOfDisparities;
+sgbm.uniquenessRatio = 10;
+sgbm.speckleWindowSize = 100;
+sgbm.speckleRange = 32;
+sgbm.disp12MaxDiff = 1;
+sgbm.fullDP = 0;
 
             
 int main(int argc, char* argv[])
@@ -151,9 +165,9 @@ int main(int argc, char* argv[])
 		temp10 = i10;
 		sbm.speckleRange = temp10;
 
-        sbm.fullDP = false;
-		sbm.P1 = 8*number_of_image_channels*temp1*temp1;
-        sbm.P2 = 8*32*temp1*temp1;
+        sbm.fullDP = true;//false;
+		sbm.P1 = 50;//8*number_of_image_channels*temp1*temp1;
+        sbm.P2 = 800;//8*32*temp1*temp1;
 	    
 	    sbm(g1, g2, disp);
 	    normalize(disp, disp8, 0, 255, CV_MINMAX, CV_8U);
@@ -164,27 +178,27 @@ int main(int argc, char* argv[])
 
 	    imshow("disp", dispHeath);
 
-		Mat inpaintMask;
-		Mat img = Mat(disp8.rows, disp8.cols, CV_8U);
-
-
-		img = disp8.clone();
-		inpaintMask = Mat::zeros(img.size(), CV_8U);
-		imshow("inpaintMask", img);
-
-		for (int rows = 0; rows < img.rows; ++rows) {
-			for (int cols = 0; cols < img.cols; ++cols) {
-				if ((img.at<unsigned char>(rows, cols)) > 180)
-					inpaintMask.at<unsigned char>(rows, cols) = 255;
-			}
-
-		}
-		imshow("inpaintMask", inpaintMask);
-
-		Mat inpainted;
-		cv::inpaint(img, inpaintMask, inpainted, 5, INPAINT_TELEA);
-
-		imshow("inpainted image", inpainted);
+//		Mat inpaintMask;
+//		Mat img = Mat(disp8.rows, disp8.cols, CV_8U);
+//
+//
+//		img = disp8.clone();
+//		inpaintMask = Mat::zeros(img.size(), CV_8U);
+//		imshow("inpaintMask", img);
+//
+//		for (int rows = 0; rows < img.rows; ++rows) {
+//			for (int cols = 0; cols < img.cols; ++cols) {
+//				if ((img.at<unsigned char>(rows, cols)) > 180)
+//					inpaintMask.at<unsigned char>(rows, cols) = 255;
+//			}
+//
+//		}
+//		imshow("inpaintMask", inpaintMask);
+//
+//		Mat inpainted;
+//		cv::inpaint(img, inpaintMask, inpainted, 5, INPAINT_TELEA);
+//
+//		imshow("inpainted image", inpainted);
 		waitKey(5);
 	}
     return(0);

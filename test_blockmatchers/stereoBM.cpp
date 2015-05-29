@@ -39,15 +39,75 @@ int temp_smooth_sigma_color;
 int smooth_sigma_space = 17;
 int temp_smooth_sigma_space;
 
+inline string type2str(int type) {
+    string r;
+
+    uchar depth = (uchar) (type & CV_MAT_DEPTH_MASK);
+    uchar chans = (uchar) (1 + (type >> CV_CN_SHIFT));
+
+    switch (depth) {
+        case CV_8U:
+            r = "8U";
+            break;
+        case CV_8S:
+            r = "8S";
+            break;
+        case CV_16U:
+            r = "16U";
+            break;
+        case CV_16S:
+            r = "16S";
+            break;
+        case CV_32S:
+            r = "32S";
+            break;
+        case CV_32F:
+            r = "32F";
+            break;
+        case CV_64F:
+            r = "64F";
+            break;
+        default:
+            r = "User";
+            break;
+    }
+
+    r += "C";
+    r += (chans + '0');
+
+    return r;
+}
+
+inline string infoMatrix(Mat& M) {
+    std::ostringstream out;
+    out << "Matrix: " << type2str( M.type() )<< " "<< M.rows << "x" << M.cols;
+    return out.str();
+
+
+}
 int main(int argc, char *argv[]) {
-    Mat img1, img2, g1, g2;
+    Mat img1, img2;
     Mat disp, disp8;
     Mat dispHeath;
 
     img1 = imread(argv[1]);
     img2 = imread(argv[2]);
+
+    Mat g1(img1);
+    Mat g2(img2);
+
+    img1.convertTo(g1, CV_8UC1);
+    img2.convertTo(g2, CV_8UC1);
+
     cvtColor(img1, g1, CV_BGR2GRAY);
     cvtColor(img2, g2, CV_BGR2GRAY);
+
+    imshow("original", g1);
+    std::cout << "dim 1" << g1.size()<< infoMatrix(g1)<< std::endl;
+    std::cout << "dim 2" << g2.size()<< infoMatrix(g2)<<std::endl;
+
+//    cvtColor(img1, g1, CV_BGR2GRAY);
+//    cvtColor(img2, g2, CV_BGR2GRAY);
     int i1;
     int i2;
     int i3;
@@ -163,7 +223,10 @@ int main(int argc, char *argv[]) {
 
         sbm.state->speckleRange = 8;
 
+        std::cout << "pre sbm "<< sbm.state->SADWindowSize << std::endl;
+
         sbm(g1, g2, disp, CV_32F);
+        std::cout << "post sbm "<< std::endl;
         imshow("left", img1);
         imshow("right", img2);
         //imshow("disp", disp8);
@@ -204,37 +267,37 @@ int main(int argc, char *argv[]) {
 
 
 
-        //APPLY INPAINTING
-        Mat inpaintMask;
-        Mat img = Mat(disp_smooth.rows, disp_smooth.cols, CV_8U);
-
-
-        img = disp_smooth.clone();
-        inpaintMask = Mat::zeros(img.size(), CV_8U);
-        imshow("inpaintMask", img);
-
-        for (int rows = 0; rows < img.rows; ++rows) {
-            for (int cols = 0; cols < img.cols; ++cols) {
-                if ((img.at<unsigned char>(rows, cols)) > 150)
-                    inpaintMask.at<unsigned char>(rows, cols) = 255;
-            }
-
-        }
-        imshow("inpaintMask", inpaintMask);
-
-        Mat inpainted;
-        cv::inpaint(img, inpaintMask, inpainted, 3, INPAINT_TELEA);
-
-        imshow("inpainted image", inpainted);
-
-
-        cv::adaptiveBilateralFilter(inpainted, disp_smooth, cv::Size(temp_smooth_kernel, temp_smooth_kernel), temp_smooth_sigma_space, temp_smooth_sigma_color); // size sigmaspace sigmacolor
-
-
-
-        applyColorMap(disp_smooth, dispHeath, COLORMAP_JET);
-
-        imshow("inpainted image- smooth", dispHeath);
+//        //APPLY INPAINTING
+//        Mat inpaintMask;
+//        Mat img = Mat(disp_smooth.rows, disp_smooth.cols, CV_8U);
+//
+//
+//        img = disp_smooth.clone();
+//        inpaintMask = Mat::zeros(img.size(), CV_8U);
+//        imshow("inpaintMask", img);
+//
+//        for (int rows = 0; rows < img.rows; ++rows) {
+//            for (int cols = 0; cols < img.cols; ++cols) {
+//                if ((img.at<unsigned char>(rows, cols)) > 150)
+//                    inpaintMask.at<unsigned char>(rows, cols) = 255;
+//            }
+//
+//        }
+//        imshow("inpaintMask", inpaintMask);
+//
+//        Mat inpainted;
+//        cv::inpaint(img, inpaintMask, inpainted, 3, INPAINT_TELEA);
+//
+//        imshow("inpainted image", inpainted);
+//
+//
+//        cv::adaptiveBilateralFilter(inpainted, disp_smooth, cv::Size(temp_smooth_kernel, temp_smooth_kernel), temp_smooth_sigma_space, temp_smooth_sigma_color); // size sigmaspace sigmacolor
+//
+//
+//
+//        applyColorMap(disp_smooth, dispHeath, COLORMAP_JET);
+//
+//        imshow("inpainted image- smooth", dispHeath);
 
 //		applyColorMap(disp8, dispHeath, COLORMAP_JET);
 

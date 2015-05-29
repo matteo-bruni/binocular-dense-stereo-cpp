@@ -30,6 +30,20 @@ namespace binocular_dense_stereo {
         }
         viewer->close();
     }
+    void viewPointCloudRGB(PointCloudRGB::Ptr point_cloud_ptr, std::string title) {
+        //Create visualizer
+        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+        viewer = createVisualizerRGB( point_cloud_ptr, title);
+
+        viewer->resetCameraViewpoint ("reconstruction");
+        //Main loop
+        while ( !viewer->wasStopped())
+        {
+            viewer->spinOnce(100);
+            boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+        }
+        viewer->close();
+    }
 //
 //    inline PointT Eigen2PointXYZRGB(Eigen::Vector3f v, Eigen::Vector3f rgb) { PointT p(rgb[0],rgb[1],rgb[2]); p.x = v[0]; p.y = v[1]; p.z = v[2]; return p; }
 //
@@ -74,15 +88,27 @@ namespace binocular_dense_stereo {
         }
         viewer->close();
     }
+    void viewDoublePointCloudRGB(PointCloudRGB::Ptr point_cloud_ptr, PointCloudRGB::Ptr point_cloud_ptr2,  std::string title) {
+        //Create visualizer
+        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+        viewer = createDoubleVisualizerRGB(point_cloud_ptr, point_cloud_ptr2, title);
 
+        //Main loop
+        while ( !viewer->wasStopped())
+        {
+            viewer->spinOnce(100);
+            boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+        }
+        viewer->close();
+    }
 
     boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizer (PointCloud::ConstPtr cloud, std::string title) {
 
         boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer(title));
-//        viewer->setBackgroundColor (0.3, 0.3, 0.3);
+        viewer->setBackgroundColor (0.3, 0.3, 0.3);
 
-        pcl::visualization::PointCloudColorHandlerRGBField<PointT> rgb(cloud);
-        viewer->addPointCloud<PointT> (cloud, rgb, "reconstruction");
+//        pcl::visualization::PointCloudColorHandlerRGBField<PointT> rgb(cloud);
+        viewer->addPointCloud<PointT> (cloud, "reconstruction");
         //viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "reconstruction");
         viewer->addCoordinateSystem ( 1.0 );
         viewer->initCameraParameters ();
@@ -90,6 +116,19 @@ namespace binocular_dense_stereo {
         return (viewer);
     }
 
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> createVisualizerRGB (PointCloudRGB::ConstPtr cloud, std::string title) {
+
+        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer(title));
+        viewer->setBackgroundColor (0.3, 0.3, 0.3);
+
+        pcl::visualization::PointCloudColorHandlerRGBField<PointTRGB> rgb(cloud);
+        viewer->addPointCloud<PointTRGB> (cloud, rgb, "reconstruction");
+        //viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "reconstruction");
+        viewer->addCoordinateSystem ( 1.0 );
+        viewer->initCameraParameters ();
+        //viewer->spin();
+        return (viewer);
+    }
     boost::shared_ptr<pcl::visualization::PCLVisualizer> createDoubleVisualizer (
             PointCloud::ConstPtr cloud, PointCloud::ConstPtr cloud2,  std::string title) {
 
@@ -103,15 +142,13 @@ namespace binocular_dense_stereo {
         viewer->createViewPort(0.0, 0.0, 0.5, 1.0, v1);
         viewer->setBackgroundColor (0.3, 0.3, 0.3, v1);
         viewer->addText("Radius: 0.01", 10, 10, "v1 text", v1);
-        pcl::visualization::PointCloudColorHandlerRGBField<PointT> rgb(cloud);
-        viewer->addPointCloud<PointT> (cloud, rgb, "sample cloud1", v1);
+        viewer->addPointCloud<PointT> (cloud, "sample cloud1", v1);
 
         int v2(0);
         viewer->createViewPort(0.5, 0.0, 1.0, 1.0, v2);
         viewer->setBackgroundColor (0.3, 0.3, 0.3, v2);
         viewer->addText("Radius: 0.1", 10, 10, "v2 text", v2);
-        pcl::visualization::PointCloudColorHandlerRGBField<PointT> rgb2(cloud2);
-        viewer->addPointCloud<PointT> (cloud2, rgb2, "sample cloud2", v2);
+        viewer->addPointCloud<PointT> (cloud2, "sample cloud2", v2);
 
         viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud1");
         viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud2");
@@ -122,4 +159,35 @@ namespace binocular_dense_stereo {
 
     }
 
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> createDoubleVisualizerRGB (
+            PointCloudRGB::ConstPtr cloud, PointCloudRGB::ConstPtr cloud2,  std::string title) {
+
+        // --------------------------------------------------------
+        // -----Open 3D viewer and add point cloud and normals-----
+        // --------------------------------------------------------
+        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer (title));
+        viewer->initCameraParameters ();
+
+        int v1(0);
+        viewer->createViewPort(0.0, 0.0, 0.5, 1.0, v1);
+        viewer->setBackgroundColor (0.3, 0.3, 0.3, v1);
+        viewer->addText("Radius: 0.01", 10, 10, "v1 text", v1);
+        pcl::visualization::PointCloudColorHandlerRGBField<PointTRGB> rgb(cloud);
+        viewer->addPointCloud<PointTRGB> (cloud, rgb, "sample cloud1", v1);
+
+        int v2(0);
+        viewer->createViewPort(0.5, 0.0, 1.0, 1.0, v2);
+        viewer->setBackgroundColor (0.3, 0.3, 0.3, v2);
+        viewer->addText("Radius: 0.1", 10, 10, "v2 text", v2);
+        pcl::visualization::PointCloudColorHandlerRGBField<PointTRGB> rgb2(cloud2);
+        viewer->addPointCloud<PointTRGB> (cloud2, rgb2, "sample cloud2", v2);
+
+        viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud1");
+        viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud2");
+        viewer->addCoordinateSystem (1.0);
+
+
+        return (viewer);
+
+    }
 }
