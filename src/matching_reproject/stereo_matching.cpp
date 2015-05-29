@@ -108,12 +108,12 @@ namespace binocular_dense_stereo {
                 if (disparity_value > min_disparity)
                 {
                     depth_image.at<float>(i,j) = baseline_ * focal / disparity_value;
-                    if (miky < 20) {
-                        FILE_LOG(logINFO) << "disparity_value - " << disparity_value;
-                        FILE_LOG(logINFO) << "depth_image.at<float>("<<i<<","<<j<<") - " << depth_image.at<float>(i,j);
-                        miky++;
-
-                    }
+//                    if (miky < 20) {
+//                        FILE_LOG(logINFO) << "disparity_value - " << disparity_value;
+//                        FILE_LOG(logINFO) << "depth_image.at<float>("<<i<<","<<j<<") - " << depth_image.at<float>(i,j);
+//                        miky++;
+//
+//                    }
                 }
             }
         }
@@ -157,13 +157,13 @@ namespace binocular_dense_stereo {
                     new_point.x = (j - depth_intrinsics.at<double>(0,2)) * new_point.z * depth_focal_inverted_x;
                     new_point.y = (i - depth_intrinsics.at<double>(1,2)) * new_point.z * depth_focal_inverted_y;
 
-                    if (miky < 20){
-                        FILE_LOG(logINFO) << "depth_image.at<float>("<<i<<","<<j<<") - " << depth_image.at<float>(i,j);
-                        FILE_LOG(logINFO) << "new_point.x <float>("<<i<<","<<j<<") - " << new_point.y ;
-                        FILE_LOG(logINFO) << "new_point.y <float>("<<i<<","<<j<<") - " << new_point.y ;
-
-                        miky++;
-                    }
+//                    if (miky < 20){
+//                        FILE_LOG(logINFO) << "depth_image.at<float>("<<i<<","<<j<<") - " << depth_image.at<float>(i,j);
+//                        FILE_LOG(logINFO) << "new_point.x <float>("<<i<<","<<j<<") - " << new_point.y ;
+//                        FILE_LOG(logINFO) << "new_point.y <float>("<<i<<","<<j<<") - " << new_point.y ;
+//
+//                        miky++;
+//                    }
 
                     cv::Vec3b intensity = img_left.at<cv::Vec3b>(i, j); //BGR
                     uint32_t rgb = (static_cast<uint32_t>(intensity[2]) << 16 | static_cast<uint32_t>(intensity[1]) << 8 | static_cast<uint32_t>(intensity[0]));
@@ -540,7 +540,7 @@ namespace binocular_dense_stereo {
 
                 FILE_LOG(logINFO) << "cloud "+std::to_string(i)+" size" <<transformed_cloud->size();
 
-                binocular_dense_stereo::viewPointCloudRGB(transformed_cloud, "cloud "+std::to_string(i));
+//                binocular_dense_stereo::viewPointCloudRGB(transformed_cloud, "cloud "+std::to_string(i));
 
 
             }
@@ -548,7 +548,7 @@ namespace binocular_dense_stereo {
         }
         FILE_LOG(logINFO) << "cloud sum size" <<cloud_sum->size();
 
-        binocular_dense_stereo::viewPointCloudRGB(cloud_sum, " dataset to world");
+//        binocular_dense_stereo::viewPointCloudRGB(cloud_sum, " dataset to world");
         pcl::io::savePLYFileASCII ("sum.ply", *cloud_sum);
 
 

@@ -171,13 +171,13 @@ int main(int argc, char *argv[])
 
         PointCloudRGB::Ptr final_cloud = binocular_dense_stereo::register_incremental_clouds(clouds);
 
-        pcl::VoxelGrid<PointTRGB> grid;
-        float leafSize = 0.05;
-        grid.setLeafSize (leafSize, leafSize, leafSize);
-        grid.setInputCloud (final_cloud);
-        FILE_LOG(logINFO) << "finalcloud leafSize: " << leafSize<< " original size :" << final_cloud->size();
-        grid.filter (*final_cloud);
-        FILE_LOG(logINFO) << "finalcloud leafSize: " << leafSize<< " downsampled size :" << final_cloud->size();
+//        pcl::VoxelGrid<PointTRGB> grid;
+//        float leafSize = 0.05;
+//        grid.setLeafSize (leafSize, leafSize, leafSize);
+//        grid.setInputCloud (final_cloud);
+//        FILE_LOG(logINFO) << "finalcloud leafSize: " << leafSize<< " original size :" << final_cloud->size();
+//        grid.filter (*final_cloud);
+//        FILE_LOG(logINFO) << "finalcloud leafSize: " << leafSize<< " downsampled size :" << final_cloud->size();
         binocular_dense_stereo::viewPointCloudRGB(final_cloud);
 
         // END REGISTRATION using incremental
@@ -215,19 +215,15 @@ int main(int argc, char *argv[])
 
         }
 
+        PointCloudRGB::Ptr batch_cloud_sum(new PointCloudRGB);
+        pcl::copyPointCloud(*cloud1, *batch_cloud_sum);
+        binocular_dense_stereo::registrationParams pars = binocular_dense_stereo::ConfigLoader::get_instance().loadRegistrationParams();
 
-
-
-
-//        PointCloud::Ptr batch_cloud_sum(new PointCloud);
-//        pcl::copyPointCloud(*cloud1, *batch_cloud_sum);
-//        binocular_dense_stereo::registrationParams pars = binocular_dense_stereo::ConfigLoader::get_instance().loadRegistrationParams();
-//
-//        binocular_dense_stereo::CloudAlignment cloud_align = binocular_dense_stereo::registerSourceToTarget(cloud2, cloud1, pars);
-//        PointCloud::Ptr cloud_source_in_target_space(new PointCloud);
-//        pcl::transformPointCloud (*cloud2, *cloud_source_in_target_space, cloud_align.transformMatrix);
-//        *batch_cloud_sum += *cloud_source_in_target_space;
-//        binocular_dense_stereo::viewPointCloud(batch_cloud_sum, std::to_string(cloud_num_1)+" - "+std::to_string(cloud_num_2));
+        binocular_dense_stereo::CloudAlignment cloud_align = binocular_dense_stereo::registerSourceToTarget(cloud2, cloud1, pars);
+        PointCloudRGB::Ptr cloud_source_in_target_space(new PointCloudRGB);
+        pcl::transformPointCloud (*cloud2, *cloud_source_in_target_space, cloud_align.transformMatrix);
+        *batch_cloud_sum += *cloud_source_in_target_space;
+        binocular_dense_stereo::viewPointCloudRGB(batch_cloud_sum, std::to_string(cloud_num_1)+" - "+std::to_string(cloud_num_2));
 
     }
 
