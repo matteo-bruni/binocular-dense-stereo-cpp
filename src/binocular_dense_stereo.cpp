@@ -70,12 +70,12 @@ int main(int argc, char *argv[])
     // string path("../dataset/dataset_templeRing_segm/");
     // Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
 
-//    string path("../dataset/NTSD-200/");
-//    Ptr<tsukuba_dataset> dataset = tsukuba_dataset::create();
+    string path("../dataset/NTSD-200/");
+    Ptr<tsukuba_dataset> dataset = tsukuba_dataset::create();
 
 
-    string path("../dataset/KITTI/");
-    Ptr<SLAM_kitti> dataset = SLAM_kitti::create();
+//    string path("../dataset/KITTI/");
+//    Ptr<SLAM_kitti> dataset = SLAM_kitti::create();
 
 
 
@@ -154,8 +154,8 @@ int main(int argc, char *argv[])
 
             FILE_LOG(logINFO) << "Generating clouds from frame : " << first_frame << " to frame " << last_frame <<
                               " with step " << step;
-//            binocular_dense_stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step);
-            binocular_dense_stereo::createAllCloudsKITTI(dataset, clouds, first_frame, last_frame, step);
+            binocular_dense_stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step);
+//            binocular_dense_stereo::createAllCloudsKITTI(dataset, clouds, first_frame, last_frame, step);
             binocular_dense_stereo::saveVectorCloudsToPCDRGB(clouds, "original");
             binocular_dense_stereo::saveVectorCloudsToPLYRGB(clouds, "original");
 
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 //        FILE_LOG(logINFO) << "finalcloud leafSize: " << leafSize<< " original size :" << final_cloud->size();
 //        grid.filter (*final_cloud);
 //        FILE_LOG(logINFO) << "finalcloud leafSize: " << leafSize<< " downsampled size :" << final_cloud->size();
-        binocular_dense_stereo::viewPointCloudRGB(final_cloud);
+        binocular_dense_stereo::viewPointCloudRGB(final_cloud,  " registration");
 
         // END REGISTRATION using incremental
     } else {
@@ -200,8 +200,8 @@ int main(int argc, char *argv[])
 
             FILE_LOG(logINFO) << "Generating clouds from frame : " << first_frame << " to frame " << last_frame <<
                               " with step " << step;
-//            binocular_dense_stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step);
-            binocular_dense_stereo::createAllCloudsKITTI(dataset, clouds, first_frame, last_frame, step);
+            binocular_dense_stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step);
+//            binocular_dense_stereo::createAllCloudsKITTI(dataset, clouds, first_frame, last_frame, step);
             binocular_dense_stereo::saveVectorCloudsToPCDRGB(clouds, "original");
             binocular_dense_stereo::saveVectorCloudsToPLYRGB(clouds, "original");
 

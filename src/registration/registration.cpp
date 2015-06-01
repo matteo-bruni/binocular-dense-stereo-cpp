@@ -119,15 +119,23 @@ namespace binocular_dense_stereo {
             cloud_source_downsampled->clear();
             cloud_target_downsampled->clear();
 
-            // DOWNSAMPLE
-            FILE_LOG(logINFO) << "STEP" << i << " leafSize: " << leafSize<< " original size :" << cloud_source->size() << " ; " << cloud_target->size();
-            grid.setLeafSize (leafSize, leafSize, leafSize);
-            grid.setInputCloud (cloud_source);
-            grid.filter (*cloud_source_downsampled);
-            grid.setInputCloud (cloud_target);
-            grid.filter (*cloud_target_downsampled);
-            FILE_LOG(logINFO) << " post size :" << cloud_source_downsampled->size() << " ; " << cloud_target_downsampled->size();
-            // END DOWNSAMPLE
+            if (i < DOWNSAMPLE_LEVELS) {
+                // DOWNSAMPLE
+                FILE_LOG(logINFO) << "STEP" << i << " leafSize: " << leafSize<< " original size :" << cloud_source->size() << " ; " << cloud_target->size();
+                grid.setLeafSize (leafSize, leafSize, leafSize);
+                grid.setInputCloud (cloud_source);
+                grid.filter (*cloud_source_downsampled);
+                grid.setInputCloud (cloud_target);
+                grid.filter (*cloud_target_downsampled);
+                FILE_LOG(logINFO) << " post size :" << cloud_source_downsampled->size() << " ; " << cloud_target_downsampled->size();
+                // END DOWNSAMPLE
+            } else {
+                FILE_LOG(logINFO) << " last step without downsample";
+
+                pcl::copyPointCloud(*cloud_source, *cloud_source_downsampled);
+                pcl::copyPointCloud(*cloud_target, *cloud_target_downsampled);
+
+            }
 
             // SIMPLE ICP
 //            pcl::IterativeClosestPoint<PointT, PointT> registration;
@@ -160,38 +168,42 @@ namespace binocular_dense_stereo {
 //            }
 //            else FILE_LOG(logINFO) << "registration step " << i << "ICP did not converge.";
 
+            if (params.use_sac){
 
-            //compute normals
-            pcl::PointCloud<pcl::Normal>::Ptr normals_source = getNormals( cloud_source_downsampled, params.normals_radius );
-            pcl::PointCloud<pcl::Normal>::Ptr normals_target = getNormals( cloud_target_downsampled, params.normals_radius );
+                //compute normals
+                pcl::PointCloud<pcl::Normal>::Ptr normals_source = getNormals( cloud_source_downsampled, params.normals_radius );
+                pcl::PointCloud<pcl::Normal>::Ptr normals_target = getNormals( cloud_target_downsampled, params.normals_radius );
 
-            //compute local features
-            pcl::PointCloud<pcl::FPFHSignature33>::Ptr features_source = getFeatures( cloud_source_downsampled,
-                                                                                normals_source, params.features_radius);
-            pcl::PointCloud<pcl::FPFHSignature33>::Ptr features_target = getFeatures( cloud_target_downsampled,
-                                                                                normals_target, params.features_radius);
+                //compute local features
+                pcl::PointCloud<pcl::FPFHSignature33>::Ptr features_source = getFeatures( cloud_source_downsampled,
+                                                                                    normals_source, params.features_radius);
+                pcl::PointCloud<pcl::FPFHSignature33>::Ptr features_target = getFeatures( cloud_target_downsampled,
+                                                                                    normals_target, params.features_radius);
 
-            //Get an initial estimate for the transformation using SAC
-            //returns the transformation for cloud2 so that it is aligned with cloud1
-            pcl::SampleConsensusInitialAlignment<PointTRGB, PointTRGB, pcl::FPFHSignature33> sac_ia = align( cloud_target_downsampled, cloud_source_downsampled,
-                                                                                                                           features_target, features_source, params.sacPar,transformMatrix);
-            Eigen::Matrix4f	init_transform = sac_ia.getFinalTransformation();
-            if (sac_ia.hasConverged())
-            {
-                FILE_LOG(logINFO) << "registration step " << i << " SAC converged." << "The score is " << sac_ia.getFitnessScore();
-                if (score == -1)
-                    score = sac_ia.getFitnessScore();
-                if (score >= sac_ia.getFitnessScore()){
-                    transformMatrix = sac_ia.getFinalTransformation();
-                    score = sac_ia.getFitnessScore();
-                } else {
-                    FILE_LOG(logINFO) << "Skipping registration step, score increasing";
+                //Get an initial estimate for the transformation using SAC
+                //returns the transformation for cloud2 so that it is aligned with cloud1
+                pcl::SampleConsensusInitialAlignment<PointTRGB, PointTRGB, pcl::FPFHSignature33> sac_ia = align( cloud_target_downsampled, cloud_source_downsampled,
+                                                                                                                               features_target, features_source, params.sacPar,transformMatrix);
+//                Eigen::Matrix4f	init_transform = sac_ia.getFinalTransformation();
+                if (sac_ia.hasConverged())
+                {
+                    FILE_LOG(logINFO) << " sac registration step " << i << " SAC converged." << "The score is " << sac_ia.getFitnessScore();
+                    if (score == -1)
+                        score = sac_ia.getFitnessScore();
+                    if (score >= sac_ia.getFitnessScore()){
+                        transformMatrix = sac_ia.getFinalTransformation();
+                        score = sac_ia.getFitnessScore();
+                    } else {
+                        FILE_LOG(logINFO) << "Skipping sac registration step, score increasing";
+                    }
+                    std::cout << sac_ia.getFinalTransformation() << std::endl;
                 }
-                std::cout << sac_ia.getFinalTransformation() << std::endl;
+                else FILE_LOG(logINFO) << "sac registration step " << i << "SAC did not converge.";
+
+            } else {
+                FILE_LOG(logINFO) << "skipping sac.";
+
             }
-            else FILE_LOG(logINFO) << "registration step " << i << "SAC did not converge.";
-
-
 
             pcl::IterativeClosestPoint<PointTRGB, PointTRGB> registration;
             registration.setInputSource(cloud_source_downsampled);
@@ -202,18 +214,21 @@ namespace binocular_dense_stereo {
             //            registration.setMaximumIterations(1000);
             //            registration.setEuclideanFitnessEpsilon(1e-5); //1);
 //            registration.setRANSACOutlierRejectionThreshold(0.1);
+            FILE_LOG(logINFO) << "pre icp align.";
             registration.align(*cloud_source_to_target_downsampled, transformMatrix);
+            FILE_LOG(logINFO) << "post icp align.";
             if (registration.hasConverged())
             {
-                FILE_LOG(logINFO) << "registration step " << i << " ICP converged." << "The score is " << registration.getFitnessScore();
-                if (score == -1)
-                    score = registration.getFitnessScore();
-                if (score >= registration.getFitnessScore()){
+                FILE_LOG(logINFO) << "registration step " << i << " ICP converged.";
+//                FILE_LOG(logINFO) << "The score is " << registration.getFitnessScore();
+//                if (score == -1)
+//                    score = registration.getFitnessScore();
+//                if (score >= registration.getFitnessScore()){
                     transformMatrix = registration.getFinalTransformation();
-                    score = registration.getFitnessScore();
-                } else {
-                    FILE_LOG(logINFO) << "Skipping registration step, score increasing";
-                }
+//                    score = registration.getFitnessScore();
+//                } else {
+//                    FILE_LOG(logINFO) << "Skipping registration step, score increasing";
+//                }
 
                 //            std::cout << "Transformation matrix:" << std::endl;
                 std::cout << registration.getFinalTransformation() << std::endl;

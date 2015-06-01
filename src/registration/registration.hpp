@@ -27,6 +27,7 @@ namespace binocular_dense_stereo {
         float downsample_decrease = 1.0;
         double normals_radius = 10;
         double features_radius = 150;
+        bool use_sac = false;
 
         sacParams sacPar;
     };

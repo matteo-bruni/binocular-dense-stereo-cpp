@@ -87,6 +87,7 @@ namespace binocular_dense_stereo {
             pars.downsample_decrease = (float) ConfigSettings["downsample_decrease"];
             pars.normals_radius = (double) ConfigSettings["normals_radius"];
             pars.features_radius = (double) ConfigSettings["features_radius"];
+            pars.use_sac = (bool) ConfigSettings["use_sac"];
 
 
         }

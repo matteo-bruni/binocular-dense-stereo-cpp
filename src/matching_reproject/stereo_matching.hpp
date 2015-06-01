@@ -26,7 +26,7 @@ namespace binocular_dense_stereo {
     PointCloudRGB::Ptr generatePointCloudKITTI(Ptr<cv::datasets::SLAM_kitti> &dataset, const int frame_num);
 
 
-    void depthFromDisparity (cv::Mat& disparity_image, float focal, float baseline_, float min_disparity, cv::Mat& depth_image);
+    void depthFromDisparity (cv::Mat& disparity_image, float focal, float baseline_, float min_disparity, cv::Mat& depth_image, bool gt);
     void pointcloudFromDepthImage (cv::Mat& depth_image, cv::Mat& img_left, cv::Mat& depth_intrinsics, PointCloudRGB::Ptr& output_cloud);
 
     // legacy

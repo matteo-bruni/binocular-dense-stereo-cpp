@@ -84,7 +84,7 @@ namespace binocular_dense_stereo {
     }
 
     void
-    depthFromDisparity (cv::Mat& disparity_image, float focal, float baseline_, float min_disparity, cv::Mat& depth_image)
+    depthFromDisparity (cv::Mat& disparity_image, float focal, float baseline_, float min_disparity, cv::Mat& depth_image, bool gt)
     {
 
         FILE_LOG(logINFO) << "depth a 100 100: " << depth_image.at<float>(100,100);
@@ -104,7 +104,7 @@ namespace binocular_dense_stereo {
             {
 
                 float disparity_value = (float) disparity_image.at<short>(i,j);
-                disparity_value = disparity_value/16;
+                if (!gt){ disparity_value = disparity_value/16;}
                 if (disparity_value > min_disparity)
                 {
                     depth_image.at<float>(i,j) = baseline_ * focal / disparity_value;
@@ -356,30 +356,46 @@ namespace binocular_dense_stereo {
         FILE_LOG(logINFO) << "translation between cameras: " << T;
 
         FILE_LOG(logINFO) << "Rectifying images...";
-        Rect roi1,roi2;
+//        Rect roi1,roi2;
 
-        cv::datasets::FramePair tuple_img_rect = binocular_dense_stereo::rectifyImages(img_left, img_right, M_left, D_left, M_right, D_right, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
+//        cv::datasets::FramePair tuple_img_rect = binocular_dense_stereo::rectifyImages(img_left, img_right, M_left, D_left, M_right, D_right, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
         // get the rectified images
         // img_left = tuple_img_rect.frame_left;
         //        img_right = tuple_img_rect.frame_right;
 
-        FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
-        Mat disp(img_left.size(), CV_32F);
-
-        FILE_LOG(logDEBUG) << "imgsize " << binocular_dense_stereo::infoMatrix(img_left);
-        FILE_LOG(logDEBUG) << "dispsize " << binocular_dense_stereo::infoMatrix(disp);
-
-//        binocular_dense_stereo::computeDisparityTsukuba(frame_num, img_left, img_right, disp,1,roi1,roi2);
-        // load ground truth disparity
+        Mat disp;
         disp = dataset->load_disparity(frame_num+1);
-
         FILE_LOG(logINFO) << "Creating point cloud..";
-        Mat recons3D(disp.size(), CV_32FC3);
-        FILE_LOG(logINFO) << "recons3Dsize " << binocular_dense_stereo::infoMatrix(recons3D);
-        FILE_LOG(logINFO) << "disp " << binocular_dense_stereo::infoMatrix(disp);
 
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
-        binocular_dense_stereo::createPointCloudOpenCV(img_left, img_right, Q, disp, recons3D, point_cloud_ptr);
+        FILE_LOG(logINFO) << "imgsize " << binocular_dense_stereo::infoMatrix(img_left);
+//        binocular_dense_stereo::computeDisparityTsukuba(frame_num, img_left, img_right, disp);
+        FILE_LOG(logINFO) << "dispsize " << binocular_dense_stereo::infoMatrix(disp);
+
+        Mat depth_image(disp.size(), CV_32F);
+        binocular_dense_stereo::depthFromDisparity (disp, M_left.at<double>(0,0), 10, 0, depth_image,true);
+        PointCloudRGB::Ptr point_cloud_ptr (new PointCloudRGB);
+        binocular_dense_stereo::pointcloudFromDepthImage (depth_image, img_left, M_left, point_cloud_ptr);
+
+
+//
+//        FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
+//        Mat disp(img_left.size(), CV_32F);
+//
+//        FILE_LOG(logDEBUG) << "imgsize " << binocular_dense_stereo::infoMatrix(img_left);
+//        FILE_LOG(logDEBUG) << "dispsize " << binocular_dense_stereo::infoMatrix(disp);
+//
+////        binocular_dense_stereo::computeDisparityTsukuba(frame_num, img_left, img_right, disp,1,roi1,roi2);
+        // load ground truth disparity
+//
+//        FILE_LOG(logINFO) << "Creating point cloud..";
+//        Mat recons3D(disp.size(), CV_32FC3);
+//        FILE_LOG(logINFO) << "recons3Dsize " << binocular_dense_stereo::infoMatrix(recons3D);
+//        FILE_LOG(logINFO) << "disp " << binocular_dense_stereo::infoMatrix(disp);
+//
+//        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+//        binocular_dense_stereo::createPointCloudOpenCV(img_left, img_right, Q, disp, recons3D, point_cloud_ptr);
+
+
         return point_cloud_ptr;
     }
 
@@ -402,6 +418,7 @@ namespace binocular_dense_stereo {
 
         // init
         Mat R1,R2,P1,P2,Q;
+
         // zero distiorsions
         Mat D_left = Mat::zeros(1, 5, CV_64F);
         Mat D_right = Mat::zeros(1, 5, CV_64F);
@@ -454,7 +471,7 @@ namespace binocular_dense_stereo {
         FILE_LOG(logINFO) << "dispsize " << binocular_dense_stereo::infoMatrix(disp);
 
         Mat depth_image(disp.size(), CV_32F);
-        binocular_dense_stereo::depthFromDisparity (disp, M_left.at<double>(0,0), 0.5372, 0, depth_image);
+        binocular_dense_stereo::depthFromDisparity (disp, M_left.at<double>(0,0), 0.5372, 0, depth_image,false);
         PointCloudRGB::Ptr point_cloud_ptr (new PointCloudRGB);
         binocular_dense_stereo::pointcloudFromDepthImage (depth_image, img_left, M_left, point_cloud_ptr);
 
@@ -500,6 +517,7 @@ namespace binocular_dense_stereo {
         }
 
         binocular_dense_stereo::viewPointCloudRGB(cloud_sum, " dataset to world");
+        pcl::io::savePLYFileASCII ("sum_tsukuba.ply", *cloud_sum);
 
 
         FILE_LOG(logINFO) << "cloud size" <<clouds.size();
@@ -548,7 +566,7 @@ namespace binocular_dense_stereo {
         }
         FILE_LOG(logINFO) << "cloud sum size" <<cloud_sum->size();
 
-//        binocular_dense_stereo::viewPointCloudRGB(cloud_sum, " dataset to world");
+        binocular_dense_stereo::viewPointCloudRGB(cloud_sum, " dataset to world");
         pcl::io::savePLYFileASCII ("sum.ply", *cloud_sum);
 
 

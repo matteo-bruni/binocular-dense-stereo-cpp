@@ -278,7 +278,7 @@ namespace binocular_dense_stereo {
 
         // rotation to world coordinates
         Mat R = r.t(); //r2*r1.t();
-        FILE_LOG(logINFO) << "Current Frame R : " << R*R.inv() ;
+        FILE_LOG(logINFO) << "Current Frame R : " << R*R.t() ;
         // translation to world coordinates
         Mat T = - r.t()*tl; //t1 - (R.t()*t2 );
 
@@ -291,6 +291,7 @@ namespace binocular_dense_stereo {
         transformMatrix (1,0) = R.at<double>(1,0);
         transformMatrix (1,1) = R.at<double>(1,1);
         transformMatrix (1,2) = R.at<double>(1,2);
+
         transformMatrix (2,0) = R.at<double>(2,0);
         transformMatrix (2,1) = R.at<double>(2,1);
         transformMatrix (2,2) = R.at<double>(2,2);
@@ -299,7 +300,7 @@ namespace binocular_dense_stereo {
         transformMatrix (1,3) = T.at<double>(1);
         transformMatrix (2,3) = T.at<double>(2);
 
-        FILE_LOG(logINFO) << "transformmatrix : " << transformMatrix ;
+        FILE_LOG(logINFO) << "transform_matrix : " << transformMatrix ;
 
 
         return transformMatrix;
@@ -334,7 +335,7 @@ namespace binocular_dense_stereo {
         transformMatrix (2,2) = cv_transform.at<double>(2,2);
         transformMatrix (2,3) = cv_transform.at<double>(2,3);
 
-        FILE_LOG(logINFO) << "transformmatrix : " << transformMatrix ;
+        FILE_LOG(logINFO) << "transform_matrix : " << transformMatrix ;
 
 
         return transformMatrix;
