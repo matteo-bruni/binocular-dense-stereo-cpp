@@ -50,6 +50,59 @@ set(SOURCE_FILES
     src/includes.h
 )
 
+SET(SRC_C
+    src/graph_cuts/io_tiff.c
+    src/graph_cuts/io_tiff.h
+    src/graph_cuts/io_png.c
+    src/graph_cuts/io_png.h)
+
+SET(SRC
+    src/graph_cuts/cmdLine.h
+    src/graph_cuts/data.cpp
+    src/graph_cuts/image.cpp
+    src/graph_cuts/image.h
+    src/graph_cuts/kz2.cpp
+    src/graph_cuts/match.cpp
+    src/graph_cuts/match.h
+    src/graph_cuts/nan.h
+    src/graph_cuts/statistics.cpp)
+
+SET(SRC_ENERGY
+    src/graph_cuts/energy/energy.h)
+SET(SRC_MAXFLOW
+    src/graph_cuts/maxflow/graph.cpp
+    src/graph_cuts/maxflow/graph.h
+    src/graph_cuts/maxflow/maxflow.cpp)
+
+
+
+
+FIND_PACKAGE(PNG)
+FIND_PACKAGE(TIFF)
+
+IF(NOT PNG_FOUND)
+    FIND_PACKAGE(ZLIB)
+    IF(NOT ZLIB_FOUND)
+        ADD_SUBDIRECTORY(src/graph_cuts/third_party/zlib-1.2.8)
+    ENDIF(NOT ZLIB_FOUND)
+    INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIRS})
+    ADD_SUBDIRECTORY(src/graph_cuts/third_party/libpng-1.6.12)
+    INCLUDE_DIRECTORIES(${PNG_INCLUDE_DIRS})
+ENDIF(NOT PNG_FOUND)
+
+IF(NOT TIFF_FOUND)
+    FIND_PACKAGE(JPEG)
+    IF(NOT JPEG_FOUND)
+        ADD_SUBDIRECTORY(src/graph_cuts/third_party/jpeg-9a)
+    ENDIF(NOT JPEG_FOUND)
+    INCLUDE_DIRECTORIES(${JPEG_INCLUDE_DIR})
+    ADD_SUBDIRECTORY(src/graph_cuts/third_party/tiff-4.0.3)
+    INCLUDE_DIRECTORIES(${TIFF_INCLUDE_DIR})
+ENDIF(NOT TIFF_FOUND)
+
+ADD_DEFINITIONS(${PNG_DEFINITIONS} -DHAS_PNG)
+ADD_DEFINITIONS(${TIFF_DEFINITIONS} -DHAS_TIFF)
+
 ##Alignment library
 #set(alignment_sources
 #    src/feature_based_alignment/alignment.h
@@ -62,6 +115,13 @@ set(SOURCE_FILES
 #    src/feature_based_alignment/util.cxx
 #)
 #set(SOURCE_FILES ${SOURCE_FILES} ${alignment_sources})
+
+
+
+set(SOURCE_FILES ${SOURCE_FILES} ${SRC_ENERGY})
+set(SOURCE_FILES ${SOURCE_FILES} ${SRC_MAXFLOW})
+set(SOURCE_FILES ${SOURCE_FILES} ${SRC_C})
+set(SOURCE_FILES ${SOURCE_FILES} ${SRC})
 
 
 
@@ -104,6 +164,8 @@ set(pcl_libs
     ${PCL_VISUALIZATION_LIBRARY}
 )
 set(LIBS ${LIBS} ${pcl_libs})
+set(LIBS ${LIBS} ${TIFF_LIBRARIES})
+set(LIBS ${LIBS} ${PNG_LIBRARIES})
 
 message(${LIBS})
 

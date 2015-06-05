@@ -6,6 +6,12 @@
 #include "../dataset/tsukuba_dataset.h"
 #include "../dataset/kitti_dataset.h"
 
+#include "../graph_cuts/match.h"
+#include <limits>
+#include <cmath>
+#include <ctime>
+#include "../graph_cuts/io_png.h"
+#include "../graph_cuts/image.h"
 
 namespace binocular_dense_stereo {
 
@@ -37,6 +43,16 @@ namespace binocular_dense_stereo {
     void createPointCloudCustom (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D, PointCloud::Ptr &point_cloud_ptr);
     PointCloudRGB::Ptr generatePointCloud(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num, bool opencv_rec);
     void createAllClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, std::vector<PointCloudRGB::Ptr> & clouds);
+
+
+    bool isGray(RGBImage im);
+    void convert_gray(GeneralImage& im);
+    void set_fractions(Match::Parameters& params,
+                       float K, float lambda1, float lambda2);
+    void fix_parameters(Match& m, Match::Parameters& params,
+                        float& K, float& lambda, float& lambda1, float& lambda2);
+    void compute_disparity_graphcuts(const int img_frame, Mat& img_left, Mat& img_right, Mat& disp);
+
 
 
 }
