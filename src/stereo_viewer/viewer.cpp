@@ -20,7 +20,7 @@ namespace binocular_dense_stereo {
         //Create visualizer
         boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
         viewer = createVisualizer( point_cloud_ptr, title);
-
+        viewer->resetCamera();
         viewer->resetCameraViewpoint ("reconstruction");
         //Main loop
         while ( !viewer->wasStopped())
@@ -34,8 +34,10 @@ namespace binocular_dense_stereo {
         //Create visualizer
         boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
         viewer = createVisualizerRGB( point_cloud_ptr, title);
-
+        viewer->resetCamera();
         viewer->resetCameraViewpoint ("reconstruction");
+//        viewer->resetCamera();
+
         //Main loop
         while ( !viewer->wasStopped())
         {

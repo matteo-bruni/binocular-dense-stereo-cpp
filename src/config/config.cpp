@@ -53,6 +53,7 @@ namespace binocular_dense_stereo {
     }
 
 
+
     registrationParams ConfigLoader::loadRegistrationParams() {
 
         sacParams sacPars;
@@ -73,8 +74,30 @@ namespace binocular_dense_stereo {
 
         }
 
+
+        icpParams icpPars;
+        try
+        {
+            const libconfig::Setting & root = cfg.getRoot();
+            const libconfig::Setting & ConfigSettings  = root["icpParams"];
+
+            icpPars.TransformationEpsilon = (double) ConfigSettings["TransformationEpsilon"];
+            icpPars.MaxCorrespondenceDistance = (double) ConfigSettings["MaxCorrespondenceDistance"];
+            icpPars.RANSACIterations = (int) ConfigSettings["RANSACIterations"];
+            icpPars.MaximumIterations = (int) ConfigSettings["MaximumIterations"];
+            icpPars.EuclideanFitnessEpsilon = (double) ConfigSettings["EuclideanFitnessEpsilon"];
+            icpPars.RANSACOutlierRejectionThreshold = (double) ConfigSettings["RANSACOutlierRejectionThreshold"];
+
+        }
+        catch(const libconfig::SettingNotFoundException &nfex)
+        {
+            std::cout << nfex.what() << "icpParams" << std::endl;
+
+        }
+
         registrationParams pars;
         pars.sacPar = sacPars;
+        pars.icpPar = icpPars;
 
         try
         {

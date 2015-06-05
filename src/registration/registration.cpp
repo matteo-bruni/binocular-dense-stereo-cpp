@@ -208,12 +208,12 @@ namespace binocular_dense_stereo {
             pcl::IterativeClosestPoint<PointTRGB, PointTRGB> registration;
             registration.setInputSource(cloud_source_downsampled);
             registration.setInputTarget(cloud_target_downsampled);
-            registration.setTransformationEpsilon (1e-8);
-            registration.setMaxCorrespondenceDistance (0.5);
-//            registration.setRANSACIterations(2000);
-            //            registration.setMaximumIterations(1000);
-            //            registration.setEuclideanFitnessEpsilon(1e-5); //1);
-//            registration.setRANSACOutlierRejectionThreshold(0.1);
+            registration.setTransformationEpsilon (params.icpPar.TransformationEpsilon);
+            registration.setMaxCorrespondenceDistance (params.icpPar.MaxCorrespondenceDistance);
+            registration.setRANSACIterations(params.icpPar.RANSACIterations);
+            registration.setMaximumIterations(params.icpPar.MaximumIterations);
+            registration.setEuclideanFitnessEpsilon(params.icpPar.EuclideanFitnessEpsilon); //1);
+            registration.setRANSACOutlierRejectionThreshold(params.icpPar.RANSACOutlierRejectionThreshold);
             FILE_LOG(logINFO) << "pre icp align.";
             registration.align(*cloud_source_to_target_downsampled, transformMatrix);
             FILE_LOG(logINFO) << "post icp align.";

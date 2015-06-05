@@ -21,6 +21,21 @@ namespace binocular_dense_stereo {
         double sac_min_correspondence_dist = 3;
     };
 
+    struct icpParams {
+        // double
+        double TransformationEpsilon = 1e-8;
+        // double
+        double MaxCorrespondenceDistance = 0.5;
+        // int
+        int RANSACIterations = 2000;
+        // int
+        int MaximumIterations = 1000;
+        // double
+        double EuclideanFitnessEpsilon = 1e-5;
+        // double
+        double RANSACOutlierRejectionThreshold = 0.1;
+    };
+
     struct registrationParams {
         float leaf_size = 6.5;
         int downsample_levels = 2;
@@ -30,7 +45,10 @@ namespace binocular_dense_stereo {
         bool use_sac = false;
 
         sacParams sacPar;
+        icpParams icpPar;
     };
+
+
 
     void printSacParams(sacParams pars);
     void printRegistrationParams(registrationParams pars);

@@ -104,7 +104,10 @@ namespace binocular_dense_stereo {
             {
 
                 float disparity_value = (float) disparity_image.at<short>(i,j);
-                if (!gt){ disparity_value = disparity_value/16;}
+                if (!gt){
+//                    FILE_LOG(logINFO) << " depth not from gt. ";
+                    disparity_value = disparity_value/16;
+                }
                 if (disparity_value > min_disparity)
                 {
                     depth_image.at<float>(i,j) = baseline_ * focal / disparity_value;
@@ -130,8 +133,8 @@ namespace binocular_dense_stereo {
         FILE_LOG(logINFO) << " fy " << depth_intrinsics.at<double>(1,1);
 
         // For point clouds XYZ
-        float depth_focal_inverted_x = 1/depth_intrinsics.at<double>(0,0);  // 1/fx
-        float depth_focal_inverted_y = 1/depth_intrinsics.at<double>(1,1);  // 1/fy
+        double depth_focal_inverted_x = 1/depth_intrinsics.at<double>(0,0);  // 1/fx
+        double depth_focal_inverted_y = 1/depth_intrinsics.at<double>(1,1);  // 1/fy
 
         PointTRGB new_point;
 
@@ -154,8 +157,8 @@ namespace binocular_dense_stereo {
 
                     // Find 3D position with respect to depth frame:
                     new_point.z = depth_value;
-                    new_point.x = (j - depth_intrinsics.at<double>(0,2)) * new_point.z * depth_focal_inverted_x;
-                    new_point.y = (i - depth_intrinsics.at<double>(1,2)) * new_point.z * depth_focal_inverted_y;
+                    new_point.x =  static_cast<float>(j - depth_intrinsics.at<double>(0,2)) * new_point.z * depth_focal_inverted_x;
+                    new_point.y =  static_cast<float>(i - depth_intrinsics.at<double>(1,2)) * new_point.z * depth_focal_inverted_y;
 
 //                    if (miky < 20){
 //                        FILE_LOG(logINFO) << "depth_image.at<float>("<<i<<","<<j<<") - " << depth_image.at<float>(i,j);
@@ -171,13 +174,13 @@ namespace binocular_dense_stereo {
 
                     output_cloud->at(j,i) = new_point;
                 }
-                else
-                {
-                    new_point.z = std::numeric_limits<float>::quiet_NaN();
-                    new_point.x = std::numeric_limits<float>::quiet_NaN();
-                    new_point.y = std::numeric_limits<float>::quiet_NaN();
-                    output_cloud->at(j,i) = new_point;
-                }
+//                else
+//                {
+//                    new_point.z = std::numeric_limits<float>::quiet_NaN();
+//                    new_point.x = std::numeric_limits<float>::quiet_NaN();
+//                    new_point.y = std::numeric_limits<float>::quiet_NaN();
+//                    output_cloud->at(j,i) = new_point;
+//                }
             }
         }
     }
@@ -371,8 +374,9 @@ namespace binocular_dense_stereo {
 //        binocular_dense_stereo::computeDisparityTsukuba(frame_num, img_left, img_right, disp);
         FILE_LOG(logINFO) << "dispsize " << binocular_dense_stereo::infoMatrix(disp);
 
+        float baseline = 10;
         Mat depth_image(disp.size(), CV_32F);
-        binocular_dense_stereo::depthFromDisparity (disp, M_left.at<double>(0,0), 10, 0, depth_image,true);
+        binocular_dense_stereo::depthFromDisparity (disp, M_left.at<double>(0,0), baseline, 0, depth_image, true);
         PointCloudRGB::Ptr point_cloud_ptr (new PointCloudRGB);
         binocular_dense_stereo::pointcloudFromDepthImage (depth_image, img_left, M_left, point_cloud_ptr);
 
@@ -395,6 +399,7 @@ namespace binocular_dense_stereo {
 //        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
 //        binocular_dense_stereo::createPointCloudOpenCV(img_left, img_right, Q, disp, recons3D, point_cloud_ptr);
 
+        binocular_dense_stereo::viewPointCloudRGB(point_cloud_ptr, "cloud ");
 
         return point_cloud_ptr;
     }
@@ -514,6 +519,8 @@ namespace binocular_dense_stereo {
 
             }
 
+
+
         }
 
         binocular_dense_stereo::viewPointCloudRGB(cloud_sum, " dataset to world");
@@ -526,7 +533,7 @@ namespace binocular_dense_stereo {
 
     void createAllCloudsKITTI(Ptr<cv::datasets::SLAM_kitti> &dataset, std::vector<PointCloudRGB::Ptr> & clouds, int first_frame,  int last_frame, int step){
 
-        PointCloudRGB::Ptr cloud;
+        PointCloudRGB::Ptr cloud(new PointCloudRGB), cloud_not_filtered(new PointCloudRGB);
         PointCloudRGB::Ptr cloud_sum(new PointCloudRGB);
 
         int frame_num;
@@ -534,9 +541,38 @@ namespace binocular_dense_stereo {
 
             frame_num = i;
 
-            cloud = generatePointCloudKITTI(dataset, frame_num);
+            cloud_not_filtered = generatePointCloudKITTI(dataset, frame_num);
+
+            PointTRGB min_pt, max_pt;
+            pcl::getMinMax3D	(	*cloud, 	min_pt, max_pt);
+            FILE_LOG(logINFO) << " min pt:" << min_pt;
+            FILE_LOG(logINFO) << " max pt:" << max_pt;
+
+
 //            binocular_dense_stereo::viewPointCloud(cloud, " singola");
 
+            FILE_LOG(logINFO) << "Doing first filtering ";
+
+            PointCloudRGB::Ptr tmp(new PointCloudRGB);
+//            binocular_dense_stereo::viewPointCloudRGB(cloud_not_filtered, "no filtered");
+
+            pcl::PassThrough<PointTRGB> pass;
+            pass.setInputCloud (cloud_not_filtered);
+            pass.setFilterFieldName ("x");
+            pass.setFilterLimits (-20.0, 20.0);
+            pass.filter (*cloud); // NPLACE SE RIUSI CAMBIA
+
+            pass.setInputCloud (cloud);
+            pass.setFilterFieldName ("y");
+            pass.setFilterLimits (-10.0, 2.0);
+            pass.filter (*tmp); // NPLACE SE RIUSI CAMBIA
+
+            pass.setInputCloud (tmp);
+            pass.setFilterFieldName ("z");
+            pass.setFilterLimits (0.0, 200.0);
+            pass.filter (*cloud); // NPLACE SE RIUSI CAMBIA
+
+//            binocular_dense_stereo::viewPointCloudRGB(cloud, "yes filtered");
 
             if(!(*cloud).empty()){
 
@@ -566,7 +602,7 @@ namespace binocular_dense_stereo {
         }
         FILE_LOG(logINFO) << "cloud sum size" <<cloud_sum->size();
 
-        binocular_dense_stereo::viewPointCloudRGB(cloud_sum, " dataset to world");
+//        binocular_dense_stereo::viewPointCloudRGB(cloud_sum, " dataset to world");
         pcl::io::savePLYFileASCII ("sum.ply", *cloud_sum);
 
 
