@@ -57,7 +57,7 @@ namespace binocular_dense_stereo {
             std::vector< PointCloudRGB::Ptr> clouds_to_register, int batch_size);
 
     PointCloudRGB::Ptr register_incremental_clouds(
-            std::vector< PointCloudRGB::Ptr> clouds_to_register);
+            std::vector< PointCloudRGB::Ptr> clouds_to_register, binocular_dense_stereo::registrationParams pars);
 
 
 

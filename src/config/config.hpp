@@ -8,10 +8,18 @@
 
 namespace binocular_dense_stereo {
 
+    struct middleburyPair {
+        int left_image = 0;
+        int right_image = 0;
+    };
+
     struct configPars {
 
         bool load_clouds = true;
         bool incremental = false;
+        bool save_generated_clouds = false;
+        bool show_single_cloud = false;
+        bool show_sum_cloud = false;
         int load_n_clouds = 20;
         int first_frame = 0;
         int last_frame = 200;
@@ -20,6 +28,7 @@ namespace binocular_dense_stereo {
         int reg_cloud_2 = 1;
     };
 
+    enum datasetType { TSUKUBA, MIDDLEBURY, KITTI};
 
     class ConfigLoader {
 
@@ -41,9 +50,10 @@ namespace binocular_dense_stereo {
             }
 
             configPars loadGeneralConfiguration();
-            registrationParams loadRegistrationParams();
+            registrationParams loadRegistrationParams(int dtype);
+            std::vector<middleburyPair> loadMiddleburyAssociations();
 
-            // C++ 11
+        // C++ 11
             // =======
             // We can use the better technique of deleting the methods
             // we don't want.

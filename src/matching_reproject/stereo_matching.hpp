@@ -12,6 +12,7 @@
 #include <ctime>
 #include "../graph_cuts/io_png.h"
 #include "../graph_cuts/image.h"
+#include "../config/config.hpp"
 
 namespace binocular_dense_stereo {
 
@@ -24,13 +25,15 @@ namespace binocular_dense_stereo {
     void createPointCloudOpenCV(Mat& img1, Mat& img2, Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr);
     void createPointCloudOpenCVKITTI(Mat& img1, Mat& img2, Mat& Q, Mat& disp, Mat& recons3D, PointCloudRGB::Ptr &point_cloud_ptr);
 
-    void createAllCloudsTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds, int first_frame, int last_frame, int step);
-    void createAllCloudsKITTI(Ptr<cv::datasets::SLAM_kitti> &dataset, std::vector<PointCloudRGB::Ptr> & clouds, int first_frame, int last_frame, int step);
-    void createAllClouds(Ptr<cv::datasets::Dataset> &dataset, std::vector<PointCloud::Ptr> & clouds, int first_frame, int last_frame, int step);
+    void createAllCloudsTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds, int first_frame, int last_frame, int step, bool show_single=false);
+    void createAllCloudsKITTI(Ptr<cv::datasets::SLAM_kitti> &dataset, std::vector<PointCloudRGB::Ptr> & clouds, int first_frame, int last_frame, int step, bool show_single=false);
+    void createAllCloudsMiddelbury(Ptr<cv::datasets::MSM_middlebury> &dataset, std::vector<PointCloudRGB::Ptr> & clouds, int first_frame, int last_frame, int step, bool show_single=false);
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloudTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, const int frame_num);
-    PointCloudRGB::Ptr generatePointCloudKITTI(Ptr<cv::datasets::SLAM_kitti> &dataset, const int frame_num);
+    void showCloudArraySum(std::vector<PointCloudRGB::Ptr> & clouds);
 
+    PointCloudRGB::Ptr generatePointCloudTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, const int frame_num, bool show=false);
+    PointCloudRGB::Ptr generatePointCloudKITTI(Ptr<cv::datasets::SLAM_kitti> &dataset, const int frame_num, bool show=false);
+    PointCloudRGB::Ptr generatePointCloudMiddlebury(Ptr<cv::datasets::MSM_middlebury> &dataset, const int frame_num, bool show=false);
 
     void depthFromDisparity (cv::Mat& disparity_image, float focal, float baseline_, float min_disparity, cv::Mat& depth_image, bool gt);
     void pointcloudFromDepthImage (cv::Mat& depth_image, cv::Mat& img_left, cv::Mat& depth_intrinsics, PointCloudRGB::Ptr& output_cloud);
@@ -38,6 +41,7 @@ namespace binocular_dense_stereo {
     // legacy
     void computeDisparity(const int img1_num, const int img2_num,  Mat& img_left, Mat& img_right, Mat& disp,int alg,Rect & roi1,Rect &roi2);
     void computeDisparityTsukuba(const int img_frame, Mat& img_left, Mat& img_right,Mat& disp);
+    void computeDisparityMiddlebury(const int img_frame, Mat& img_left, Mat& img_right,Mat& disp);
     void display(const int img1_num, const int img2_num, Mat& img1, Mat& img2,Mat& disp);
     void storePointCloud(Mat& disp, Mat& Q,/*const char* filename,*/ Mat& recons3D);
     void createPointCloudCustom (Mat& img1, Mat& img2, Mat img_1_segm, Mat& Q, Mat& disp, Mat& recons3D, PointCloud::Ptr &point_cloud_ptr);

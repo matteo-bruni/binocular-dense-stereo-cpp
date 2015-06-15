@@ -37,11 +37,14 @@ namespace binocular_dense_stereo {
             pars.load_clouds = (bool) ConfigSettings["load_clouds"];
             pars.incremental = (bool) ConfigSettings["incremental"];
             pars.load_n_clouds = (int) ConfigSettings["load_clouds_n"];
+            pars.save_generated_clouds = (bool) ConfigSettings["save_generated_clouds"];
             pars.first_frame = (int) ConfigSettings["generate_start_frame"];
             pars.last_frame = (int) ConfigSettings["generate_stop_frame"];
             pars.step = (int) ConfigSettings["generate_step"];
             pars.reg_cloud_1 = (int) ConfigSettings["reg_cloud_1"];;
             pars.reg_cloud_2 = (int) ConfigSettings["reg_cloud_2"];
+            pars.show_single_cloud = (bool) ConfigSettings["show_single_cloud"];
+            pars.show_sum_cloud = (bool) ConfigSettings["show_sum_cloud"];
 
         }
         catch(const libconfig::SettingNotFoundException &nfex)
@@ -54,13 +57,28 @@ namespace binocular_dense_stereo {
 
 
 
-    registrationParams ConfigLoader::loadRegistrationParams() {
+    registrationParams ConfigLoader::loadRegistrationParams(int dtype) {
+
+        std::string dataset;
+        switch (dtype) {
+            case TSUKUBA:
+                dataset = "tsukubaParams";
+                break;
+            case MIDDLEBURY:
+                dataset = "middleburyParams";
+                break;
+            case KITTI:
+                dataset = "kittiParams";
+                break;
+        }
+
 
         sacParams sacPars;
         try
         {
             const libconfig::Setting & root = cfg.getRoot();
-            const libconfig::Setting & ConfigSettings  = root["sacParams"];
+            const libconfig::Setting & DatasetSettings  = root[dataset];
+            const libconfig::Setting & ConfigSettings  = DatasetSettings["sacParams"];
 
             sacPars.filter_limit = (double) ConfigSettings["filter_limit"];
             sacPars.max_sacia_iterations = (int) ConfigSettings["max_sacia_iterations"];
@@ -79,7 +97,8 @@ namespace binocular_dense_stereo {
         try
         {
             const libconfig::Setting & root = cfg.getRoot();
-            const libconfig::Setting & ConfigSettings  = root["icpParams"];
+            const libconfig::Setting & DatasetSettings  = root[dataset];
+            const libconfig::Setting & ConfigSettings  = DatasetSettings["icpParams"];
 
             icpPars.TransformationEpsilon = (double) ConfigSettings["TransformationEpsilon"];
             icpPars.MaxCorrespondenceDistance = (double) ConfigSettings["MaxCorrespondenceDistance"];
@@ -102,7 +121,8 @@ namespace binocular_dense_stereo {
         try
         {
             const libconfig::Setting & root = cfg.getRoot();
-            const libconfig::Setting & ConfigSettings  = root["registrationParams"];
+            const libconfig::Setting & DatasetSettings  = root[dataset];
+            const libconfig::Setting & ConfigSettings  = DatasetSettings["registrationParams"];
 
 
             pars.leaf_size = (float) ConfigSettings["leaf_size"];
@@ -125,7 +145,37 @@ namespace binocular_dense_stereo {
         return pars;
     }
 
+    std::vector<middleburyPair> ConfigLoader::loadMiddleburyAssociations() {
+
+        std::vector<middleburyPair> output;
+        try {
+            const libconfig::Setting &root = cfg.getRoot();
+            const libconfig::Setting &DatasetSettings = DatasetSettings["middleburyParams"];
+
+
+            libconfig::Setting &lista = DatasetSettings["associations"];
+
+            for (int i=0; i<lista.getLength(); i++){
+
+                middleburyPair pair;
+                pair.left_image = (int) lista[i][0];
+                pair.right_image = (int) lista[i][1];
+                output.push_back(pair);
+            }
+
+
+        }
+        catch(const libconfig::SettingNotFoundException &nfex)
+        {
+            std::cout << nfex.what() << "sacParams" << std::endl;
+
+        }
+        return output;
+    }
+
 }
+
+
 
 //
 //int main() {

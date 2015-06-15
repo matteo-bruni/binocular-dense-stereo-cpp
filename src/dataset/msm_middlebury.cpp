@@ -49,6 +49,7 @@
 // local includes
 #include "msm_middlebury.hpp"
 #include "util.hpp"
+#include "../config/config.hpp"
 #include "../logger/log.h"
 
 
@@ -194,10 +195,17 @@ namespace cv {
 
         FramePair MSM_middleburyImp::load_stereo_images(const int img_num){
 
-            cv::Mat img_left, img_right;
+            std::vector<binocular_dense_stereo::middleburyPair> association_pairs = binocular_dense_stereo::ConfigLoader::get_instance().loadMiddleburyAssociations();
+
+            if (img_num > association_pairs.size())
+                FILE_LOG(logERROR) << " LOAD ASSOCIATION > ASSOACIATION SIZE ";
+
             FramePair pair;
-            pair.frame_left = img_left;
-            pair.frame_right = img_right;
+
+            FILE_LOG(logINFO) << "Loading association : " << img_num << " cloud: " << association_pairs[img_num].left_image << " and " << association_pairs[img_num].right_image;
+
+            pair.frame_left = loadImage(association_pairs[img_num].left_image);
+            pair.frame_right = loadImage(association_pairs[img_num].right_image);
             return pair;
 
         }

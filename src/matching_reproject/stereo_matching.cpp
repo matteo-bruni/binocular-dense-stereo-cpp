@@ -229,6 +229,86 @@ namespace binocular_dense_stereo {
         imwrite("disp_"+std::to_string(img_frame)+".png", disp);
     }
 
+    void computeDisparityMiddlebury(const int img_frame, Mat& img_left, Mat& img_right,Mat& disp){
+
+        std::vector<binocular_dense_stereo::middleburyPair> association_pairs = binocular_dense_stereo::ConfigLoader::get_instance().loadMiddleburyAssociations();
+
+        // recover orginal image number
+        int img1_num = association_pairs[img_frame].left_image;
+        int img2_num = association_pairs[img_frame].left_image;
+
+        Mat g1, g2;
+
+        ///da provare
+        cvtColor(img_left, g1, CV_BGR2GRAY);
+        cvtColor(img_right, g2, CV_BGR2GRAY);
+
+        // ROTATE IMAGES
+        if (img1_num < 32)
+            binocular_dense_stereo::rotate_clockwise(g1, g1, false);
+        else
+            binocular_dense_stereo::rotate_clockwise(g1, g1, true);
+
+        if (img2_num < 32)
+            binocular_dense_stereo::rotate_clockwise(g2, g2, false);
+        else
+            binocular_dense_stereo::rotate_clockwise(g2, g2, true);
+
+
+
+        std::string tipo = "SGBM";
+
+        FILE_LOG(logDEBUG) << "USING SGBM DISPARITY - ";
+
+        StereoBM sbm;
+        sbm.state->SADWindowSize = 5;
+        sbm.state->numberOfDisparities = 192;
+        sbm.state->preFilterSize = 5;
+        sbm.state->preFilterCap = 51;
+        sbm.state->minDisparity = -5;
+        sbm.state->textureThreshold = 182;
+        sbm.state->uniquenessRatio = 0;
+        sbm.state->speckleWindowSize = 0;
+        sbm.state->speckleRange = 0;
+        sbm.state->disp12MaxDiff = 0;
+
+//        sbm.state->SADWindowSize = 5;
+//        sbm.state->numberOfDisparities = 160;
+//        sbm.state->preFilterSize = 5;
+//        sbm.state->preFilterCap = 11;
+//        sbm.state->minDisparity = 6;
+//        sbm.state->textureThreshold = 173;
+//        sbm.state->uniquenessRatio = 0;
+//        sbm.state->speckleWindowSize = 0;
+//        sbm.state->speckleRange = 0;
+//        sbm.state->disp12MaxDiff = 1;
+
+//        sbm.state->SADWindowSize = 5;
+//        sbm.state->numberOfDisparities = 192;
+//        sbm.state->preFilterSize = 5;
+//        sbm.state->preFilterCap = 51;
+//        sbm.state->minDisparity = 25;
+//        sbm.state->textureThreshold = 223;
+//        sbm.state->uniquenessRatio = 0;
+//        sbm.state->speckleWindowSize = 0;
+//        sbm.state->speckleRange = 0;
+//        sbm.state->disp12MaxDiff = 0;
+
+        sbm(g1, g2, disp, CV_16S);
+
+        // RESTORE ROTATION
+        if (img1_num < 32)
+            binocular_dense_stereo::rotate_clockwise(disp, disp, true);
+        else
+            binocular_dense_stereo::rotate_clockwise(disp, disp, false);
+
+        imwrite("disp_"+std::to_string(img_frame)+".png", disp);
+    }
+
+    /*
+     *  GENERATE SINGLE POINT CLOUD
+     */
+
     void createPointCloudOpenCV (Mat& img1, Mat& img2,  Mat& Q, Mat& disp, Mat& recons3D, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &point_cloud_ptr) {
 
         cv::reprojectImageTo3D(disp, recons3D, Q, true);
@@ -311,9 +391,7 @@ namespace binocular_dense_stereo {
         FILE_LOG(logDEBUG) << "Esco..";
     }
 
-
-
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr generatePointCloudTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, const int frame_num){
+    PointCloudRGB::Ptr generatePointCloudTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, const int frame_num, bool show){
 
         FILE_LOG(logINFO) << "Loading data.. frame" << frame_num;
 
@@ -399,13 +477,13 @@ namespace binocular_dense_stereo {
 //        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
 //        binocular_dense_stereo::createPointCloudOpenCV(img_left, img_right, Q, disp, recons3D, point_cloud_ptr);
 
-        binocular_dense_stereo::viewPointCloudRGB(point_cloud_ptr, "cloud ");
+        if (show)
+            binocular_dense_stereo::viewPointCloudRGB(point_cloud_ptr, "cloud ");
 
         return point_cloud_ptr;
     }
 
-
-    PointCloudRGB::Ptr generatePointCloudKITTI(Ptr<cv::datasets::SLAM_kitti> &dataset, const int frame_num){
+    PointCloudRGB::Ptr generatePointCloudKITTI(Ptr<cv::datasets::SLAM_kitti> &dataset, const int frame_num, bool show){
 
         FILE_LOG(logINFO) << "Loading data.. frame" << frame_num;
 
@@ -490,20 +568,138 @@ namespace binocular_dense_stereo {
 //        FILE_LOG(logINFO) << "disp " << binocular_dense_stereo::infoMatrix(disp);
 
 //        binocular_dense_stereo::createPointCloudOpenCVKITTI(img_left, img_right, Q, disp, recons3D, point_cloud_ptr);
+
+        if (show)
+            binocular_dense_stereo::viewPointCloudRGB(point_cloud_ptr, "cloud ");
+
         return point_cloud_ptr;
     }
 
-    void createAllCloudsTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds, int first_frame,  int last_frame, int step){
+    PointCloudRGB::Ptr generatePointCloudMiddlebury(Ptr<cv::datasets::MSM_middlebury> &dataset, const int frame_num, bool show){
+
+        FILE_LOG(logINFO) << "Loading data.. frame" << frame_num;
+
+        std::vector<binocular_dense_stereo::middleburyPair> association_pairs = binocular_dense_stereo::ConfigLoader::get_instance().loadMiddleburyAssociations();
+
+        // load images data
+        Ptr<cv::datasets::MSM_middleburyObj> data_stereo_left_img =
+                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[association_pairs[frame_num].left_image]);
+        Ptr<cv::datasets::MSM_middleburyObj> data_stereo_right_img =
+                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[association_pairs[frame_num].right_image]);
+
+        FILE_LOG(logINFO) << "Loading images..";
+        // load images
+        cv::Mat img_left, img_right;
+        cv::datasets::FramePair tuple_img = dataset->load_stereo_images(frame_num);
+        img_left = tuple_img.frame_left;
+        img_right = tuple_img.frame_right;
+
+        // init
+        Mat R1,R2,P1,P2,Q;
+
+        // zero distiorsions
+        Mat D_left = Mat::zeros(1, 5, CV_64F);
+        Mat D_right = Mat::zeros(1, 5, CV_64F);
+
+        // load K and R from dataset info
+        Mat M_left = Mat(data_stereo_left_img->k);
+        Mat M_right = Mat(data_stereo_right_img->k);
+
+        FILE_LOG(logINFO) << "intrinsic matrix left " << binocular_dense_stereo::infoMatrix(M_left) << M_left;
+        FILE_LOG(logINFO) << "intrinsic matrix right " << binocular_dense_stereo::infoMatrix(M_right) << M_right;
+
+        // Left image
+        Mat r_left = Mat(data_stereo_left_img->r);
+        Mat t_left = Mat(3, 1, CV_64FC1, &data_stereo_left_img->t);
+
+        // Right image
+        Mat r_right = Mat(data_stereo_right_img->r);
+        Mat t_right = Mat(3, 1, CV_64FC1, &data_stereo_right_img->t);
+
+        // rotation between left and right
+        cv::Mat R = r_right*r_left.t();
+        // translation between img2 and img1
+        cv::Mat T = t_left - (R.t()*t_right );
+
+
+        FILE_LOG(logINFO) << "translation between cameras: " << T;
+        FILE_LOG(logINFO) << "Rectifying images...";
+        Rect roi1,roi2;
+//        binocular_dense_stereo::rectifyImages(img_left, img_right, M_left, D_left, M_right, D_right, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
+        cv::datasets::FramePair tuple_img_rect = binocular_dense_stereo::rectifyImages(img_left, img_right, M_left, D_left, M_right, D_right, R, T, R1, R2, P1, P2, Q, roi1, roi2, 1.f);
+        // get the rectified images
+        img_left = tuple_img_rect.frame_left;
+        img_right = tuple_img_rect.frame_right;
+        imwrite("middle_rect_l_"+std::to_string(frame_num)+".png", img_left);
+        imwrite("middle_rect_r_"+std::to_string(frame_num)+".png", img_right);
+
+        FILE_LOG(logINFO) << "P1 after rectify " << P1;
+        FILE_LOG(logINFO) << "P2 after rectify " << P2;
+
+
+        float baseline = abs(P1.at<double>(1,3) - P2.at<double>(1,3)); //P1.at<double>(0,0);
+        FILE_LOG(logINFO) << "baseline:"<<baseline<<" tx1: "<< P1.at<double>(1,3)<< " tx2: "<<P2.at<double>(1,3)<< " f: "<< P1.at<double>(0,0);
+
+        FILE_LOG(logINFO) << "Computing Disparity map Dense Stereo";
+//        Mat disp(img_left.size(), CV_32F);
+        Mat disp;
+
+        FILE_LOG(logINFO) << "imgsize " << binocular_dense_stereo::infoMatrix(img_left);
+        binocular_dense_stereo::computeDisparityMiddlebury(frame_num, img_left, img_right, disp);
+//        binocular_dense_stereo::compute_disparity_graphcuts(frame_num, img_left, img_right, disp);
+        FILE_LOG(logINFO) << "dispsize " << binocular_dense_stereo::infoMatrix(disp);
+
+        Mat depth_image(disp.size(), CV_32F);
+        binocular_dense_stereo::depthFromDisparity (disp, M_left.at<double>(0,0), baseline, 0, depth_image, true);
+        PointCloudRGB::Ptr point_cloud_ptr (new PointCloudRGB);
+        binocular_dense_stereo::pointcloudFromDepthImage (depth_image, img_left, M_left, point_cloud_ptr);
+
+        // load ground truth disparity
+//        disp = dataset->load_disparity(frame_num+1);
+
+//        FILE_LOG(logINFO) << "Creating point cloud..";
+//        Mat recons3D(disp.size(), CV_32FC3);
+//        FILE_LOG(logINFO) << "recons3Dsize " << binocular_dense_stereo::infoMatrix(recons3D);
+//        FILE_LOG(logINFO) << "disp " << binocular_dense_stereo::infoMatrix(disp);
+
+//        binocular_dense_stereo::createPointCloudOpenCVKITTI(img_left, img_right, Q, disp, recons3D, point_cloud_ptr);
+        if (show)
+            binocular_dense_stereo::viewPointCloudRGB(point_cloud_ptr, "cloud ");
+
+        return point_cloud_ptr;
+    }
+
+
+    /*
+     *  GENERATE ALL CLOUDS
+     */
+
+    void showCloudArraySum(std::vector<PointCloudRGB::Ptr> & clouds){
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+        for (int i=0; i<clouds.size();i++){
+            if (i == 0)
+                pcl::copyPointCloud(*clouds[i], *cloud_sum);
+            else
+                *cloud_sum+=*clouds[i];
+
+
+        }
+        binocular_dense_stereo::viewPointCloudRGB(cloud_sum, " dataset to world");
+        pcl::io::savePLYFileASCII ("sum.ply", *cloud_sum);
+
+    }
+
+    void createAllCloudsTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds, int first_frame,  int last_frame, int step, bool show_single){
 
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_sum(new pcl::PointCloud<pcl::PointXYZRGB>);
 
         int frame_num;
         for (int i=first_frame; i<last_frame; i+=step){
 
             frame_num = i;
 
-            cloud = generatePointCloudTsukuba(dataset, frame_num);
+            cloud = generatePointCloudTsukuba(dataset, frame_num, show_single);
 
             if(!(*cloud).empty()){
 
@@ -513,36 +709,53 @@ namespace binocular_dense_stereo {
                 // You can either apply transform_1 or transform_2; they are the same
                 pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
                 clouds.push_back(transformed_cloud);
-                if (i == first_frame)
-                    pcl::copyPointCloud(*transformed_cloud, *cloud_sum);
-                else
-                    *cloud_sum+=*transformed_cloud;
-
             }
 
 
-
         }
-
-        binocular_dense_stereo::viewPointCloudRGB(cloud_sum, " dataset to world");
-        pcl::io::savePLYFileASCII ("sum_tsukuba.ply", *cloud_sum);
-
 
         FILE_LOG(logINFO) << "cloud size" <<clouds.size();
 
     }
 
-    void createAllCloudsKITTI(Ptr<cv::datasets::SLAM_kitti> &dataset, std::vector<PointCloudRGB::Ptr> & clouds, int first_frame,  int last_frame, int step){
+    void createAllCloudsMiddelbury(Ptr<cv::datasets::MSM_middlebury> &dataset, std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> & clouds, int first_frame,  int last_frame, int step, bool show_single){
 
-        PointCloudRGB::Ptr cloud(new PointCloudRGB), cloud_not_filtered(new PointCloudRGB);
-        PointCloudRGB::Ptr cloud_sum(new PointCloudRGB);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
 
         int frame_num;
         for (int i=first_frame; i<last_frame; i+=step){
 
             frame_num = i;
 
-            cloud_not_filtered = generatePointCloudKITTI(dataset, frame_num);
+            cloud = generatePointCloudMiddlebury(dataset, frame_num, show_single);
+
+            if(!(*cloud).empty()){
+
+                Eigen::Matrix4d transf = binocular_dense_stereo::getTransformToWorldCoordinatesMiddlebury(dataset, frame_num);
+                // Executing the transformation
+                pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+                // You can either apply transform_1 or transform_2; they are the same
+                pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+                clouds.push_back(transformed_cloud);
+
+            }
+
+        }
+
+        FILE_LOG(logINFO) << "cloud size" <<clouds.size();
+
+    }
+
+    void createAllCloudsKITTI(Ptr<cv::datasets::SLAM_kitti> &dataset, std::vector<PointCloudRGB::Ptr> & clouds, int first_frame,  int last_frame, int step, bool show_single){
+
+        PointCloudRGB::Ptr cloud(new PointCloudRGB), cloud_not_filtered(new PointCloudRGB);
+
+        int frame_num;
+        for (int i=first_frame; i<last_frame; i+=step){
+
+            frame_num = i;
+
+            cloud_not_filtered = generatePointCloudKITTI(dataset, frame_num, show_single);
 
             PointTRGB min_pt, max_pt;
             pcl::getMinMax3D	(	*cloud, 	min_pt, max_pt);
@@ -583,29 +796,14 @@ namespace binocular_dense_stereo {
                 // You can either apply transform_1 or transform_2; they are the same
                 pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
                 clouds.push_back(transformed_cloud);
-                if (i == first_frame) {
-                    FILE_LOG(logINFO) << " first cloud copy";
-                    pcl::copyPointCloud(*transformed_cloud, *cloud_sum);
-                }
-                else{
-                    FILE_LOG(logINFO) << " not first cloud sum";
-                    *cloud_sum+=*transformed_cloud;
-                }
-
 
                 FILE_LOG(logINFO) << "cloud "+std::to_string(i)+" size" <<transformed_cloud->size();
 
 //                binocular_dense_stereo::viewPointCloudRGB(transformed_cloud, "cloud "+std::to_string(i));
 
-
             }
 
         }
-        FILE_LOG(logINFO) << "cloud sum size" <<cloud_sum->size();
-
-//        binocular_dense_stereo::viewPointCloudRGB(cloud_sum, " dataset to world");
-        pcl::io::savePLYFileASCII ("sum.ply", *cloud_sum);
-
 
         FILE_LOG(logINFO) << "cloud size" <<clouds.size();
 

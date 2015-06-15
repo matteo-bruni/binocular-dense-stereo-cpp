@@ -66,16 +66,25 @@ int main(int argc, char *argv[])
 
     FILE_LOG(logINFO) << "Binocular Dense Stereo";
 
+//    string dataset_type = "middlebury";
+//    string dataset_type = "tsukuba";
+//    string dataset_type = "kitti";
 
-    // string path("../dataset/dataset_templeRing_segm/");
-    // Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
+
+    string path("../dataset/dataset_templeRing_segm/");
+    Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
+    int datasetType = binocular_dense_stereo::datasetType::MIDDLEBURY;
 
 //    string path("../dataset/NTSD-200/");
 //    Ptr<tsukuba_dataset> dataset = tsukuba_dataset::create();
+//    int datasetType = binocular_dense_stereo::datasetType::TSUKUBA;
+
+//
+//    string path("../dataset/KITTI/");
+//    Ptr<SLAM_kitti> dataset = SLAM_kitti::create();
+//    int datasetType = binocular_dense_stereo::datasetType::KITTI;
 
 
-    string path("../dataset/KITTI/");
-    Ptr<SLAM_kitti> dataset = SLAM_kitti::create();
 
 
 
@@ -154,10 +163,18 @@ int main(int argc, char *argv[])
 
             FILE_LOG(logINFO) << "Generating clouds from frame : " << first_frame << " to frame " << last_frame <<
                               " with step " << step;
-//            binocular_dense_stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step);
-            binocular_dense_stereo::createAllCloudsKITTI(dataset, clouds, first_frame, last_frame, step);
-            binocular_dense_stereo::saveVectorCloudsToPCDRGB(clouds, "original");
-            binocular_dense_stereo::saveVectorCloudsToPLYRGB(clouds, "original");
+
+//            binocular_dense_stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
+//            binocular_dense_stereo::createAllCloudsKITTI(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
+            binocular_dense_stereo::createAllCloudsMiddelbury(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
+
+            if (pars.save_generated_clouds){
+                binocular_dense_stereo::saveVectorCloudsToPCDRGB(clouds, "original");
+                binocular_dense_stereo::saveVectorCloudsToPLYRGB(clouds, "original");
+            }
+
+            if (pars.show_sum_cloud)
+                binocular_dense_stereo::showCloudArraySum(clouds);
 
             FILE_LOG(logINFO) << "We have used: " << clouds.size() << " clouds from dataset. From images: ";
             for (int i=first_frame; i<last_frame; i+=step){
@@ -168,8 +185,9 @@ int main(int argc, char *argv[])
 
         // TOTAL REGISTRATION using incremental
         FILE_LOG(logINFO) << "Doing incremental registration ";
+        binocular_dense_stereo::registrationParams pars = binocular_dense_stereo::ConfigLoader::get_instance().loadRegistrationParams(datasetType);
 
-        PointCloudRGB::Ptr final_cloud = binocular_dense_stereo::register_incremental_clouds(clouds);
+        PointCloudRGB::Ptr final_cloud = binocular_dense_stereo::register_incremental_clouds(clouds, pars);
 
 //        pcl::VoxelGrid<PointTRGB> grid;
 //        float leafSize = 0.05;
@@ -212,11 +230,19 @@ int main(int argc, char *argv[])
 
             FILE_LOG(logINFO) << "Generating clouds from frame : " << first_frame << " to frame " << last_frame <<
                               " with step " << step;
-//            binocular_dense_stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step);
-            binocular_dense_stereo::createAllCloudsKITTI(dataset, clouds, first_frame, last_frame, step);
-            binocular_dense_stereo::saveVectorCloudsToPCDRGB(clouds, "original");
-            binocular_dense_stereo::saveVectorCloudsToPLYRGB(clouds, "original");
 
+//            binocular_dense_stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
+//            binocular_dense_stereo::createAllCloudsKITTI(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
+            binocular_dense_stereo::createAllCloudsMiddelbury(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
+
+            if (pars.save_generated_clouds) {
+                binocular_dense_stereo::saveVectorCloudsToPCDRGB(clouds, "original");
+                binocular_dense_stereo::saveVectorCloudsToPLYRGB(clouds, "original");
+            }
+
+            if (pars.show_sum_cloud)
+                binocular_dense_stereo::showCloudArraySum(clouds);
+            
             FILE_LOG(logINFO) << "We have used: " << clouds.size() << " clouds from dataset. From images: ";
             for (int i=first_frame; i<last_frame; i+=step){
                 FILE_LOG(logINFO) << "image: " << i+1;
@@ -229,7 +255,7 @@ int main(int argc, char *argv[])
 
         PointCloudRGB::Ptr batch_cloud_sum(new PointCloudRGB);
         pcl::copyPointCloud(*cloud1, *batch_cloud_sum);
-        binocular_dense_stereo::registrationParams pars = binocular_dense_stereo::ConfigLoader::get_instance().loadRegistrationParams();
+        binocular_dense_stereo::registrationParams pars = binocular_dense_stereo::ConfigLoader::get_instance().loadRegistrationParams(datasetType);
 
         binocular_dense_stereo::CloudAlignment cloud_align = binocular_dense_stereo::registerSourceToTarget(cloud2, cloud1, pars);
         PointCloudRGB::Ptr cloud_source_in_target_space(new PointCloudRGB);

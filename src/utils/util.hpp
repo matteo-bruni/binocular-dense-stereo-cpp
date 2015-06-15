@@ -29,7 +29,7 @@ namespace binocular_dense_stereo {
 
     cv::Mat createPINVFromRT(cv::Mat R, cv::Mat T);
 
-    Eigen::Matrix4f getTransformBetweenClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num);
+    Eigen::Matrix4d getTransformToWorldCoordinatesMiddlebury(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num);
 
     Eigen::Matrix4d getTransformToWorldCoordinatesTsukuba(Ptr<cv::datasets::tsukuba_dataset> &dataset,
                                                           const int current_frame);

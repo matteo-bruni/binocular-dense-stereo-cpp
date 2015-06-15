@@ -9,7 +9,7 @@
 namespace binocular_dense_stereo {
 
     PointCloudRGB::Ptr register_incremental_clouds(
-            std::vector<PointCloudRGB::Ptr> clouds_to_register) {
+            std::vector<PointCloudRGB::Ptr> clouds_to_register, binocular_dense_stereo::registrationParams pars) {
 
 
         PointCloudRGB::Ptr final_cloud(new PointCloudRGB);
@@ -25,7 +25,6 @@ namespace binocular_dense_stereo {
             cloud_src = clouds_to_register[i];
             cloud_tgt = clouds_to_register[i+1];
             FILE_LOG(logINFO) << "registering clouds: " << i << " to "<< i+1;
-            registrationParams pars = binocular_dense_stereo::ConfigLoader::get_instance().loadRegistrationParams();
             CloudAlignment output = binocular_dense_stereo::registerSourceToTarget(cloud_src, cloud_tgt, pars);
 
             transformMatrix = output.transformMatrix;
