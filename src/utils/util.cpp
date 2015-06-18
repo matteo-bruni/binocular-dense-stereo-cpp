@@ -213,15 +213,60 @@ namespace binocular_dense_stereo {
 //        return std::make_tuple(foreground, binary);
     }
 
+    Eigen::Matrix4d getTransformBetweenClouds(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num, const int img2_num) {
 
+        std::vector<binocular_dense_stereo::middleburyPair> association_pairs = binocular_dense_stereo::ConfigLoader::get_instance().loadMiddleburyAssociations();
+
+
+        Ptr<cv::datasets::MSM_middleburyObj> data_img1 =
+                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[association_pairs[img1_num].left_image]);
+        Ptr<cv::datasets::MSM_middleburyObj> data_img2 =
+                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[association_pairs[img2_num].left_image]);
+
+
+        Mat r1 = Mat(data_img1->r);
+        Mat r2 = Mat(data_img2->r);
+
+        // init translation vectors from dataset
+        Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->t);
+        Mat t2 = Mat(3, 1, CV_64FC1, &data_img2->t);
+
+        // rotation between img2 and img1
+        Mat R = r2*r1.t();
+        // translation between img2 and img1
+        Mat T = t1 - (R.t()*t2 );
+
+        Eigen::Matrix4d transformMatrix = Eigen::Matrix4d::Identity();
+
+        FILE_LOG(logINFO) << "R float: " <<  R.at<float>(0,0) << " double:" << R.at<double>(0,0);
+
+        transformMatrix (0,0) = R.at<double>(0,0);
+        transformMatrix (0,1) = R.at<double>(0,1);
+        transformMatrix (0,2) = R.at<double>(0,2);
+
+        transformMatrix (1,0) = R.at<double>(1,0);
+        transformMatrix (1,1) = R.at<double>(1,1);
+        transformMatrix (1,2) = R.at<double>(1,2);
+        transformMatrix (2,0) = R.at<double>(2,0);
+        transformMatrix (2,1) = R.at<double>(2,1);
+        transformMatrix (2,2) = R.at<double>(2,2);
+
+        transformMatrix (0,3) = T.at<double>(0);
+        transformMatrix (1,3) = T.at<double>(1);
+        transformMatrix (2,3) = T.at<double>(2);
+
+        return transformMatrix;
+    }
 
     Eigen::Matrix4d getTransformToWorldCoordinatesMiddlebury(Ptr<cv::datasets::MSM_middlebury> &dataset, const int img1_num) {
 
 //        FILE_LOG(logINFO) << "R: " << binocular_dense_stereo::infoMatrix(R) << R;
 //        FILE_LOG(logINFO) << "T: " << binocular_dense_stereo::infoMatrix(T) << T;
 
+        std::vector<binocular_dense_stereo::middleburyPair> association_pairs = binocular_dense_stereo::ConfigLoader::get_instance().loadMiddleburyAssociations();
+
         Ptr<cv::datasets::MSM_middleburyObj> data_img1 =
-                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[img1_num]);
+                static_cast< Ptr<cv::datasets::MSM_middleburyObj> >  (dataset->getTrain()[association_pairs[img1_num].left_image]);
 
         Mat r1 = Mat(data_img1->r);
 
@@ -229,8 +274,10 @@ namespace binocular_dense_stereo {
         Mat t1 = Mat(3, 1, CV_64FC1, &data_img1->t);
 
         // rotation between img2 and img1
+//        Mat R = r1;
         Mat R = r1.t();
         // translation between img2 and img1
+//        Mat T =  t1;
         Mat T =  -(r1.t()*t1 );
 
         Eigen::Matrix4d transformMatrix = Eigen::Matrix4d::Identity();
@@ -308,7 +355,7 @@ namespace binocular_dense_stereo {
 
 
         Ptr<cv::datasets::SLAM_kittiObj> data_img =
-                static_cast< Ptr<cv::datasets::SLAM_kittiObj> >  (dataset->getTrain()[0]);
+                static_cast< Ptr<cv::datasets::SLAM_kittiObj> >  (dataset->getTrain()[0]);l'hai pus'
 
         FILE_LOG(logINFO) << "Current Frame R and T: " << current_frame ;
 

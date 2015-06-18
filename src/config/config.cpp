@@ -27,12 +27,26 @@ namespace binocular_dense_stereo {
     };
 
 
-    configPars ConfigLoader::loadGeneralConfiguration() {
+    configPars ConfigLoader::loadGeneralConfiguration(int dtype) {
+
+        std::string dataset;
+        switch (dtype) {
+            case TSUKUBA:
+                dataset = "tsukubaParams";
+                break;
+            case MIDDLEBURY:
+                dataset = "middleburyParams";
+                break;
+            case KITTI:
+                dataset = "kittiParams";
+                break;
+        }
+
         configPars pars;
         try
         {
             const libconfig::Setting & root = cfg.getRoot();
-            const libconfig::Setting & ConfigSettings  = root["Config"];
+            const libconfig::Setting & ConfigSettings  = root[dataset];
 
             pars.load_clouds = (bool) ConfigSettings["load_clouds"];
             pars.incremental = (bool) ConfigSettings["incremental"];
@@ -150,7 +164,7 @@ namespace binocular_dense_stereo {
         std::vector<middleburyPair> output;
         try {
             const libconfig::Setting &root = cfg.getRoot();
-            const libconfig::Setting &DatasetSettings = DatasetSettings["middleburyParams"];
+            const libconfig::Setting &DatasetSettings = root["middleburyParams"];
 
 
             libconfig::Setting &lista = DatasetSettings["associations"];

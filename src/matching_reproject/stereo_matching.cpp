@@ -256,21 +256,34 @@ namespace binocular_dense_stereo {
 
 
 
-        std::string tipo = "SGBM";
+        std::string tipo = "SBM";
 
-        FILE_LOG(logDEBUG) << "USING SGBM DISPARITY - ";
+        FILE_LOG(logDEBUG) << "USING SBM DISPARITY - ";
 
         StereoBM sbm;
-        sbm.state->SADWindowSize = 5;
-        sbm.state->numberOfDisparities = 192;
-        sbm.state->preFilterSize = 5;
-        sbm.state->preFilterCap = 51;
-        sbm.state->minDisparity = -5;
-        sbm.state->textureThreshold = 182;
-        sbm.state->uniquenessRatio = 0;
-        sbm.state->speckleWindowSize = 0;
-        sbm.state->speckleRange = 0;
-        sbm.state->disp12MaxDiff = 0;
+
+        sbm.state->SADWindowSize = 7;
+        sbm.state->numberOfDisparities = 64;
+        sbm.state->preFilterSize = 15;
+        sbm.state->preFilterCap = 63;
+        sbm.state->minDisparity = -50;
+        sbm.state->textureThreshold = 1;
+        sbm.state->uniquenessRatio = 1;
+        sbm.state->speckleWindowSize = 1;
+        sbm.state->speckleRange = 27;
+//        sbm.state->disp12MaxDiff = 0;
+
+
+//        sbm.state->SADWindowSize = 5;
+//        sbm.state->numberOfDisparities = 192;
+//        sbm.state->preFilterSize = 5;
+//        sbm.state->preFilterCap = 51;
+//        sbm.state->minDisparity = -5;
+//        sbm.state->textureThreshold = 182;
+//        sbm.state->uniquenessRatio = 0;
+//        sbm.state->speckleWindowSize = 0;
+//        sbm.state->speckleRange = 0;
+//        sbm.state->disp12MaxDiff = 0;
 
 //        sbm.state->SADWindowSize = 5;
 //        sbm.state->numberOfDisparities = 160;
@@ -550,12 +563,12 @@ namespace binocular_dense_stereo {
         Mat disp;
 
         FILE_LOG(logINFO) << "imgsize " << binocular_dense_stereo::infoMatrix(img_left);
-//        binocular_dense_stereo::computeDisparityTsukuba(frame_num, img_left, img_right, disp);
-        binocular_dense_stereo::compute_disparity_graphcuts(frame_num, img_left, img_right, disp);
+        binocular_dense_stereo::computeDisparityTsukuba(frame_num, img_left, img_right, disp);
+//        binocular_dense_stereo::compute_disparity_graphcuts(frame_num, img_left, img_right, disp);
         FILE_LOG(logINFO) << "dispsize " << binocular_dense_stereo::infoMatrix(disp);
 
         Mat depth_image(disp.size(), CV_32F);
-        binocular_dense_stereo::depthFromDisparity (disp, M_left.at<double>(0,0), 0.5372, 0, depth_image, true);
+        binocular_dense_stereo::depthFromDisparity (disp, M_left.at<double>(0,0), 0.5372, 0, depth_image, false);
         PointCloudRGB::Ptr point_cloud_ptr (new PointCloudRGB);
         binocular_dense_stereo::pointcloudFromDepthImage (depth_image, img_left, M_left, point_cloud_ptr);
 
@@ -579,6 +592,7 @@ namespace binocular_dense_stereo {
 
         FILE_LOG(logINFO) << "Loading data.. frame" << frame_num;
 
+        FILE_LOG(logINFO) << "Loading associations.. ";
         std::vector<binocular_dense_stereo::middleburyPair> association_pairs = binocular_dense_stereo::ConfigLoader::get_instance().loadMiddleburyAssociations();
 
         // load images data
@@ -635,6 +649,9 @@ namespace binocular_dense_stereo {
 
         FILE_LOG(logINFO) << "P1 after rectify " << P1;
         FILE_LOG(logINFO) << "P2 after rectify " << P2;
+        FILE_LOG(logINFO) << "R1 after rectify " << R1;
+        FILE_LOG(logINFO) << "R2 after rectify " << R2;
+
 
 
         float baseline = abs(P1.at<double>(1,3) - P2.at<double>(1,3)); //P1.at<double>(0,0);
@@ -649,8 +666,9 @@ namespace binocular_dense_stereo {
 //        binocular_dense_stereo::compute_disparity_graphcuts(frame_num, img_left, img_right, disp);
         FILE_LOG(logINFO) << "dispsize " << binocular_dense_stereo::infoMatrix(disp);
 
+//        disp = -disp;
         Mat depth_image(disp.size(), CV_32F);
-        binocular_dense_stereo::depthFromDisparity (disp, M_left.at<double>(0,0), baseline, 0, depth_image, true);
+        binocular_dense_stereo::depthFromDisparity (disp, M_left.at<double>(0,0), baseline, -1000, depth_image, false);
         PointCloudRGB::Ptr point_cloud_ptr (new PointCloudRGB);
         binocular_dense_stereo::pointcloudFromDepthImage (depth_image, img_left, M_left, point_cloud_ptr);
 
@@ -663,6 +681,34 @@ namespace binocular_dense_stereo {
 //        FILE_LOG(logINFO) << "disp " << binocular_dense_stereo::infoMatrix(disp);
 
 //        binocular_dense_stereo::createPointCloudOpenCVKITTI(img_left, img_right, Q, disp, recons3D, point_cloud_ptr);
+
+        // rotation between img2 and img1
+
+//        Mat R_INV = R1.t();
+//
+//
+//        Eigen::Matrix4d transformMatrix = Eigen::Matrix4d::Identity();
+//
+//        //        FILE_LOG(logINFO) << "R float: " <<  R.at<float>(0,0) << " double:" << R.at<double>(0,0);
+//
+//        transformMatrix (0,0) = R_INV.at<double>(0,0);
+//        transformMatrix (0,1) = R_INV.at<double>(0,1);
+//        transformMatrix (0,2) = R_INV.at<double>(0,2);
+//
+//        transformMatrix (1,0) = R_INV.at<double>(1,0);
+//        transformMatrix (1,1) = R_INV.at<double>(1,1);
+//        transformMatrix (1,2) = R_INV.at<double>(1,2);
+//        transformMatrix (2,0) = R_INV.at<double>(2,0);
+//        transformMatrix (2,1) = R_INV.at<double>(2,1);
+//        transformMatrix (2,2) = R_INV.at<double>(2,2);
+//        //
+//        //        transformMatrix (0,3) = T.at<double>(0);
+//        //        transformMatrix (1,3) = T.at<double>(1);
+//        //        transformMatrix (2,3) = T.at<double>(2);
+//        pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+//        pcl::transformPointCloud (*point_cloud_ptr, *transformed_cloud, transformMatrix);
+////        return transformed_cloud;
+
         if (show)
             binocular_dense_stereo::viewPointCloudRGB(point_cloud_ptr, "cloud ");
 
@@ -727,16 +773,30 @@ namespace binocular_dense_stereo {
 
             frame_num = i;
 
+            FILE_LOG(logINFO) << "generating cloud : " << i;
             cloud = generatePointCloudMiddlebury(dataset, frame_num, show_single);
 
             if(!(*cloud).empty()){
 
-                Eigen::Matrix4d transf = binocular_dense_stereo::getTransformToWorldCoordinatesMiddlebury(dataset, frame_num);
-                // Executing the transformation
-                pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
-                // You can either apply transform_1 or transform_2; they are the same
-                pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
-                clouds.push_back(transformed_cloud);
+                if (i!=first_frame){
+                    Eigen::Matrix4d transf = binocular_dense_stereo::getTransformBetweenClouds(dataset, first_frame, frame_num);
+                    // Executing the transformation
+                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+                    // You can either apply transform_1 or transform_2; they are the same
+                    pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+                    clouds.push_back(transformed_cloud);
+                }
+                else {
+                    clouds.push_back(cloud);
+
+                }
+////                Eigen::Matrix4d transf = binocular_dense_stereo::getTransformToWorldCoordinatesMiddlebury(dataset, frame_num);
+//                Eigen::Matrix4d transf = binocular_dense_stereo::getTransformBetweenClouds(dataset, first_frame, frame_num);
+//                // Executing the transformation
+//                pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
+//                // You can either apply transform_1 or transform_2; they are the same
+//                pcl::transformPointCloud (*cloud, *transformed_cloud, transf);
+//                clouds.push_back(transformed_cloud);
 
             }
 
@@ -768,17 +828,18 @@ namespace binocular_dense_stereo {
             FILE_LOG(logINFO) << "Doing first filtering ";
 
             PointCloudRGB::Ptr tmp(new PointCloudRGB);
-            binocular_dense_stereo::viewPointCloudRGB(cloud_not_filtered, "no filtered");
+            PointCloudRGB::Ptr tmp2(new PointCloudRGB);
+//            binocular_dense_stereo::viewPointCloudRGB(cloud_not_filtered, "no filtered");
 
             pcl::PassThrough<PointTRGB> pass;
             pass.setInputCloud (cloud_not_filtered);
             pass.setFilterFieldName ("x");
             pass.setFilterLimits (-20.0, 20.0);
-            pass.filter (*cloud); // NPLACE SE RIUSI CAMBIA
+            pass.filter (*tmp2); // NPLACE SE RIUSI CAMBIA
 
-            pass.setInputCloud (cloud);
+            pass.setInputCloud (tmp2);
             pass.setFilterFieldName ("y");
-            pass.setFilterLimits (-10.0, 2.0);
+            pass.setFilterLimits (-10.0, 2);
             pass.filter (*tmp); // NPLACE SE RIUSI CAMBIA
 
             pass.setInputCloud (tmp);
@@ -786,7 +847,8 @@ namespace binocular_dense_stereo {
             pass.setFilterLimits (0.0, 200.0);
             pass.filter (*cloud); // NPLACE SE RIUSI CAMBIA
 
-            binocular_dense_stereo::viewPointCloudRGB(cloud, "yes filtered");
+//            binocular_dense_stereo::viewPointCloudRGB(cloud, "yes filtered");
+
 
             if(!(*cloud).empty()){
 

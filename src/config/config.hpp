@@ -49,7 +49,7 @@ namespace binocular_dense_stereo {
                 return instance;
             }
 
-            configPars loadGeneralConfiguration();
+            configPars loadGeneralConfiguration(int dtype);
             registrationParams loadRegistrationParams(int dtype);
             std::vector<middleburyPair> loadMiddleburyAssociations();
 

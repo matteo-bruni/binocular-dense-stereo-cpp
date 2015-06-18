@@ -71,18 +71,18 @@ int main(int argc, char *argv[])
 //    string dataset_type = "kitti";
 
 
-    string path("../dataset/dataset_templeRing_segm/");
-    Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
-    int datasetType = binocular_dense_stereo::datasetType::MIDDLEBURY;
-
+//    string path("../dataset/dataset_templeRing_segm/");
+//    Ptr<MSM_middlebury> dataset = MSM_middlebury::create();
+//    int datasetType = binocular_dense_stereo::datasetType::MIDDLEBURY;
+//
 //    string path("../dataset/NTSD-200/");
 //    Ptr<tsukuba_dataset> dataset = tsukuba_dataset::create();
 //    int datasetType = binocular_dense_stereo::datasetType::TSUKUBA;
 
 //
-//    string path("../dataset/KITTI/");
-//    Ptr<SLAM_kitti> dataset = SLAM_kitti::create();
-//    int datasetType = binocular_dense_stereo::datasetType::KITTI;
+    string path("../dataset/KITTI/");
+    Ptr<SLAM_kitti> dataset = SLAM_kitti::create();
+    int datasetType = binocular_dense_stereo::datasetType::KITTI;
 
 
 
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 
 
     FILE_LOG(logINFO) << "Loading params from config.cfg.. ";
-    binocular_dense_stereo::configPars pars = binocular_dense_stereo::ConfigLoader::get_instance().loadGeneralConfiguration();
+    binocular_dense_stereo::configPars pars = binocular_dense_stereo::ConfigLoader::get_instance().loadGeneralConfiguration(datasetType);
 
     bool load_clouds = pars.load_clouds;
     int load_n_clouds = pars.load_n_clouds;
@@ -165,8 +165,8 @@ int main(int argc, char *argv[])
                               " with step " << step;
 
 //            binocular_dense_stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
-//            binocular_dense_stereo::createAllCloudsKITTI(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
-            binocular_dense_stereo::createAllCloudsMiddelbury(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
+            binocular_dense_stereo::createAllCloudsKITTI(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
+//            binocular_dense_stereo::createAllCloudsMiddelbury(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
 
             if (pars.save_generated_clouds){
                 binocular_dense_stereo::saveVectorCloudsToPCDRGB(clouds, "original");
@@ -232,8 +232,8 @@ int main(int argc, char *argv[])
                               " with step " << step;
 
 //            binocular_dense_stereo::createAllCloudsTsukuba(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
-//            binocular_dense_stereo::createAllCloudsKITTI(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
-            binocular_dense_stereo::createAllCloudsMiddelbury(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
+            binocular_dense_stereo::createAllCloudsKITTI(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
+//            binocular_dense_stereo::createAllCloudsMiddelbury(dataset, clouds, first_frame, last_frame, step, pars.show_single_cloud);
 
             if (pars.save_generated_clouds) {
                 binocular_dense_stereo::saveVectorCloudsToPCDRGB(clouds, "original");
